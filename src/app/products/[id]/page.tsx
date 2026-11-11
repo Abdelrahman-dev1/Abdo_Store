@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
+import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import {
   ShoppingBag,
@@ -21,36 +20,10 @@ import Link from 'next/link';
 
 import { supabase } from '@/lib/supabase';
 
-export const dynamic = 'force-dynamic';
-
-
 // ============================
+// المكون الفرعي الذي يحتوي على كل منطق الصفحة و useParams
 // ============================
-// ============================
-// ============================
-// ============================
-// ============================
-
-
-
-// ============================
-// ============================
-// ============================
-// ============================
-
-
-
-
-
-
-
-
-
-
-
-
-
-export default function ProductDetailsPage() {
+function ProductContent() {
   const params = useParams();
   const id = params?.id;
 
@@ -98,7 +71,7 @@ export default function ProductDetailsPage() {
   const toggleWishlist = () => {
     let wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
     if (isWishlisted) {
-      wishlist = wishlist.filter((item: any) => item.id === product.id);
+      wishlist = wishlist.filter((item: any) => item.id !== product.id);
       setIsWishlisted(false);
     } else {
       wishlist.push({
@@ -364,10 +337,6 @@ export default function ProductDetailsPage() {
             >
               <Maximize2 size={15} /> Zoom Image
             </button>
-
-
-
-
           </div>
 
           {/* Product Info & Actions */}
@@ -604,5 +573,23 @@ export default function ProductDetailsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// ============================
+// المكون الرئيسي المصدر (Exported Default Component) مغلف بـ Suspense
+// ============================
+export default function ProductDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='min-h-screen bg-[#07090e] flex flex-col items-center justify-center text-slate-400 space-y-3 font-sans'>
+          <Loader2 className='w-8 h-8 animate-spin text-blue-500' />
+          <p className='text-xs font-medium'>Loading product details...</p>
+        </div>
+      }
+    >
+      <ProductContent />
+    </Suspense>
   );
 }
