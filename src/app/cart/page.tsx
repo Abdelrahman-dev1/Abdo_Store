@@ -166,7 +166,7 @@ export default function CartPage() {
           >
             <div className='flex items-center gap-1.5 cursor-pointer'>
               <ArrowLeft size={12} className='text-slate-400' />
-              <span className='text-[7px] xs:text-[7px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+              <span className='text-[7px] xs:text-[7px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent  tracking-wide'>
                 Continue Shopping
               </span>
             </div>

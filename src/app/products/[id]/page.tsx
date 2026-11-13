@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Flame,
 } from 'lucide-react';
+import CustomerReviews from '@/components/CustomerReviews';
 
 // ============================
 // المكون الفرعي الذي يحتوي على كل منطق الصفحة و useParams
@@ -466,8 +467,7 @@ function ProductContent() {
         {/* ====================== */}
         {/* ====================== */}
         {/* ====================== */}
-
-        {/* Related Products Section - Smooth Infinite Slider */}
+        {/* Related Products - Responsive Infinite Slider */}
         {relatedProducts.length > 0 && (
           <div className='space-y-2 pt-3 sm:pt-4 border-t border-slate-800/80'>
             {/* Header */}
@@ -476,7 +476,7 @@ function ProductContent() {
                 Related Products You May Like 🛍️ ({relatedProducts.length})
               </h2>
 
-              {/* Navigation Buttons */}
+              {/* Navigation */}
               <div className='flex items-center gap-1.5'>
                 <button
                   type='button'
@@ -488,7 +488,7 @@ function ProductContent() {
                     slider.dataset.isPaused = 'true';
 
                     if (slider.dataset.resumeTimer) {
-                      window.clearTimeout(Number(slider.dataset.resumeTimer));
+                      clearTimeout(Number(slider.dataset.resumeTimer));
                     }
 
                     slider.scrollBy({
@@ -498,10 +498,8 @@ function ProductContent() {
 
                     slider.dataset.resumeTimer = String(
                       window.setTimeout(() => {
-                        if (slider.isConnected) {
-                          slider.dataset.isPaused = 'false';
-                        }
-                      }, 900),
+                        slider.dataset.isPaused = 'false';
+                      }, 1200),
                     );
                   }}
                   className='p-1.5 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition active:scale-95 cursor-pointer flex items-center justify-center'
@@ -520,7 +518,7 @@ function ProductContent() {
                     slider.dataset.isPaused = 'true';
 
                     if (slider.dataset.resumeTimer) {
-                      window.clearTimeout(Number(slider.dataset.resumeTimer));
+                      clearTimeout(Number(slider.dataset.resumeTimer));
                     }
 
                     slider.scrollBy({
@@ -530,10 +528,8 @@ function ProductContent() {
 
                     slider.dataset.resumeTimer = String(
                       window.setTimeout(() => {
-                        if (slider.isConnected) {
-                          slider.dataset.isPaused = 'false';
-                        }
-                      }, 900),
+                        slider.dataset.isPaused = 'false';
+                      }, 1200),
                     );
                   }}
                   className='p-1.5 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition active:scale-95 cursor-pointer flex items-center justify-center'
@@ -544,45 +540,44 @@ function ProductContent() {
               </div>
             </div>
 
-            {/* Slider Container */}
+            {/* Slider */}
             <div className='relative'>
               <div
                 id='related-slider-ref'
                 dir='ltr'
-                onMouseEnter={(e) => {
-                  e.currentTarget.dataset.isPaused = 'true';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.dataset.isPaused = 'false';
-                }}
-                onTouchStart={(e) => {
+                data-loop-enabled={
+                  relatedProducts.length >= 5 ? 'true' : 'false'
+                }
+                onPointerDown={(e) => {
                   const node = e.currentTarget;
 
                   node.dataset.isPaused = 'true';
 
                   if (node.dataset.resumeTimer) {
-                    window.clearTimeout(Number(node.dataset.resumeTimer));
+                    clearTimeout(Number(node.dataset.resumeTimer));
                   }
                 }}
-                onTouchEnd={(e) => {
+                onPointerUp={(e) => {
                   const node = e.currentTarget;
-
-                  if (node.dataset.resumeTimer) {
-                    window.clearTimeout(Number(node.dataset.resumeTimer));
-                  }
 
                   node.dataset.resumeTimer = String(
                     window.setTimeout(() => {
                       if (node.isConnected) {
                         node.dataset.isPaused = 'false';
                       }
-                    }, 2500),
+                    }, 1600),
                   );
                 }}
-                onTouchCancel={(e) => {
+                onPointerCancel={(e) => {
                   const node = e.currentTarget;
 
-                  node.dataset.isPaused = 'false';
+                  node.dataset.resumeTimer = String(
+                    window.setTimeout(() => {
+                      if (node.isConnected) {
+                        node.dataset.isPaused = 'false';
+                      }
+                    }, 500),
+                  );
                 }}
                 onWheel={(e) => {
                   const node = e.currentTarget;
@@ -590,7 +585,7 @@ function ProductContent() {
                   node.dataset.isPaused = 'true';
 
                   if (node.dataset.resumeTimer) {
-                    window.clearTimeout(Number(node.dataset.resumeTimer));
+                    clearTimeout(Number(node.dataset.resumeTimer));
                   }
 
                   node.dataset.resumeTimer = String(
@@ -598,7 +593,7 @@ function ProductContent() {
                       if (node.isConnected) {
                         node.dataset.isPaused = 'false';
                       }
-                    }, 1200),
+                    }, 1000),
                   );
                 }}
                 ref={(node) => {
@@ -607,49 +602,56 @@ function ProductContent() {
                   node.dataset.initAuto = 'true';
                   node.dataset.isPaused = 'false';
 
-                  let previousWidth = 0;
+                  let groupWidth = 0;
                   let lastTime = 0;
+                  let lastLoopMode: boolean | null = null;
 
                   const animate = (time: number) => {
-                    // إيقاف الحركة عند إزالة السلايدر من الصفحة
                     if (!node.isConnected) return;
 
-                    const firstGroup = node.querySelector<HTMLElement>(
-                      '[data-related-group="0"]',
+                    const shouldLoop = node.dataset.loopEnabled === 'true';
+
+                    const centerGroup = node.querySelector<HTMLElement>(
+                      `[data-related-group="${shouldLoop ? 1 : 0}"]`,
                     );
 
-                    if (firstGroup) {
-                      const groupWidth =
-                        firstGroup.getBoundingClientRect().width;
+                    if (centerGroup) {
+                      const newWidth =
+                        centerGroup.getBoundingClientRect().width;
 
-                      if (groupWidth > node.clientWidth + 1) {
-                        // ضبط البداية في منتصف المجموعات
-                        if (Math.abs(groupWidth - previousWidth) > 1) {
-                          previousWidth = groupWidth;
-                          node.scrollLeft = groupWidth;
-                        }
+                      // تحديث القياسات عند تغيير حجم الشاشة أو وضع التكرار
+                      if (
+                        newWidth > 0 &&
+                        (Math.abs(newWidth - groupWidth) > 1 ||
+                          lastLoopMode !== shouldLoop)
+                      ) {
+                        groupWidth = newWidth;
+                        lastLoopMode = shouldLoop;
 
+                        // لو التكرار شغال نبدأ من المجموعة الوسطى
+                        // لو المنتجات قليلة نبدأ من المجموعة الوحيدة
+                        node.scrollLeft = shouldLoop ? groupWidth : 0;
+                      }
+
+                      if (groupWidth > 0 && shouldLoop) {
                         const delta = lastTime
                           ? Math.min(time - lastTime, 40)
                           : 0;
 
-                        // التحريك التلقائي بدون تعارض مع المستخدم
+                        // Auto Scroll
                         if (node.dataset.isPaused !== 'true') {
-                          node.scrollLeft += delta * 0.025;
+                          node.scrollLeft += (30 * delta) / 1000;
                         }
 
-                        // الانتقال للمجموعة التالية بدون قفزة
+                        // Infinite Loop Forward
                         if (node.scrollLeft >= groupWidth * 2) {
                           node.scrollLeft -= groupWidth;
                         }
 
-                        // الانتقال للمجموعة السابقة بدون قفزة
+                        // Infinite Loop Backward
                         else if (node.scrollLeft <= 0) {
                           node.scrollLeft += groupWidth;
                         }
-                      } else {
-                        previousWidth = groupWidth;
-                        node.scrollLeft = 0;
                       }
                     }
 
@@ -668,91 +670,109 @@ function ProductContent() {
                   scrollBehavior: 'auto',
                 }}
               >
-                {/* Three Identical Groups For Seamless Infinite Scrolling */}
+                {/* 3 Groups for 5+ Products | 1 Group for Fewer Products */}
                 <div className='flex w-max'>
-                  {[0, 1, 2].map((copy) => (
-                    <div
-                      key={`related-group-${copy}`}
-                      data-related-group={copy}
-                      aria-hidden={copy !== 1}
-                      className='flex shrink-0 items-center gap-2 sm:gap-3 pr-2 sm:pr-3'
-                    >
-                      {relatedProducts.map((item) => {
-                        const itemImg =
-                          item.image ||
-                          item.images?.[0] ||
-                          'https://via.placeholder.com/300';
+                  {Array.from(
+                    { length: relatedProducts.length >= 5 ? 3 : 1 },
+                    (_, copy) => (
+                      <div
+                        key={`related-group-${copy}`}
+                        data-related-group={copy}
+                        aria-hidden={relatedProducts.length >= 5 && copy !== 1}
+                        className='flex shrink-0 items-center gap-2 sm:gap-3 pr-2 sm:pr-3'
+                      >
+                        {relatedProducts.map((item) => {
+                          const itemImg =
+                            item.image ||
+                            item.images?.[0] ||
+                            'https://via.placeholder.com/300';
 
-                        const oldPrice =
-                          item.originalPrice ||
-                          item.oldPrice ||
-                          item.compare_at_price;
+                          const oldPrice =
+                            item.originalPrice ||
+                            item.oldPrice ||
+                            item.compare_at_price;
 
-                        return (
-                          <Link
-                            key={`${copy}-${item.id}`}
-                            href={`/products/${item.id}`}
-                            tabIndex={copy === 1 ? undefined : -1}
-                            className='w-[140px] sm:w-[190px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-xl border border-slate-800 shadow-sm overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
-                          >
-                            <div>
-                              {/* Product Image */}
-                              <div className='w-full h-28 sm:h-38 bg-slate-900 overflow-hidden relative border-b border-slate-800'>
-                                <img
-                                  src={itemImg}
-                                  alt={item.name}
-                                  className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-                                />
+                          return (
+                            <Link
+                              key={`${copy}-${item.id}`}
+                              href={`/products/${item.id}`}
+                              tabIndex={
+                                relatedProducts.length >= 5 && copy !== 1
+                                  ? -1
+                                  : undefined
+                              }
+                              className='w-[140px] sm:w-[190px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-xl border border-slate-800 shadow-sm overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                            >
+                              <div>
+                                {/* Image */}
+                                <div className='w-full h-28 sm:h-38 bg-slate-900 overflow-hidden relative border-b border-slate-800'>
+                                  <img
+                                    src={itemImg}
+                                    alt={item.name}
+                                    className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                                  />
 
-                                {oldPrice && oldPrice > item.price ? (
-                                  <span className='absolute top-1.5 left-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1 py-0.5 rounded uppercase tracking-wider shadow animate-pulse'>
-                                    🔥 Sale
-                                  </span>
-                                ) : (
-                                  <span className='absolute top-1.5 left-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[7px] font-black px-1 py-0.5 rounded uppercase tracking-wider shadow'>
-                                    ✨ Hot
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Product Details */}
-                              <div className='p-2 space-y-1'>
-                                <h3 className='font-bold text-[11px] sm:text-xs text-slate-100 line-clamp-1 group-hover:text-blue-400 transition'>
-                                  {item.name}
-                                </h3>
-
-                                <div className='flex items-baseline gap-1 pt-0.5'>
-                                  <span className='text-[11px] sm:text-sm font-black text-blue-400 tracking-tight'>
-                                    {item.price}{' '}
-                                    <span className='text-[8px] text-slate-400 font-normal'>
-                                      {currency || 'EGP'}
+                                  {oldPrice && oldPrice > item.price ? (
+                                    <span className='absolute top-1.5 left-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1 py-0.5 rounded uppercase tracking-wider shadow animate-pulse'>
+                                      🔥 Sale
                                     </span>
-                                  </span>
-
-                                  {oldPrice && oldPrice > item.price && (
-                                    <span className='text-[9px] text-slate-400/80 line-through font-light'>
-                                      {oldPrice}
+                                  ) : (
+                                    <span className='absolute top-1.5 left-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[7px] font-black px-1 py-0.5 rounded uppercase tracking-wider shadow'>
+                                      ✨ Hot
                                     </span>
                                   )}
                                 </div>
+
+                                {/* Details */}
+                                <div className='p-2 space-y-1'>
+                                  <h3 className='font-bold text-[11px] sm:text-xs text-slate-100 line-clamp-1 group-hover:text-blue-400 transition'>
+                                    {item.name}
+                                  </h3>
+
+                                  <div className='flex items-baseline gap-1 pt-0.5'>
+                                    <span className='text-[11px] sm:text-sm font-black text-blue-400 tracking-tight'>
+                                      {item.price}{' '}
+                                      <span className='text-[8px] text-slate-400 font-normal'>
+                                        {currency || 'EGP'}
+                                      </span>
+                                    </span>
+
+                                    {oldPrice && oldPrice > item.price && (
+                                      <span className='text-[9px] text-slate-400/80 line-through font-light'>
+                                        {oldPrice}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  ))}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
+
         {/* ============================ */}
         {/* ============================ */}
         {/* ============================ */}
         {/* ============================ */}
         {/* ============================ */}
+
+        <CustomerReviews productId={product.id} />
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+
         {/* Customer Reviews & Ratings Section */}
+
+{/*
+
         <div className='bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800/90 shadow-2xl p-6 sm:p-8 space-y-6'>
           <div className='flex items-center gap-3 border-b border-slate-800 pb-4'>
             <Star className='text-amber-400 fill-amber-400' size={22} />
@@ -763,6 +783,8 @@ function ProductContent() {
 
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             {/* Reviews List */}
+
+{/*
             <div className='space-y-4 max-h-80 overflow-y-auto pr-2'>
               {reviews.length === 0 ? (
                 <p className='text-xs text-slate-500 py-8 text-center font-medium'>
@@ -793,10 +815,10 @@ function ProductContent() {
                   </div>
                 ))
               )}
-            </div>
+            </div> */}
 
             {/* Add Review Form */}
-            <form
+            {/* <form
               onSubmit={handleAddReview}
               className='p-6 bg-[#141d2f]/60 rounded-2xl border border-slate-800 space-y-4'
             >
@@ -858,7 +880,15 @@ function ProductContent() {
               </button>
             </form>
           </div>
-        </div>
+        </div> */}
+
+
+
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
       </main>
     </div>
   );

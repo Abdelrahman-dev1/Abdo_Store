@@ -51,7 +51,7 @@ export async function generateMetadata({
   const product = await getProduct(id);
 
   // [ملاحظة]: قم بتغيير رابط الصورة الافتراضية هنا برابط موقعك الحقيقي لاحقاً
-  const fallbackImage = 'https://abdo-store.vercel.app/we3.jpg';
+  const fallbackImage = 'https://abdo-store-kappa.vercel.app/we11.jpg';
 
   /* --- تخصيص بيانات الكارد (WhatsApp / Facebook Preview) --- */
   const productName = product?.name || 'عرض مميز';
@@ -74,7 +74,7 @@ export async function generateMetadata({
      ========================================================== */
   // [تعديل هــــــــام جداً عند الرفع لـ Vercel]:
   // استبدل 'https://abdo-store.vercel.app' برابط موقعك الحقيقي الذي سيعطيه لك Vercel
-  const siteDomain = 'https://abdo-store.vercel.app';
+  const siteDomain = 'https://abdo-store-kappa.vercel.app/';
   const productUrl = `${siteDomain}/product/${id}`;
 
   return {

@@ -62,6 +62,51 @@ export default function HomePage() {
 
   // ==========================================
   // ==========================================
+const [announcementBar, setAnnouncementBar] = useState<{
+  enabled: boolean;
+  text: string;
+  startEmoji: string;
+  endEmoji: string;
+} | null>(null);
+  // ==========================================
+  // ==========================================
+  // ==========================================
+useEffect(() => {
+  let active = true;
+
+  const loadAnnouncementBar = async () => {
+    const { data } = await supabase
+      .from('settings')
+      .select(
+        'announcement_enabled, announcement_text, announcement_emoji_start, announcement_emoji_end',
+      )
+      .limit(1)
+      .maybeSingle();
+
+    if (!active) return;
+
+    setAnnouncementBar({
+      enabled: data?.announcement_enabled ?? true,
+      text:
+        data?.announcement_text ||
+        'FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items! Limited Time Only.',
+      startEmoji: data?.announcement_emoji_start || '💸',
+      endEmoji: data?.announcement_emoji_end || '🔥',
+    });
+  };
+
+  void loadAnnouncementBar();
+  return () => {
+    active = false;
+  };
+}, []);
+
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
   // ==========================================
   // محرك الحركة المستمرة لسكشن الهيرو
   useEffect(() => {
@@ -368,7 +413,7 @@ export default function HomePage() {
 
     const existingIndex = cart.findIndex((item: any) => item.id === product.id);
     const productImage = product.image || (product.images?.[0] ?? '');
-    let updatedCart = [...cart];
+    const updatedCart = [...cart];
 
     if (existingIndex > -1) {
       updatedCart[existingIndex].quantity += 1;
@@ -417,12 +462,28 @@ export default function HomePage() {
   // يمكنك لاحقاً ربط هذه المتغيرات (مثل heroProducts, flashProducts, catalogProducts)
   // بجدول في Supabase أو صفحة الـ Product Admin لتحديد تخصيص صور وعناصر كل سكشن على حدة.
   // ----------------------------------------------------
-  // تصفية المنتجات بناءً على ما تم تحديده من لوحة التحكم (الادمن)
+  // ========================
+  // ========================
+  // ========================
+  // ========================
+
   const heroProducts = products.filter((p) => p.show_in_hero);
   const flashDeals = products.filter((p) => p.show_in_flash);
-  const catalogProducts = filteredProducts.filter(
-    (p) => p.show_in_catalog === true,
-  );
+
+  const heroIds = new Set(heroProducts.map((p) => p.id));
+  const flashIds = new Set(flashDeals.map((p) => p.id));
+
+  // تصفية الكتالوج: يظهر لو مخصص للكاتلوج، ومش موجود كـ Hero أساسي فوق
+  // تصفية الكتالوج: يظهر فوراً لو الأدمن معلّم عليه صح في الكتالوج (بغض النظر عن الهيرو أو الفلاش)
+  const catalogProducts = filteredProducts.filter((p) => {
+    return p.show_in_catalog === true;
+  });
+
+  // ========================
+  // ========================
+  // ========================
+  // ========================
+
   // General Slider manual scroll helper
   const handleScrollManual = (ref: any, direction: string, amount = 380) => {
     if (!ref.current) return;
@@ -811,8 +872,7 @@ export default function HomePage() {
       {/* =============================== */}
       {/* =============================== */}
 
-      {/* 3. SECTION 1: HERO BANNER SLIDER (متوسط السرعة مع أزرار تحكم مخصصة وتخصيص للصور) */}
-
+      {/* 3. SECTION 1: HERO BANNER SLIDER (متوسط السرعة مع أزرار تحكم مخصصة وتخصيص للصور وحركة أوتوماتيكية ذكية) */}
       <section className='mt-2 sm:mt-6 mb-3 relative w-full py-2 sm:py-4 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80 text-[11px] sm:text-sm'>
         {/* Background Ambient Glows */}
         <div className='absolute top-1/4 left-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-blue-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
@@ -839,13 +899,20 @@ export default function HomePage() {
             {/* Slider Controls for Hero Section */}
             {heroProducts.length > 0 && !loading && (
               <div className='flex items-center gap-2 self-end sm:self-auto shrink-0'>
+                {/* Pause / Resume Button */}
                 <button
                   type='button'
-                  onClick={() => setIsHeroPaused(!isHeroPaused)}
+                  onClick={() => {
+                    const slider = document.getElementById('hero-slider-ref');
+                    if (!slider) return;
+                    const currentPaused = slider.dataset.isPaused === 'true';
+                    slider.dataset.isPaused = currentPaused ? 'false' : 'true';
+                    if (typeof setIsHeroPaused === 'function') {
+                      setIsHeroPaused(!currentPaused);
+                    }
+                  }}
                   className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title={
-                    isHeroPaused ? 'Resume Hero Scroll' : 'Pause Hero Scroll'
-                  }
+                  title='Toggle Hero Scroll'
                 >
                   {isHeroPaused ? (
                     <Play size={14} className='sm:w-4 sm:h-4' />
@@ -854,19 +921,33 @@ export default function HomePage() {
                   )}
                 </button>
 
+                {/* Scroll Left Button */}
                 <button
                   type='button'
                   onClick={() => {
-                    if (typeof setIsHeroPaused === 'function')
-                      setIsHeroPaused(true);
-                    if (heroScrollRef.current) {
-                      heroScrollRef.current.scrollBy({
-                        left: -320,
-                        behavior: 'smooth',
-                      });
+                    const slider = document.getElementById('hero-slider-ref');
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+                    if (slider.dataset.resumeTimer) {
+                      clearTimeout(Number(slider.dataset.resumeTimer));
                     }
+
+                    slider.scrollBy({
+                      left: -320,
+                      behavior: 'smooth',
+                    });
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                        }
+                      }, 1500),
+                    );
                   }}
                   className='p-2 sm:p-2.5 rounded-xl bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='السابق'
                 >
                   <ChevronLeft
                     size={16}
@@ -874,19 +955,33 @@ export default function HomePage() {
                   />
                 </button>
 
+                {/* Scroll Right Button */}
                 <button
                   type='button'
                   onClick={() => {
-                    if (typeof setIsHeroPaused === 'function')
-                      setIsHeroPaused(true);
-                    if (heroScrollRef.current) {
-                      heroScrollRef.current.scrollBy({
-                        left: 320,
-                        behavior: 'smooth',
-                      });
+                    const slider = document.getElementById('hero-slider-ref');
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+                    if (slider.dataset.resumeTimer) {
+                      clearTimeout(Number(slider.dataset.resumeTimer));
                     }
+
+                    slider.scrollBy({
+                      left: 320,
+                      behavior: 'smooth',
+                    });
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                        }
+                      }, 1500),
+                    );
                   }}
                   className='p-2 sm:p-2.5 rounded-xl bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='التالي'
                 >
                   <ChevronRight
                     size={16}
@@ -907,167 +1002,283 @@ export default function HomePage() {
           ) : heroProducts.length === 0 ? null : (
             <div className='relative'>
               <div
-                ref={heroScrollRef}
-                onMouseEnter={() => setIsHeroPaused(true)}
-                onMouseLeave={() => setIsHeroPaused(false)}
-                className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth touch-pan-x'
+                id='hero-slider-ref'
+                dir='ltr'
+                onPointerDown={(e) => {
+                  const node = e.currentTarget;
+                  node.dataset.isPaused = 'true';
+                  if (node.dataset.resumeTimer) {
+                    clearTimeout(Number(node.dataset.resumeTimer));
+                  }
+                }}
+                onPointerUp={(e) => {
+                  const node = e.currentTarget;
+                  node.dataset.resumeTimer = String(
+                    window.setTimeout(() => {
+                      if (node.isConnected) {
+                        node.dataset.isPaused = 'false';
+                      }
+                    }, 1600),
+                  );
+                }}
+                onPointerCancel={(e) => {
+                  const node = e.currentTarget;
+                  node.dataset.resumeTimer = String(
+                    window.setTimeout(() => {
+                      if (node.isConnected) {
+                        node.dataset.isPaused = 'false';
+                      }
+                    }, 600),
+                  );
+                }}
+                onWheel={(e) => {
+                  const node = e.currentTarget;
+                  node.dataset.isPaused = 'true';
+                  if (node.dataset.resumeTimer) {
+                    clearTimeout(Number(node.dataset.resumeTimer));
+                  }
+                  node.dataset.resumeTimer = String(
+                    window.setTimeout(() => {
+                      if (node.isConnected) {
+                        node.dataset.isPaused = 'false';
+                      }
+                    }, 1200),
+                  );
+                }}
+                onMouseEnter={() => {
+                  const node = document.getElementById('hero-slider-ref');
+                  if (node) node.dataset.isPaused = 'true';
+                }}
+                onMouseLeave={() => {
+                  const node = document.getElementById('hero-slider-ref');
+                  if (node) node.dataset.isPaused = 'false';
+                }}
+                ref={(node) => {
+                  if (!node || node.dataset.initAuto === 'true') return;
+
+                  node.dataset.initAuto = 'true';
+                  node.dataset.isPaused = 'false';
+
+                  let groupWidth = 0;
+                  let lastTime = 0;
+
+                  const animate = (time: number) => {
+                    if (!node.isConnected) return;
+
+                    const centerGroup = node.querySelector<HTMLElement>(
+                      '[data-hero-group="4"]',
+                    );
+
+                    if (centerGroup) {
+                      const newWidth =
+                        centerGroup.getBoundingClientRect().width;
+
+                      // تحديث القياسات عند تغيير الشاشة
+                      if (newWidth > 0 && Math.abs(newWidth - groupWidth) > 1) {
+                        groupWidth = newWidth;
+                        node.scrollLeft = groupWidth * 4;
+                      }
+
+                      if (groupWidth > 0) {
+                        const delta = lastTime
+                          ? Math.min(time - lastTime, 40)
+                          : 0;
+
+                        // Auto Scroll Speed (سرعة الهيرو مظبوطة وسلسة)
+                        if (node.dataset.isPaused !== 'true') {
+                          node.scrollLeft += (35 * delta) / 1000;
+                        }
+
+                        // Infinite Loop Forward
+                        if (node.scrollLeft >= groupWidth * 5) {
+                          node.scrollLeft -= groupWidth;
+                        }
+                        // Infinite Loop Backward
+                        else if (node.scrollLeft <= groupWidth * 3) {
+                          node.scrollLeft += groupWidth;
+                        }
+                      }
+                    }
+
+                    lastTime = time;
+                    requestAnimationFrame(animate);
+                  };
+
+                  requestAnimationFrame(animate);
+                }}
+                className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x overscroll-x-contain'
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
                   WebkitOverflowScrolling: 'touch',
+                  scrollBehavior: 'auto',
                 }}
               >
-                {heroProducts.map((product) => {
-                  const displayImage = product.image || product.images?.[0];
-                  const isWish = wishlist.includes(product.id);
-                  const oldPrice =
-                    product.originalPrice ||
-                    product.oldPrice ||
-                    product.compare_at_price;
-                  const stockQty =
-                    product.stock_quantity ?? product.stock ?? 10;
-                  const ratingVal = product.rating || 5;
-
-                  return (
-                    <Link
-                      key={`hero-${product.id}`}
-                      href={`/products/${product.id}`}
-                      className='w-[240px] sm:w-[320px] shrink-0 bg-[#0e172a]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-800/90 shadow-xl overflow-hidden hover:border-blue-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                {/* 9 Repeated Groups for Infinite Seamless Flow */}
+                <div className='flex w-max'>
+                  {Array.from({ length: 9 }, (_, copy) => (
+                    <div
+                      key={`hero-group-${copy}`}
+                      data-hero-group={copy}
+                      aria-hidden={copy !== 4}
+                      className='flex shrink-0 items-center gap-3 sm:gap-5 pr-3 sm:pr-5'
                     >
-                      <div>
-                        {/* Image Container */}
-                        <div className='w-full h-44 sm:h-56 bg-slate-950 relative overflow-hidden border-b border-slate-800/80'>
-                          {displayImage ? (
-                            <img
-                              src={displayImage}
-                              alt={product.name}
-                              className='w-full h-full object-cover group-hover:scale-105 transition duration-700'
-                            />
-                          ) : (
-                            <div className='flex items-center justify-center h-full text-slate-600 text-[11px] font-medium'>
-                              No Image Available
-                            </div>
-                          )}
+                      {heroProducts.map((product) => {
+                        const displayImage =
+                          product.image || product.images?.[0];
+                        const isWish = wishlist.includes(product.id);
+                        const oldPrice =
+                          product.originalPrice ||
+                          product.oldPrice ||
+                          product.compare_at_price;
+                        const stockQty =
+                          product.stock_quantity ?? product.stock ?? 10;
+                        const ratingVal = product.rating || 5;
 
-                          <div className='absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md'>
-                            <Flame size={10} className='fill-white' /> Hero
-                            Featured
-                          </div>
-
-                          <button
-                            type='button'
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleWishlist(product);
-                            }}
-                            className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
-                              isWish
-                                ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
-                                : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
-                            }`}
+                        return (
+                          <Link
+                            key={`hero-${copy}-${product.id}`}
+                            href={`/products/${product.id}`}
+                            tabIndex={copy === 4 ? undefined : -1}
+                            className='w-[240px] sm:w-[320px] shrink-0 bg-[#0e172a]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-800/90 shadow-xl overflow-hidden hover:border-blue-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                           >
-                            <Heart
-                              size={14}
-                              className={isWish ? 'fill-rose-500' : ''}
-                            />
-                          </button>
-                        </div>
+                            <div>
+                              {/* Image Container */}
+                              <div className='w-full h-44 sm:h-56 bg-slate-950 relative overflow-hidden border-b border-slate-800/80'>
+                                {displayImage ? (
+                                  <img
+                                    src={displayImage}
+                                    alt={product.name}
+                                    className='w-full h-full object-cover group-hover:scale-105 transition duration-700'
+                                  />
+                                ) : (
+                                  <div className='flex items-center justify-center h-full text-slate-600 text-[11px] font-medium'>
+                                    No Image Available
+                                  </div>
+                                )}
 
-                        {/* Details */}
-                        <div className='p-3 sm:p-4 space-y-2'>
-                          <div className='flex items-center justify-between'>
-                            <span className='text-[9px] font-bold text-blue-400 uppercase tracking-widest block'>
-                              {product.category || 'Hero Series'}
-                            </span>
-                            <span
-                              className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
-                                stockQty > 0
-                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
-                                  : 'bg-red-950/60 text-red-300 border-red-500/30'
-                              }`}
-                            >
-                              {stockQty > 0
-                                ? `${stockQty} in stock`
-                                : 'Out of Stock'}
-                            </span>
-                          </div>
+                                <div className='absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md'>
+                                  <Flame size={10} className='fill-white' />{' '}
+                                  Hero Featured
+                                </div>
 
-                          <h3 className='font-extrabold text-white line-clamp-1 text-xs sm:text-sm group-hover:text-blue-400 transition'>
-                            {product.name}
-                          </h3>
-
-                          <p className='text-[10px] sm:text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
-                            {product.description ||
-                              'No description available for this product.'}
-                          </p>
-
-                          {/* النجوم */}
-                          <div className='flex items-center gap-1 text-amber-400 text-[11px]'>
-                            <div className='flex items-center'>
-                              {[...Array(5)].map((_, i) => (
-                                <span
-                                  key={i}
-                                  className={
-                                    i < ratingVal
-                                      ? 'text-amber-400'
-                                      : 'text-slate-700'
-                                  }
+                                <button
+                                  type='button'
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleWishlist(product);
+                                  }}
+                                  className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
+                                    isWish
+                                      ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
+                                      : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
+                                  }`}
                                 >
-                                  ★
-                                </span>
-                              ))}
-                            </div>
-                            <span className='text-[9px] text-slate-400 font-medium'>
-                              ({ratingVal}.0)
-                            </span>
-                          </div>
+                                  <Heart
+                                    size={14}
+                                    className={isWish ? 'fill-rose-500' : ''}
+                                  />
+                                </button>
+                              </div>
 
-                          {/* الأسعار والشير */}
-                          <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
-                            <div className='flex items-baseline gap-1.5'>
-                              <span className='font-black text-sm sm:text-base text-white tracking-tight'>
-                                {product.price}{' '}
-                                <span className='text-[9px] text-slate-400 font-semibold'>
-                                  EGP
-                                </span>
-                              </span>
-                              {oldPrice && oldPrice > product.price && (
-                                <span className='text-[10px] text-slate-400/80 line-through font-light'>
-                                  {oldPrice}{' '}
-                                  <span className='text-[8px]'>EGP</span>
-                                </span>
-                              )}
+                              {/* Details */}
+                              <div className='p-3 sm:p-4 space-y-2'>
+                                <div className='flex items-center justify-between'>
+                                  <span className='text-[9px] font-bold text-blue-400 uppercase tracking-widest block'>
+                                    {product.category || 'Hero Series'}
+                                  </span>
+                                  <span
+                                    className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
+                                      stockQty > 0
+                                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                                        : 'bg-red-950/60 text-red-300 border-red-500/30'
+                                    }`}
+                                  >
+                                    {stockQty > 0
+                                      ? `${stockQty} in stock`
+                                      : 'Out of Stock'}
+                                  </span>
+                                </div>
+
+                                <h3 className='font-extrabold text-white line-clamp-1 text-xs sm:text-sm group-hover:text-blue-400 transition'>
+                                  {product.name}
+                                </h3>
+
+                                <p className='text-[10px] sm:text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
+                                  {product.description ||
+                                    'No description available for this product.'}
+                                </p>
+
+                                {/* النجوم */}
+                                <div className='flex items-center gap-1 text-amber-400 text-[11px]'>
+                                  <div className='flex items-center'>
+                                    {[...Array(5)].map((_, i) => (
+                                      <span
+                                        key={i}
+                                        className={
+                                          i < ratingVal
+                                            ? 'text-amber-400'
+                                            : 'text-slate-700'
+                                        }
+                                      >
+                                        ★
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <span className='text-[9px] text-slate-400 font-medium'>
+                                    ({ratingVal}.0)
+                                  </span>
+                                </div>
+
+                                {/* الأسعار والشير */}
+                                <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
+                                  <div className='flex items-baseline gap-1.5'>
+                                    <span className='font-black text-sm sm:text-base text-white tracking-tight'>
+                                      {product.price}{' '}
+                                      <span className='text-[9px] text-slate-400 font-semibold'>
+                                        EGP
+                                      </span>
+                                    </span>
+                                    {oldPrice && oldPrice > product.price && (
+                                      <span className='text-[10px] text-slate-400/80 line-through font-light'>
+                                        {oldPrice}{' '}
+                                        <span className='text-[8px]'>EGP</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div
+                                    className='scale-75 origin-center inline-block'
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <ShareButton
+                                      productId={product.id}
+                                      productName={product.name}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
                             </div>
 
                             <div
-                              className='scale-75 origin-center inline-block'
+                              className='p-3 sm:p-4 pt-0'
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <ShareButton
-                                productId={product.id}
-                                productName={product.name}
-                              />
+                              <button
+                                type='button'
+                                onClick={(e) => addToCart(e, product)}
+                                className='w-full py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 hover:from-blue-500 hover:to-rose-500 text-white rounded-xl text-[11px] sm:text-xs font-black tracking-wide flex items-center justify-center gap-1.5 shadow-lg transition cursor-pointer'
+                              >
+                                <ShoppingCart size={14} /> Add to Cart
+                              </button>
                             </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div
-                        className='p-3 sm:p-4 pt-0'
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          type='button'
-                          onClick={(e) => addToCart(e, product)}
-                          className='w-full py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 hover:from-blue-500 hover:to-rose-500 text-white rounded-xl text-[11px] sm:text-xs font-black tracking-wide flex items-center justify-center gap-1.5 shadow-lg transition cursor-pointer'
-                        >
-                          <ShoppingCart size={14} /> Add to Cart
-                        </button>
-                      </div>
-                    </Link>
-                  );
-                })}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1131,34 +1342,31 @@ export default function HomePage() {
       {/* =============================== */}
 
       {/* 1. Top Announcement Bar (متحرك بـ Animation خفيف ونار من الناحيتين) */}
-      {/*Top Announcement Bar*/}
-      <div className='w-full py-3 px-4 bg-[#07090e] flex items-center justify-center border-b border-slate-800/60'>
-        <div className='inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-red-600/90 via-rose-600/90 to-blue-600/90 border border-red-500/40 text-white text-xs sm:text-sm font-extrabold py-2.5 px-6 rounded-2xl shadow-xl shadow-red-950/40 backdrop-blur-md'>
-          {/* نار في البداية */}
-          <span className='animate text-sm sm:text-base flex-shrink-0'>💸</span>
 
-          <span className='tracking-wide text-center'>
-            FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items!
-            Limited Time Only.
-          </span>
-
-          {/* نار في النهاية */}
-          <span
-            className='animate-bounce text-sm sm:text-base flex-shrink-0'
-            // style={{ animationDelay: '0.2s' }}
-          >
-            🔥
-          </span>
+      {/* Top Announcement Bar - Dynamic from Supabase */}
+      {announcementBar?.enabled && announcementBar.text.trim() && (
+        <div className='w-full py-3 px-4 bg-[#07090e] flex items-center justify-center border-b border-slate-800/60'>
+          <div className='inline-flex max-w-full items-center justify-center gap-2.5 rounded-2xl border border-red-500/40 bg-gradient-to-r from-red-600/90 via-emerald-600/90 to-blue-600/90 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl shadow-red-950/40 backdrop-blur-md sm:px-6 sm:text-sm'>
+            <span className='shrink-0 animate-pulse text-sm sm:text-base'>
+              {announcementBar.startEmoji}
+            </span>
+            <span className='break-words text-center tracking-wide'>
+              {announcementBar.text}
+            </span>
+            <span className='shrink-0 animate-bounce text-sm sm:text-base'>
+              {announcementBar.endEmoji}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* =============================== */}
       {/* =============================== */}
       {/* =============================== */}
       {/* =============================== */}
       {/* =============================== */}
-      {/* =============================== */}
 
+      {/* ===============2================ */}
       {flashDeals.length > 0 && (
         <section className='max-w-7xl mx-auto px-2 sm:px-6 my-3 sm:my-6 py-3 sm:py-5 border-b border-slate-800/80 relative'>
           {/* Header & Controls */}
@@ -1181,9 +1389,18 @@ export default function HomePage() {
             {/* Slider Controls */}
             {!loading && (
               <div className='flex items-center gap-2 self-end sm:self-auto'>
+                {/* Pause / Resume Button */}
                 <button
                   type='button'
-                  onClick={() => setIsFlashPaused(!isFlashPaused)}
+                  onClick={() => {
+                    const slider = document.getElementById('flash-slider-ref');
+                    if (!slider) return;
+                    const currentPaused = slider.dataset.isPaused === 'true';
+                    slider.dataset.isPaused = currentPaused ? 'false' : 'true';
+                    if (typeof setIsFlashPaused === 'function') {
+                      setIsFlashPaused(!currentPaused);
+                    }
+                  }}
                   className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                   title={
                     isFlashPaused ? 'Resume Flash Deals' : 'Pause Flash Deals'
@@ -1196,34 +1413,64 @@ export default function HomePage() {
                   )}
                 </button>
 
+                {/* Scroll Left Button */}
                 <button
                   type='button'
                   onClick={() => {
-                    setIsFlashPaused(true);
-                    if (flashScrollRef.current) {
-                      flashScrollRef.current.scrollBy({
-                        left: -280,
-                        behavior: 'smooth',
-                      });
+                    const slider = document.getElementById('flash-slider-ref');
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+                    if (slider.dataset.resumeTimer) {
+                      clearTimeout(Number(slider.dataset.resumeTimer));
                     }
+
+                    slider.scrollBy({
+                      left: -280,
+                      behavior: 'smooth',
+                    });
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                        }
+                      }, 1500),
+                    );
                   }}
                   className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-red-600/20 border border-blue-500/40 text-slate-100 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='السابق'
                 >
                   <ChevronLeft size={16} className='sm:w-5 sm:h-5' />
                 </button>
 
+                {/* Scroll Right Button */}
                 <button
                   type='button'
                   onClick={() => {
-                    setIsFlashPaused(true);
-                    if (flashScrollRef.current) {
-                      flashScrollRef.current.scrollBy({
-                        left: 280,
-                        behavior: 'smooth',
-                      });
+                    const slider = document.getElementById('flash-slider-ref');
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+                    if (slider.dataset.resumeTimer) {
+                      clearTimeout(Number(slider.dataset.resumeTimer));
                     }
+
+                    slider.scrollBy({
+                      left: 280,
+                      behavior: 'smooth',
+                    });
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                        }
+                      }, 1500),
+                    );
                   }}
                   className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-red-600/20 to-blue-600/20 border border-red-500/40 text-slate-100 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='التالي'
                 >
                   <ChevronRight size={16} className='sm:w-5 sm:h-5' />
                 </button>
@@ -1231,157 +1478,277 @@ export default function HomePage() {
             )}
           </div>
 
-          <div
-            ref={flashScrollRef}
-            onMouseEnter={() => setIsFlashPaused(true)}
-            onMouseLeave={() => setIsFlashPaused(false)}
-            className='flex items-center gap-2.5 sm:gap-4 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth touch-pan-x'
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
-            {flashDeals.map((item) => {
-              const displayImage = item.image || item.images?.[0];
-              const isWish = wishlist.includes(item.id);
-              const oldPrice =
-                item.originalPrice || item.oldPrice || item.compare_at_price;
-              const stockQty = item.stock_quantity ?? item.stock ?? 10;
-              const ratingVal = item.rating || 5;
+          {/* Slider Container */}
+          <div className='relative'>
+            <div
+              id='flash-slider-ref'
+              dir='ltr'
+              onPointerDown={(e) => {
+                const node = e.currentTarget;
+                node.dataset.isPaused = 'true';
+                if (node.dataset.resumeTimer) {
+                  clearTimeout(Number(node.dataset.resumeTimer));
+                }
+              }}
+              onPointerUp={(e) => {
+                const node = e.currentTarget;
+                node.dataset.resumeTimer = String(
+                  window.setTimeout(() => {
+                    if (node.isConnected) {
+                      node.dataset.isPaused = 'false';
+                    }
+                  }, 1600),
+                );
+              }}
+              onPointerCancel={(e) => {
+                const node = e.currentTarget;
+                node.dataset.resumeTimer = String(
+                  window.setTimeout(() => {
+                    if (node.isConnected) {
+                      node.dataset.isPaused = 'false';
+                    }
+                  }, 600),
+                );
+              }}
+              onWheel={(e) => {
+                const node = e.currentTarget;
+                node.dataset.isPaused = 'true';
+                if (node.dataset.resumeTimer) {
+                  clearTimeout(Number(node.dataset.resumeTimer));
+                }
+                node.dataset.resumeTimer = String(
+                  window.setTimeout(() => {
+                    if (node.isConnected) {
+                      node.dataset.isPaused = 'false';
+                    }
+                  }, 1200),
+                );
+              }}
+              onMouseEnter={() => {
+                const node = document.getElementById('flash-slider-ref');
+                if (node) node.dataset.isPaused = 'true';
+              }}
+              onMouseLeave={() => {
+                const node = document.getElementById('flash-slider-ref');
+                if (node) node.dataset.isPaused = 'false';
+              }}
+              ref={(node) => {
+                if (!node || node.dataset.initAuto === 'true') return;
 
-              return (
-                <Link
-                  key={`flash-${item.id}`}
-                  href={`/products/${item.id}`}
-                  className='w-[220px> sm:w-[260px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-red-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
-                >
-                  <div>
-                    <div className='relative w-full h-38 sm:h-48 bg-slate-900 border-b border-slate-800 overflow-hidden'>
-                      <img
-                        src={displayImage || 'https://via.placeholder.com/300'}
-                        alt={item.name}
-                        className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-                      />
-                      <button
-                        type='button'
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          toggleWishlist(item);
-                        }}
-                        className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
-                          isWish
-                            ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
-                            : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
-                        }`}
-                      >
-                        <Heart
-                          size={14}
-                          className={isWish ? 'fill-rose-500' : ''}
-                        />
-                      </button>
-                      <span className='absolute top-2.5 left-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md'>
-                        Hot Deal
-                      </span>
-                    </div>
+                node.dataset.initAuto = 'true';
+                node.dataset.isPaused = 'false';
 
-                    <div className='p-3 sm:p-3.5 space-y-1.5'>
-                      <div className='flex items-center justify-between'>
-                        <span className='text-[9px] font-bold text-red-400 uppercase tracking-wider block'>
-                          {item.category || 'Special Offer'}
-                        </span>
-                        <span
-                          className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
-                            stockQty > 0
-                              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
-                              : 'bg-red-950/60 text-red-300 border-red-500/30'
-                          }`}
-                        >
-                          {stockQty > 0
-                            ? `${stockQty} in stock`
-                            : 'Out of Stock'}
-                        </span>
-                      </div>
+                let groupWidth = 0;
+                let lastTime = 0;
 
-                      <h3 className='font-bold text-xs sm:text-sm text-slate-100 line-clamp-1 group-hover:text-red-400 transition'>
-                        {item.name}
-                      </h3>
+                const animate = (time: number) => {
+                  if (!node.isConnected) return;
 
-                      <p className='text-[10px] text-slate-400 line-clamp-1 leading-relaxed'>
-                        {item.description ||
-                          'Limited time flash deal offer available now.'}
-                      </p>
+                  const centerGroup = node.querySelector<HTMLElement>(
+                    '[data-flash-group="4"]',
+                  );
 
-                      <div className='flex items-center gap-1 text-amber-400 text-[11px] pt-0.5'>
-                        <div className='flex items-center'>
-                          {[...Array(5)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={
-                                i < ratingVal
-                                  ? 'text-amber-400'
-                                  : 'text-slate-700'
-                              }
-                            >
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                        <span className='text-[9px] text-slate-400 font-medium'>
-                          ({ratingVal}.0)
-                        </span>
-                      </div>
+                  if (centerGroup) {
+                    const newWidth = centerGroup.getBoundingClientRect().width;
 
-                      <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
-                        <div className='flex items-baseline gap-1.5'>
-                          <span className='text-sm sm:text-base font-black text-white tracking-tight'>
-                            {item.price}{' '}
-                            <span className='text-[9px] text-slate-400 font-semibold'>
-                              EGP
-                            </span>
-                          </span>
-                          {oldPrice && oldPrice > item.price && (
-                            <span className='text-[10px] text-slate-400/80 line-through font-light'>
-                              {oldPrice} <span className='text-[8px]'>EGP</span>
-                            </span>
-                          )}
-                        </div>
+                    if (newWidth > 0 && Math.abs(newWidth - groupWidth) > 1) {
+                      groupWidth = newWidth;
+                      node.scrollLeft = groupWidth * 4;
+                    }
 
-                        <div
-                          className='scale-75 origin-center inline-block'
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ShareButton
-                            productId={item.id}
-                            productName={item.name}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    if (groupWidth > 0) {
+                      const delta = lastTime
+                        ? Math.min(time - lastTime, 40)
+                        : 0;
 
+                      // سرعة عروض الفلاش (40px/s لحركة أسرع وأكثر حيوية)
+                      if (node.dataset.isPaused !== 'true') {
+                        node.scrollLeft += (40 * delta) / 1000;
+                      }
+
+                      // Infinite Loop Forward
+                      if (node.scrollLeft >= groupWidth * 5) {
+                        node.scrollLeft -= groupWidth;
+                      }
+                      // Infinite Loop Backward
+                      else if (node.scrollLeft <= groupWidth * 3) {
+                        node.scrollLeft += groupWidth;
+                      }
+                    }
+                  }
+
+                  lastTime = time;
+                  requestAnimationFrame(animate);
+                };
+
+                requestAnimationFrame(animate);
+              }}
+              className='overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x overscroll-x-contain'
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'auto',
+              }}
+            >
+              {/* 9 Repeated Groups */}
+              <div className='flex w-max'>
+                {Array.from({ length: 9 }, (_, copy) => (
                   <div
-                    className='p-3 sm:p-3.5 pt-0'
-                    onClick={(e) => e.stopPropagation()}
+                    key={`flash-group-${copy}`}
+                    data-flash-group={copy}
+                    aria-hidden={copy !== 4}
+                    className='flex shrink-0 items-center gap-2.5 sm:gap-4 pr-2.5 sm:pr-4'
                   >
-                    <button
-                      type='button'
-                      onClick={(e) => addToCart(e, item)}
-                      className='w-full py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg cursor-pointer'
-                    >
-                      <ShoppingCart size={14} /> Add to Cart
-                    </button>
+                    {flashDeals.map((item) => {
+                      const displayImage = item.image || item.images?.[0];
+                      const isWish = wishlist.includes(item.id);
+                      const oldPrice =
+                        item.originalPrice ||
+                        item.oldPrice ||
+                        item.compare_at_price;
+                      const stockQty = item.stock_quantity ?? item.stock ?? 10;
+                      const ratingVal = item.rating || 5;
+
+                      return (
+                        <Link
+                          key={`flash-${copy}-${item.id}`}
+                          href={`/products/${item.id}`}
+                          tabIndex={copy === 4 ? undefined : -1}
+                          className='w-[220px] sm:w-[260px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-red-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                        >
+                          <div>
+                            <div className='relative w-full h-38 sm:h-48 bg-slate-900 border-b border-slate-800 overflow-hidden'>
+                              <img
+                                src={
+                                  displayImage ||
+                                  'https://via.placeholder.com/300'
+                                }
+                                alt={item.name}
+                                className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                              />
+                              <button
+                                type='button'
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleWishlist(item);
+                                }}
+                                className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
+                                  isWish
+                                    ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
+                                    : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
+                                }`}
+                              >
+                                <Heart
+                                  size={14}
+                                  className={isWish ? 'fill-rose-500' : ''}
+                                />
+                              </button>
+                              <span className='absolute top-2.5 left-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md'>
+                                Hot Deal
+                              </span>
+                            </div>
+
+                            <div className='p-3 sm:p-3.5 space-y-1.5'>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-[9px] font-bold text-red-400 uppercase tracking-wider block'>
+                                  {item.category || 'Special Offer'}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
+                                    stockQty > 0
+                                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                                      : 'bg-red-950/60 text-red-300 border-red-500/30'
+                                  }`}
+                                >
+                                  {stockQty > 0
+                                    ? `${stockQty} in stock`
+                                    : 'Out of Stock'}
+                                </span>
+                              </div>
+
+                              <h3 className='font-bold text-xs sm:text-sm text-slate-100 line-clamp-1 group-hover:text-red-400 transition'>
+                                {item.name}
+                              </h3>
+
+                              <p className='text-[10px] text-slate-400 line-clamp-1 leading-relaxed'>
+                                {item.description ||
+                                  'Limited time flash deal offer available now.'}
+                              </p>
+
+                              <div className='flex items-center gap-1 text-amber-400 text-[11px] pt-0.5'>
+                                <div className='flex items-center'>
+                                  {[...Array(5)].map((_, i) => (
+                                    <span
+                                      key={i}
+                                      className={
+                                        i < ratingVal
+                                          ? 'text-amber-400'
+                                          : 'text-slate-700'
+                                      }
+                                    >
+                                      ★
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className='text-[9px] text-slate-400 font-medium'>
+                                  ({ratingVal}.0)
+                                </span>
+                              </div>
+
+                              <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
+                                <div className='flex items-baseline gap-1.5'>
+                                  <span className='text-sm sm:text-base font-black text-white tracking-tight'>
+                                    {item.price}{' '}
+                                    <span className='text-[9px] text-slate-400 font-semibold'>
+                                      EGP
+                                    </span>
+                                  </span>
+                                  {oldPrice && oldPrice > item.price && (
+                                    <span className='text-[10px] text-slate-400/80 line-through font-light'>
+                                      {oldPrice}{' '}
+                                      <span className='text-[8px]'>EGP</span>
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div
+                                  className='scale-75 origin-center inline-block'
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <ShareButton
+                                    productId={item.id}
+                                    productName={item.name}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div
+                            className='p-3 sm:p-3.5 pt-0'
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type='button'
+                              onClick={(e) => addToCart(e, item)}
+                              className='w-full py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg cursor-pointer'
+                            >
+                              <ShoppingCart size={14} /> Add to Cart
+                            </button>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
-                </Link>
-              );
-            })}
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}
 
-      {/* ====================================== */}
-      {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
@@ -1399,7 +1766,7 @@ export default function HomePage() {
 
       {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Ultra Compact & Optimized */}
 
-      {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Ultra Compact & Fully Detailed */}
+      {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Final Smooth Infinite */}
       <main
         id='products-grid'
         className='max-w-7xl mx-auto px-2 sm:px-4 my-2 sm:my-4 py-2 sm:py-4 space-y-3 sm:space-y-4'
@@ -1412,56 +1779,74 @@ export default function HomePage() {
                 ? `Search Results: "${searchQuery}"`
                 : 'Our Complete Product Catalog 🏷️'}
             </h2>
+
             <p className='text-[9px] sm:text-[11px] text-slate-300'>
-              Browse all items with continuous smooth slider
+              Browse all items with smooth touch & scroll preview
             </p>
           </div>
 
-          {/* أزرار التحكم */}
+          {/* Slider Navigation */}
           <div className='flex items-center gap-1.5 shrink-0 self-end sm:self-auto'>
-            {!loading && filteredProducts.length > 0 && (
+            {!loading && catalogProducts.length > 0 && (
               <div className='flex items-center gap-1.5'>
-                <button
-                  type='button'
-                  onClick={() => setIsCatalogPaused((prev) => !prev)}
-                  className='p-1.5 sm:p-2 rounded-lg bg-gradient-to-tr from-red-600/90 to-blue-600/90 text-white shadow transition-all active:scale-95 cursor-pointer flex items-center justify-center'
-                  title={
-                    isCatalogPaused
-                      ? 'Resume Catalog Scroll'
-                      : 'Pause Catalog Scroll'
-                  }
-                >
-                  {isCatalogPaused ? <Play size={12} /> : <Pause size={12} />}
-                </button>
-
+                {/* Previous */}
                 <button
                   type='button'
                   onClick={() => {
-                    setIsCatalogPaused(true);
-                    if (catalogScrollRef.current) {
-                      catalogScrollRef.current.scrollBy({
-                        left: -260,
-                        behavior: 'smooth',
-                      });
+                    const slider = catalogScrollRef.current;
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+
+                    if (slider.dataset.resumeTimer) {
+                      clearTimeout(Number(slider.dataset.resumeTimer));
+                      delete slider.dataset.resumeTimer;
                     }
+
+                    const maxScroll = Math.max(
+                      0,
+                      slider.scrollWidth - slider.clientWidth,
+                    );
+
+                    const target = slider.scrollLeft - 260;
+
+                    slider.dataset.manualTarget = String(
+                      Math.max(0, Math.min(maxScroll, target)),
+                    );
                   }}
-                  className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow'
+                  title='السابق'
                 >
                   <ChevronLeft size={14} className='text-blue-400' />
                 </button>
 
+                {/* Next */}
                 <button
                   type='button'
                   onClick={() => {
-                    setIsCatalogPaused(true);
-                    if (catalogScrollRef.current) {
-                      catalogScrollRef.current.scrollBy({
-                        left: 260,
-                        behavior: 'smooth',
-                      });
+                    const slider = catalogScrollRef.current;
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+
+                    if (slider.dataset.resumeTimer) {
+                      clearTimeout(Number(slider.dataset.resumeTimer));
+                      delete slider.dataset.resumeTimer;
                     }
+
+                    const maxScroll = Math.max(
+                      0,
+                      slider.scrollWidth - slider.clientWidth,
+                    );
+
+                    const target = slider.scrollLeft + 260;
+
+                    slider.dataset.manualTarget = String(
+                      Math.max(0, Math.min(maxScroll, target)),
+                    );
                   }}
-                  className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow'
+                  title='التالي'
                 >
                   <ChevronRight size={14} className='text-red-400' />
                 </button>
@@ -1470,7 +1855,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Category Filter Cards Section - Ultra Mini */}
+        {/* Category Filter Cards */}
         <div className='space-y-1.5'>
           <span className='text-[9px] sm:text-[10px] font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1'>
             ⚡ Filter by Categories:
@@ -1479,7 +1864,10 @@ export default function HomePage() {
           <div className='grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-1'>
             {/* All Categories */}
             {(() => {
-              const allCount = products.length;
+              const allCount = products.filter(
+                (p) => p.show_in_catalog === true,
+              ).length;
+
               const isAllSelected =
                 selectedCategory === 'All' ||
                 selectedCategory === 'الكل' ||
@@ -1496,14 +1884,20 @@ export default function HomePage() {
                   }`}
                 >
                   <span className='text-[10px] font-bold truncate w-full'>
-                    All
+                    All Categories
                   </span>
+
                   <div className='flex items-center justify-between text-[8px]'>
                     <span
-                      className={`px-1 rounded ${isAllSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}
+                      className={`px-1 rounded ${
+                        isAllSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
                     >
                       {allCount}
                     </span>
+
                     <span>📦</span>
                   </div>
                 </button>
@@ -1515,13 +1909,15 @@ export default function HomePage() {
               const catName = typeof cat === 'object' ? cat.name : cat;
               const catId = typeof cat === 'object' ? cat.id : cat;
 
-              const count = products.filter(
-                (p) =>
+              const count = products.filter((p) => {
+                const matchesCategory =
                   p.category_id === catId ||
                   p.category === catName ||
                   p.categories?.id === catId ||
-                  p.categories?.name === catName,
-              ).length;
+                  p.categories?.name === catName;
+
+                return matchesCategory && p.show_in_catalog === true;
+              }).length;
 
               const isSelected =
                 selectedCategory === catName ||
@@ -1542,12 +1938,18 @@ export default function HomePage() {
                   <span className='text-[10px] font-bold truncate w-full'>
                     {catName}
                   </span>
+
                   <div className='flex items-center justify-between text-[8px]'>
                     <span
-                      className={`px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}
+                      className={`px-1 rounded ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
                     >
                       {count}
                     </span>
+
                     <span>🏷️</span>
                   </div>
                 </button>
@@ -1556,16 +1958,19 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Products Display Slider Section - Fully Integrated Data */}
+        {/* Products Slider */}
         {loading ? (
           <div className='py-12 flex flex-col items-center justify-center text-slate-400 space-y-1.5'>
             <Loader2 className='w-6 h-6 animate-spin text-blue-500' />
+
             <p className='text-[10px] font-medium'>Loading store products...</p>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : catalogProducts.length === 0 ? (
           <div className='text-center py-8 bg-[#0e1626]/90 rounded-xl border border-slate-800 shadow max-w-xs mx-auto space-y-2'>
             <ShoppingBag size={28} className='mx-auto text-slate-600' />
+
             <p className='text-xs font-bold text-white'>No products found</p>
+
             <button
               type='button'
               onClick={() => {
@@ -1579,180 +1984,402 @@ export default function HomePage() {
           </div>
         ) : (
           <div className='relative'>
+            {/* Slider Container */}
             <div
-              ref={catalogScrollRef}
-              onMouseEnter={() => setIsCatalogPaused(true)}
-              onMouseLeave={() => setIsCatalogPaused(false)}
-              className='flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none py-1.5 px-0.5 scroll-smooth touch-pan-x overscroll-x-contain'
+              id='catalog-slider-ref'
+              ref={(node) => {
+                catalogScrollRef.current = node;
+
+                if (!node || node.dataset.initAuto === 'true') return;
+
+                node.dataset.initAuto = 'true';
+                node.dataset.isPaused = 'false';
+
+                let groupWidth = 0;
+                let lastTime = 0;
+                let lastLoopMode: boolean | null = null;
+
+                const animate = (time: number) => {
+                  if (!node.isConnected) return;
+
+                  // تحديد المجموعات الموجودة حاليًا
+                  const groups = node.querySelectorAll<HTMLElement>(
+                    '[data-catalog-group]',
+                  );
+
+                  const shouldLoop = groups.length === 3;
+
+                  const centerGroup = groups[shouldLoop ? 1 : 0];
+
+                  if (centerGroup) {
+                    const newWidth = centerGroup.getBoundingClientRect().width;
+
+                    // تحديث القياسات عند تغيير الشاشة أو عدد المجموعات
+                    if (
+                      newWidth > 0 &&
+                      (Math.abs(newWidth - groupWidth) > 1 ||
+                        lastLoopMode !== shouldLoop)
+                    ) {
+                      groupWidth = newWidth;
+                      lastLoopMode = shouldLoop;
+
+                      node.scrollLeft = shouldLoop ? groupWidth : 0;
+
+                      delete node.dataset.manualTarget;
+                    }
+
+                    if (groupWidth > 0) {
+                      const maxScroll = Math.max(
+                        0,
+                        node.scrollWidth - node.clientWidth,
+                      );
+
+                      const rightBoundary = Math.min(groupWidth * 2, maxScroll);
+
+                      // Manual Navigation Animation
+                      const manualTarget = node.dataset.manualTarget;
+
+                      if (manualTarget !== undefined) {
+                        const target = Number(manualTarget);
+
+                        const distance = target - node.scrollLeft;
+
+                        if (Math.abs(distance) > 0.8) {
+                          // حركة ناعمة للأسهم بدون تعارض مع Auto Scroll
+                          node.scrollLeft += distance * 0.2;
+                        } else {
+                          node.scrollLeft = target;
+
+                          delete node.dataset.manualTarget;
+
+                          // الحفاظ على Infinite Loop بعد حركة الأسهم
+                          if (shouldLoop) {
+                            if (node.scrollLeft >= rightBoundary - 1) {
+                              node.scrollLeft = Math.max(
+                                0,
+                                node.scrollLeft - groupWidth,
+                              );
+                            } else if (node.scrollLeft <= 1) {
+                              node.scrollLeft = Math.min(
+                                maxScroll,
+                                node.scrollLeft + groupWidth,
+                              );
+                            }
+                          }
+
+                          // استئناف الحركة التلقائية بعد انتهاء تحريك الزر
+                          if (node.dataset.resumeTimer) {
+                            clearTimeout(Number(node.dataset.resumeTimer));
+                          }
+
+                          node.dataset.resumeTimer = String(
+                            window.setTimeout(() => {
+                              if (
+                                node.isConnected &&
+                                node.dataset.manualTarget === undefined
+                              ) {
+                                node.dataset.isPaused = 'false';
+                              }
+                            }, 800),
+                          );
+                        }
+                      }
+
+                      // Automatic Infinite Scroll
+                      else if (shouldLoop) {
+                        const delta = lastTime
+                          ? Math.min(time - lastTime, 40)
+                          : 0;
+
+                        // سرعة الحركة التلقائية: 15px per second
+                        if (node.dataset.isPaused !== 'true') {
+                          node.scrollLeft += (15 * delta) / 1000;
+                        }
+
+                        // Infinite Loop Forward
+                        if (node.scrollLeft >= rightBoundary - 1) {
+                          node.scrollLeft = Math.max(
+                            0,
+                            node.scrollLeft - groupWidth,
+                          );
+                        }
+
+                        // Infinite Loop Backward
+                        else if (node.scrollLeft <= 1) {
+                          node.scrollLeft = Math.min(
+                            maxScroll,
+                            node.scrollLeft + groupWidth,
+                          );
+                        }
+                      }
+                    }
+                  }
+
+                  lastTime = time;
+
+                  requestAnimationFrame(animate);
+                };
+
+                requestAnimationFrame(animate);
+              }}
+              dir='ltr'
+              onPointerDown={(e) => {
+                const node = e.currentTarget;
+
+                node.dataset.isPaused = 'true';
+
+                delete node.dataset.manualTarget;
+
+                if (node.dataset.resumeTimer) {
+                  clearTimeout(Number(node.dataset.resumeTimer));
+                  delete node.dataset.resumeTimer;
+                }
+              }}
+              onPointerUp={(e) => {
+                const node = e.currentTarget;
+
+                node.dataset.resumeTimer = String(
+                  window.setTimeout(() => {
+                    if (node.isConnected) {
+                      node.dataset.isPaused = 'false';
+                    }
+                  }, 1600),
+                );
+              }}
+              onPointerCancel={(e) => {
+                const node = e.currentTarget;
+
+                node.dataset.resumeTimer = String(
+                  window.setTimeout(() => {
+                    if (node.isConnected) {
+                      node.dataset.isPaused = 'false';
+                    }
+                  }, 500),
+                );
+              }}
+              onWheel={(e) => {
+                const node = e.currentTarget;
+
+                node.dataset.isPaused = 'true';
+
+                delete node.dataset.manualTarget;
+
+                if (node.dataset.resumeTimer) {
+                  clearTimeout(Number(node.dataset.resumeTimer));
+                  delete node.dataset.resumeTimer;
+                }
+
+                node.dataset.resumeTimer = String(
+                  window.setTimeout(() => {
+                    if (node.isConnected) {
+                      node.dataset.isPaused = 'false';
+                    }
+                  }, 1000),
+                );
+              }}
+              className='overflow-x-auto scrollbar-none py-1.5 px-0.5 touch-pan-x overscroll-x-contain'
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
                 WebkitOverflowScrolling: 'touch',
+                scrollBehavior: 'auto',
               }}
             >
-              {filteredProducts.map((product) => {
-                const displayImage = product.image || product.images?.[0];
-                const isWish = wishlist.includes(product.id);
-                const oldPrice =
-                  product.originalPrice ||
-                  product.oldPrice ||
-                  product.compare_at_price;
-                const stockQty = product.stock_quantity ?? product.stock ?? 10;
-                const ratingVal = product.rating || 5;
+              {/* 3 Groups Only When There Are Enough Products */}
+              <div className='flex w-max'>
+                {Array.from(
+                  {
+                    length: catalogProducts.length >= 5 ? 3 : 1,
+                  },
+                  (_, copy) => (
+                    <div
+                      key={`catalog-group-${copy}`}
+                      data-catalog-group={copy}
+                      aria-hidden={catalogProducts.length >= 5 && copy !== 1}
+                      className='flex shrink-0 items-center gap-2 sm:gap-3 pr-2 sm:pr-3'
+                    >
+                      {catalogProducts.map((product) => {
+                        const displayImage =
+                          product.image || product.images?.[0];
 
-                const productCategoryName =
-                  product.categories?.name ||
-                  categories.find(
-                    (c) =>
-                      c.id === product.category_id ||
-                      c.name === product.category,
-                  )?.name ||
-                  product.category ||
-                  'General';
+                        const isWish = wishlist.includes(product.id);
 
-                return (
-                  <Link
-                    key={`catalog-${product.id}`}
-                    href={`/products/${product.id}`}
-                    className='w-[210px] sm:w-[240px] shrink-0 bg-[#0e1626]/95 backdrop-blur-xl rounded-xl border border-slate-800 shadow-md overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
-                  >
-                    <div>
-                      {/* Image & Wishlist & Badges */}
-                      <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800'>
-                        {displayImage ? (
-                          <img
-                            src={displayImage}
-                            alt={product.name}
-                            className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-                          />
-                        ) : (
-                          <div className='flex items-center justify-center h-full text-slate-600 text-[10px]'>
-                            No Image
-                          </div>
-                        )}
+                        const oldPrice =
+                          product.originalPrice ||
+                          product.oldPrice ||
+                          product.compare_at_price;
 
-                        <button
-                          type='button'
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleWishlist(product);
-                          }}
-                          className={`absolute top-2 right-2 p-1.5 rounded-lg backdrop-blur-md border transition z-20 ${
-                            isWish
-                              ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
-                              : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
-                          }`}
-                        >
-                          <Heart
-                            size={12}
-                            className={isWish ? 'fill-rose-500' : ''}
-                          />
-                        </button>
-                      </div>
+                        const stockQty =
+                          product.stock_quantity ?? product.stock ?? 10;
 
-                      {/* Product Info (Ultra Compact & Full Admin Data) */}
-                      <div className='p-2 sm:p-2.5 space-y-1.5'>
-                        <div className='flex items-center justify-between'>
-                          <span className='text-[8px] font-bold text-blue-400 uppercase tracking-wider block bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[110px]'>
-                            {productCategoryName}
-                          </span>
+                        const ratingVal = product.rating || 5;
 
-                          {/* ستوك الأدمن الحقيقي */}
-                          <span
-                            className={`px-1 py-0.5 rounded font-bold text-[8px] border ${
-                              stockQty > 0
-                                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
-                                : 'bg-red-950/60 text-red-300 border-red-500/30'
-                            }`}
+                        const productCategoryName =
+                          product.categories?.name ||
+                          categories.find(
+                            (c) =>
+                              c.id === product.category_id ||
+                              c.name === product.category,
+                          )?.name ||
+                          product.category ||
+                          'General';
+
+                        return (
+                          <Link
+                            key={`${copy}-${product.id}`}
+                            href={`/products/${product.id}`}
+                            tabIndex={
+                              catalogProducts.length >= 5 && copy !== 1
+                                ? -1
+                                : undefined
+                            }
+                            className='w-[210px] sm:w-[240px] shrink-0 bg-[#0e1626]/95 backdrop-blur-xl rounded-xl border border-slate-800 shadow-md overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
                           >
-                            {stockQty > 0
-                              ? `${stockQty} in stock`
-                              : 'Out of Stock'}
-                          </span>
-                        </div>
+                            <div>
+                              {/* Image & Wishlist */}
+                              <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800'>
+                                {displayImage ? (
+                                  <img
+                                    src={displayImage}
+                                    alt={product.name}
+                                    className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                                  />
+                                ) : (
+                                  <div className='flex items-center justify-center h-full text-slate-600 text-[10px]'>
+                                    No Image
+                                  </div>
+                                )}
 
-                        <h3 className='font-bold text-slate-100 line-clamp-1 text-[11px] sm:text-xs group-hover:text-blue-400 transition'>
-                          {product.name}
-                        </h3>
+                                <button
+                                  type='button'
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleWishlist(product);
+                                  }}
+                                  className={`absolute top-2 right-2 p-1.5 rounded-lg backdrop-blur-md border transition z-20 ${
+                                    isWish
+                                      ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
+                                      : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
+                                  }`}
+                                >
+                                  <Heart
+                                    size={12}
+                                    className={isWish ? 'fill-rose-500' : ''}
+                                  />
+                                </button>
+                              </div>
 
-                        <p className='text-[9px] text-slate-400 line-clamp-1 leading-relaxed'>
-                          {product.description ||
-                            'Explore our high-quality product collection.'}
-                        </p>
+                              {/* Product Info */}
+                              <div className='p-2 sm:p-2.5 space-y-1.5'>
+                                <div className='flex items-center justify-between'>
+                                  <span className='text-[8px] font-bold text-blue-400 uppercase tracking-wider block bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[110px]'>
+                                    {productCategoryName}
+                                  </span>
 
-                        {/* النجوم والتقييم */}
-                        <div className='flex items-center justify-between text-[10px] text-amber-400 pt-0.5'>
-                          <div className='flex items-center'>
-                            {[...Array(5)].map((_, i) => (
-                              <span
-                                key={i}
-                                className={`text-[9px] ${i < ratingVal ? 'text-amber-400' : 'text-slate-700'}`}
-                              >
-                                ★
-                              </span>
-                            ))}
-                            <span className='text-[8px] text-slate-400 font-medium ml-1'>
-                              ({ratingVal}.0)
-                            </span>
-                          </div>
-                        </div>
+                                  <span
+                                    className={`px-1 py-0.5 rounded font-bold text-[8px] border ${
+                                      stockQty > 0
+                                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                                        : 'bg-red-950/60 text-red-300 border-red-500/30'
+                                    }`}
+                                  >
+                                    {stockQty > 0
+                                      ? `${stockQty} in stock`
+                                      : 'Out of Stock'}
+                                  </span>
+                                </div>
 
-                        {/* الأسعار وزر المشاركة ShareButton */}
-                        <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
-                          <div className='flex items-baseline gap-1'>
-                            <span className='font-black text-xs sm:text-sm text-white tracking-tight'>
-                              {product.price}{' '}
-                              <span className='text-[8px] text-slate-400 font-semibold'>
-                                EGP
-                              </span>
-                            </span>
+                                <h3 className='font-bold text-slate-100 line-clamp-1 text-[11px] sm:text-xs group-hover:text-blue-400 transition'>
+                                  {product.name}
+                                </h3>
 
-                            {oldPrice && oldPrice > product.price && (
-                              <span className='text-[9px] text-slate-400/80 line-through font-light'>
-                                {oldPrice}{' '}
-                                <span className='text-[7px]'>EGP</span>
-                              </span>
-                            )}
-                          </div>
+                                <p className='text-[9px] text-slate-400 line-clamp-1 leading-relaxed'>
+                                  {product.description ||
+                                    'Explore our high-quality product collection.'}
+                                </p>
 
-                          <div className='flex items-center gap-1'>
+                                {/* Rating */}
+                                <div className='flex items-center justify-between text-[10px] text-amber-400 pt-0.5'>
+                                  <div className='flex items-center'>
+                                    {[...Array(5)].map((_, i) => (
+                                      <span
+                                        key={i}
+                                        className={`text-[9px] ${
+                                          i < ratingVal
+                                            ? 'text-amber-400'
+                                            : 'text-slate-700'
+                                        }`}
+                                      >
+                                        ★
+                                      </span>
+                                    ))}
+
+                                    <span className='text-[8px] text-slate-400 font-medium ml-1'>
+                                      ({ratingVal}.0)
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Prices */}
+                                <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
+                                  <div className='flex items-baseline gap-1'>
+                                    <span className='font-black text-xs sm:text-sm text-white tracking-tight'>
+                                      {product.price}{' '}
+                                      <span className='text-[8px] text-slate-400 font-semibold'>
+                                        EGP
+                                      </span>
+                                    </span>
+
+                                    {oldPrice && oldPrice > product.price && (
+                                      <span className='text-[9px] text-slate-400/80 line-through font-light'>
+                                        {oldPrice}{' '}
+                                        <span className='text-[7px]'>EGP</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className='flex items-center gap-1'>
+                                    <div
+                                      className='scale-65 origin-center inline-block'
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <ShareButton
+                                        productId={product.id}
+                                        productName={product.name}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Add to Cart */}
                             <div
-                              className='scale-65 origin-center inline-block'
+                              className='p-2 sm:p-2.5 pt-0'
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <ShareButton
-                                productId={product.id}
-                                productName={product.name}
-                              />
+                              <button
+                                type='button'
+                                onClick={(e) => addToCart(e, product)}
+                                className='w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 shadow transition cursor-pointer'
+                              >
+                                <ShoppingCart size={12} />
+                                Add to Cart
+                              </button>
                             </div>
-                          </div>
-                        </div>
-                      </div>
+                          </Link>
+                        );
+                      })}
                     </div>
-
-                    {/* Add to Cart Button */}
-                    <div
-                      className='p-2 sm:p-2.5 pt-0'
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type='button'
-                        onClick={(e) => addToCart(e, product)}
-                        className='w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 shadow transition cursor-pointer'
-                      >
-                        <ShoppingCart size={12} /> Add to Cart
-                      </button>
-                    </div>
-                  </Link>
-                );
-              })}
+                  ),
+                )}
+              </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}

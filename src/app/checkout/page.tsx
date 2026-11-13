@@ -87,92 +87,134 @@ export default function CheckoutPage() {
   const shippingFee = 50;
   const totalAmount = subtotal + (cart.length > 0 ? shippingFee : 0);
 
-  const handleSubmitOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (cart.length === 0) return;
 
-    setLoading(true);
-    setErrorMessage(null);
 
-    let userId = currentUser?.id || null;
 
-    if (!currentUser && createAccount) {
-      if (!email || !password) {
-        setErrorMessage(
-          'Please enter your email and password to create an account.',
-        );
-        setLoading(false);
-        return;
-      }
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
 
-      const { data: signUpData, error: signUpError } =
-        await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName } },
-        });
 
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          setErrorMessage(
-            'This email is already registered! Please sign in first.',
-          );
-        } else {
-          setErrorMessage('Account creation error: ' + signUpError.message);
-        }
-        setLoading(false);
-        return;
-      }
+const handleSubmitOrder = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (cart.length === 0) return;
 
-      if (signUpData.user) {
-        userId = signUpData.user.id;
-        await supabase.from('profiles').upsert({
-          id: userId,
-          full_name: fullName,
-          phone,
-          city,
-          address,
-        });
-      }
-    }
+  setLoading(true);
+  setErrorMessage(null);
 
-    const orderData = {
-      user_id: userId,
-      customer_name: fullName,
-      customer_phone: phone,
-      city: city,
-      customer_address: address,
-      items: cart,
-      total_amount: totalAmount,
-      status: 'pending',
-    };
+  let userId = currentUser?.id || null;
 
-    const { data: insertedOrder, error: orderError } = await supabase
-      .from('orders')
-      .insert([orderData])
-      .select()
-      .single();
-
-    if (orderError) {
-      setErrorMessage('Error placing order: ' + orderError.message);
+  if (!currentUser && createAccount) {
+    if (!email || !password) {
+      setErrorMessage(
+        'Please enter your email and password to create an account.',
+      );
       setLoading(false);
       return;
     }
 
-    try {
-      await fetch('/api/telegram', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: insertedOrder.id, ...orderData }),
-      });
-    } catch (err) {
-      console.log('Telegram error:', err);
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
+      {
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      },
+    );
+
+    if (signUpError) {
+      if (signUpError.message.includes('already registered')) {
+        setErrorMessage(
+          'This email is already registered! Please sign in first.',
+        );
+      } else {
+        setErrorMessage('Account creation error: ' + signUpError.message);
+      }
+
+      setLoading(false);
+      return;
     }
 
-    localStorage.removeItem('cart');
-    setLoading(false);
-    setSuccess(true);
+    if (signUpData.user) {
+      userId = signUpData.user.id;
+
+      await supabase.from('profiles').upsert({
+        id: userId,
+        full_name: fullName,
+        phone,
+        city,
+        address,
+      });
+    }
+  }
+
+  const orderData = {
+    user_id: userId,
+    customer_name: fullName,
+    customer_phone: phone,
+    customer_email: currentUser?.email || email || '',
+    city,
+    customer_address: address,
+    items: cart,
+    subtotal,
+    shipping_cost: shippingFee,
+    total_amount: totalAmount,
+    payment_method: 'Cash on Delivery',
+    payment_status: 'Unpaid',
+    delivery_method: 'Standard Delivery',
+    status: 'pending',
   };
+
+  const { data: insertedOrder, error: orderError } = await supabase
+    .from('orders')
+    .insert([orderData])
+    .select()
+    .single();
+
+  if (orderError) {
+    setErrorMessage('Error placing order: ' + orderError.message);
+    setLoading(false);
+    return;
+  }
+
+  // Send order notification after successful order creation.
+  // Notification failure must NOT cancel the customer's order.
+  try {
+    const notificationResponse = await fetch('/api/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: insertedOrder.id,
+        orderDate: insertedOrder.created_at || new Date().toISOString(),
+        ...orderData,
+      }),
+    });
+
+    const notificationResult = await notificationResponse.json();
+
+    if (!notificationResponse.ok || !notificationResult.success) {
+      console.error(
+        'Order notification failed:',
+        notificationResult.error || 'Unknown notification error',
+      );
+    } else {
+      console.log('Order notification result:', notificationResult);
+    }
+  } catch (err) {
+    console.error('Order notification error:', err);
+  }
+
+  localStorage.removeItem('cart');
+  setLoading(false);
+  setSuccess(true);
+};
+
+
+// ===================================
+// ===================================
+// ===================================
+// ===================================
 
   if (success) {
     return (
@@ -265,7 +307,7 @@ export default function CheckoutPage() {
             {/* ======================= */}
             {/* ======================= */}
 
-            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent             tracking-wide'>
               Return to Cart
             </span>
 

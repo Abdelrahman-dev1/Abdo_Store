@@ -21,12 +21,12 @@ const geistMono = Geist_Mono({
    2. إعدادات الـ SEO الشاملة وميتا داتا الموقع (Abdo Store)
    ========================================================== */
 // [تعديل هــــــــام]: استبدل 'https://abdo-store.vercel.app' برابط موقعك الحقيقي لاحقاً
-const siteUrl = 'https://abdo-store.vercel.app';
+const siteUrl = 'https://abdo-store-kappa.vercel.app/';
 
 export const metadata: Metadata = {
   // عنوان المتجر الرئيسي (يظهر في تبويب المتصفح ومحركات البحث)
   title: {
-    default: 'Abdo Store | المتجر الأول للتسوق الإلكتروني',
+    default: 'Abdo Store | Store Number one  ❤️',
     template: '%s | Abdo Store', // لتوليد عناوين الصفحات الفرعية أوتوماتيكياً
   },
 
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     locale: 'ar_EG',
     url: siteUrl,
     siteName: 'Abdo Store',
-    title: 'Abdo Store | المتجر الأول للتسوق الإلكتروني',
+    title: 'Abdo Store | Store Number one ❤️',
     description: 'اكتشف أحدث العروض والمنتجات المميزة مع خدمة توصيل سريعة.',
     images: [
       {
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
   // إعدادات تويتر (Twitter Cards)
   twitter: {
     card: 'summary_large_image',
-    title: 'Abdo Store | المتجر الأول للتسوق الإلكتروني',
+    title: 'Abdo Store | store Number one  ❤️',
     description: 'اكتشف أحدث العروض والمنتجات المميزة مع Abdo Store.',
     images: [`${siteUrl}/meq.jpg`],
   },
