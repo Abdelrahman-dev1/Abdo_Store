@@ -69,22 +69,7 @@ export default function MyOrdersPage() {
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
       {/* Custom Neon Scrollbar Styles */}
-      <style jsx global>{`
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #07090e;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, #ef4444, #3b82f6);
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, #dc2626, #2563eb);
-        }
-      `}</style>
+  
 
       {/* Background Glow Orbs */}
       <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />

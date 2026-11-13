@@ -60,6 +60,108 @@ export default function HomePage() {
   const [isFlashPaused, setIsFlashPaused] = useState(false);
   const [isCatalogPaused, setIsCatalogPaused] = useState(false);
 
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // محرك الحركة المستمرة لسكشن الهيرو
+  useEffect(() => {
+    if (isHeroPaused) return;
+
+    let animationFrameId: number;
+    const container = heroScrollRef.current;
+    if (!container) return;
+
+    const step = () => {
+      if (container && !isHeroPaused) {
+        container.scrollLeft += 0.8;
+
+        if (
+          container.scrollLeft >=
+          container.scrollWidth - container.clientWidth - 5
+        ) {
+          container.scrollLeft = 0;
+        }
+      }
+      animationFrameId = requestAnimationFrame(step);
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isHeroPaused]); // <--- شلنا heroProducts من هنا لأنها مش متعرّفة
+
+  // ==========================================
+  // ==========================================
+  // const [isCatalogPaused, setIsCatalogPaused] = useState(false);
+
+  // محرك الحركة المستمرة والناعمة (Continuous Smooth Scroll)
+  useEffect(() => {
+    if (isCatalogPaused) return;
+
+    let animationFrameId: number;
+    const container = catalogScrollRef.current;
+    if (!container) return;
+
+    const step = () => {
+      if (container && !isCatalogPaused) {
+        container.scrollLeft += 0.8; // سرعة الحركة (كل ما تقلل الرقم تبقي أبطأ وأنعم، زوّده لو عايز تسرعها)
+
+        // لو وصلنا للنهاية، ارجع للبداية بذكاء عشان تفضل الحركة شغالة على طول
+        if (
+          container.scrollLeft >=
+          container.scrollWidth - container.clientWidth - 5
+        ) {
+          container.scrollLeft = 0;
+        }
+      }
+      animationFrameId = requestAnimationFrame(step);
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isCatalogPaused, filteredProducts]);
+
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // محرك الحركة المستمرة لسكشن Flash Deals
+  useEffect(() => {
+    if (isFlashPaused) return;
+
+    let animationFrameId: number;
+    const container = flashScrollRef.current;
+    if (!container) return;
+
+    const step = () => {
+      if (container && !isFlashPaused) {
+        container.scrollLeft += 0.8;
+
+        // لو وصلنا للنهاية ارجع للبداية بذكاء
+        if (
+          container.scrollLeft >=
+          container.scrollWidth - container.clientWidth - 5
+        ) {
+          container.scrollLeft = 0;
+        }
+      }
+      animationFrameId = requestAnimationFrame(step);
+    };
+
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isFlashPaused]);
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+
   useEffect(() => {
     fetchProducts();
     loadCartFromStorage();
@@ -73,28 +175,78 @@ export default function HomePage() {
     } = await supabase.auth.getUser();
     setCurrentUser(user);
   };
-
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
   const fetchProducts = async () => {
     setLoading(true);
-    const { data } = await supabase
+
+    // 1. جلب المنتجات النشطة فقط بدون شرط الكاتلوج الصارم مؤقتاً لكي تظهر وتراها بنفسك
+    const { data: productsData, error: prodError } = await supabase
       .from('products')
-      .select('*')
+      .select('*, categories(id, name)')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (data) {
-      setProducts(data);
-      setFilteredProducts(data);
+    // 2. جلب جميع التصنيفات المتاحة من جدول categories
+    const { data: categoriesData, error: catError } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name', { ascending: true });
 
-      // Extract unique categories dynamically
-      const uniqueCats = Array.from(
-        new Set(data.map((p) => p.category).filter(Boolean)),
-      ) as string[];
-      setCategories(['All', ...uniqueCats]);
+    if (productsData) {
+      setProducts(productsData);
+      setFilteredProducts(productsData);
     }
+
+    if (categoriesData) {
+      setCategories(categoriesData);
+    }
+
     setLoading(false);
   };
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // const fetchProducts = async () => {
+  //   setLoading(true);
+  //   const { data } = await supabase
+  //     .from('products')
+  //     .select('*')
+  //     .eq('is_active', true)
+  //     // .eq('show_in_catalog', true) // ⚡ هذا هو الشرط المطلوب لضمان عدم ظهور المنتج في الكاتلوج إلا إذا حددته أنت يدوياً
+  //     .order('created_at', { ascending: false });
 
+  //   if (data) {
+  //     setProducts(data);
+  //     setFilteredProducts(data);
+
+  //     // Extract unique categories dynamically
+  //     const uniqueCats = Array.from(
+  //       new Set(data.map((p) => p.category).filter(Boolean)),
+  //     ) as string[];
+  //     setCategories(['All', ...uniqueCats]);
+  //   }
+  //   setLoading(false);
+  // };
+
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
+  // =============================================
   const loadCartFromStorage = () => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCart(savedCart);
@@ -133,7 +285,62 @@ export default function HomePage() {
     localStorage.setItem('wishlist', JSON.stringify(savedWishlist));
     setTimeout(() => setToastMessage(null), 2000);
   };
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
 
+  // ⚡ الكود المسؤول عن فلترة المنتجات لحظياً عند الضغط على أي بوكس تصنيف
+  useEffect(() => {
+    let result = products;
+
+    // 1. تصفية حسب البحث إن وجد
+    if (searchQuery) {
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+    }
+
+    // 2. تصفية حسب التصنيف المختار (هنا بيشغل البوكسات وتظهر منتجات التصنيف دا فقط!)
+    if (
+      selectedCategory &&
+      selectedCategory !== 'All' &&
+      selectedCategory !== 'الكل'
+    ) {
+      result = result.filter((p) => {
+        const catObj = categories.find(
+          (c) => c.name === selectedCategory || c.id === selectedCategory,
+        );
+        return (
+          p.category_id === catObj?.id ||
+          p.category === selectedCategory ||
+          p.categories?.name === selectedCategory ||
+          p.categories?.id === catObj?.id
+        );
+      });
+    }
+
+    setFilteredProducts(result);
+  }, [selectedCategory, searchQuery, products, categories]);
+
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
+  // ===========================================
   // // Live Filter by Category & Search Query
   // useEffect(() => {
   //   let updated = [...products];
@@ -214,7 +421,7 @@ export default function HomePage() {
   const heroProducts = products.filter((p) => p.show_in_hero);
   const flashDeals = products.filter((p) => p.show_in_flash);
   const catalogProducts = filteredProducts.filter(
-    (p) => p.show_in_catalog ?? true,
+    (p) => p.show_in_catalog === true,
   );
   // General Slider manual scroll helper
   const handleScrollManual = (ref: any, direction: string, amount = 380) => {
@@ -454,8 +661,9 @@ export default function HomePage() {
       )}
 
       {/* 2. Main Navbar (Sticky and includes Wishlist Icon linked to logic) */}
-      <nav className='fixed top-0 left-0 right-0 w-full bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/85 z-50'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4'>
+      <nav className=' fixed top-0 left-0 right-0 w-full bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/85 z-50'>
+        {/* تم تعديل الارتفاع على الموبايل ليكون h-16 بدلاً من h-20، وزيادة المسافات الجانبية px-5 */}
+        <div className='max-w-7xl mx-auto px-5 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4'>
           <Link
             href='/'
             onClick={(e) => {
@@ -464,19 +672,19 @@ export default function HomePage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className='text-base sm:text-lg font-black flex items-center gap-3 text-white shrink-0 cursor-pointer group'
+            className='text-sm sm:text-lg font-black flex items-center gap-2 sm:gap-3 text-white shrink-0 cursor-pointer group'
           >
-            {/* الصورة بحجم أكبر وبوردر وتدرج مكس */}
-            <div className='w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
+            {/* تصغير حجم الصورة على الموبايل w-9 h-9 وعلى الشاشات الأكبر ترجع w-12 h-12 */}
+            <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
               <img
                 src='/we11.jpg'
                 alt='Abdo'
-                className='w-full h-full object-cover rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
+                className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
               />
             </div>
 
-            {/* اسم الاستور مكس أحمر وأزرق مع أنيميشن نبض أو حركة بطيئة */}
-            <span className='text-lg sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+            {/* تصغير حجم خط Abdo Store على الموبايل ليكون text-sm وفي الشاشات الأكبر sm:text-xl */}
+            <span className='text-sm sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
               Abdo Store
             </span>
           </Link>
@@ -516,18 +724,22 @@ export default function HomePage() {
           {/* ============================================== */}
           {/* ============================================== */}
           {/* Actions & Wishlist / Account / Cart */}
-          <div className='flex items-center gap-2.5 shrink-0'>
+          {/* تقليل المسافات البينية بين الأزرار على الموبايل gap-1.5 لتوفير مساحة */}
+          <div className='flex items-center gap-1.5 sm:gap-2.5 shrink-0'>
             {/* Wishlist Button in Navbar linked with Wishlist count logic */}
             <button
               type='button'
               onClick={() => setIsWishlistModalOpen(true)}
-              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition border border-slate-700/60 relative cursor-pointer'
+              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60 relative cursor-pointer'
               title='My Wishlist'
             >
-              <Heart size={15} className='text-rose-500 fill-rose-500' />
+              <Heart
+                size={14}
+                className='sm:w-[15px] sm:h-[15px] text-rose-500 fill-rose-500'
+              />
               <span className='hidden lg:inline'>Wishlist</span>
               {wishlist.length > 0 && (
-                <span className='bg-rose-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md'>
+                <span className='bg-rose-500 text-white text-[9px] sm:text-[10px] font-black w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center shadow-md'>
                   {wishlist.length}
                 </span>
               )}
@@ -535,10 +747,13 @@ export default function HomePage() {
 
             <Link
               href='/admin/login'
-              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition border border-slate-700/60'
+              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60'
               title='Admin Portal'
             >
-              <ShieldAlert size={15} className='text-red-400' />
+              <ShieldAlert
+                size={14}
+                className='sm:w-[15px] sm:h-[15px] text-red-400'
+              />
               <span className='hidden lg:inline'>Admin</span>
             </Link>
 
@@ -551,10 +766,13 @@ export default function HomePage() {
                   setIsAuthModalOpen(true);
                 }
               }}
-              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition border border-slate-700/60 cursor-pointer'
+              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60 cursor-pointer'
               title={currentUser ? 'My Profile' : 'Sign In'}
             >
-              <User size={15} className='text-blue-400' />
+              <User
+                size={14}
+                className='sm:w-[15px] sm:h-[15px] text-blue-400'
+              />
               <span className='hidden lg:inline'>
                 {currentUser ? 'Account' : 'Sign In'}
               </span>
@@ -562,12 +780,12 @@ export default function HomePage() {
 
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
-              className='flex items-center gap-2 bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-lg shadow-red-950/40 relative cursor-pointer'
+              className='flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white px-2.5 py-2 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition shadow-lg shadow-red-950/40 relative cursor-pointer'
             >
-              <ShoppingCart size={16} />
+              <ShoppingCart size={14} className='sm:w-4 sm:h-4' />
               <span className='hidden sm:inline'>Cart</span>
               {totalItemsCount > 0 && (
-                <span className='bg-white text-slate-900 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md'>
+                <span className='bg-white text-slate-900 text-[9px] sm:text-[10px] font-black w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-md'>
                   {totalItemsCount}
                 </span>
               )}
@@ -577,23 +795,25 @@ export default function HomePage() {
       </nav>
 
       {/* 3. SECTION 1: HERO BANNER SLIDER (متوسط السرعة مع أزرار تحكم مخصصة وتخصيص للصور) */}
-      <section className='relative w-full py-12 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80'>
-        {/* Background Ambient Glows */}
-        <div className='absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none' />
-        <div className='absolute bottom-1/4 right-1/4 w-96 h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none' />
 
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 space-y-6 relative z-10'>
-          <div className='flex items-center justify-between border-b border-slate-800/80 pb-5'>
-            <div className='flex items-center gap-3'>
-              <div className='p-2.5 rounded-2xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shadow-red-950/50'>
-                {/* <Package size={20} className='text-red-400' /> */}
-                <Zap size={20} className='text-blue-400' />
+      <section className=' my-3 sm:my-3 relative w-full py-8 sm:py-12 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80'>
+        {/* Background Ambient Glows */}
+        <div className='absolute top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none' />
+        <div className='absolute bottom-1/4 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none' />
+
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-6 relative z-10'>
+          {/* Header & Controls: تم جعلها تتكيف تلقائياً بحيث تنتقل لأسفل بعضها على الموبايل لمنع الزحمة */}
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-4 sm:pb-5 gap-4'>
+            <div className='flex items-center gap-2.5 sm:gap-3 '>
+              <div className='p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shadow-red-950/50 shrink-0'>
+                <Zap size={18} className='sm:w-5 sm:h-5 text-blue-400' />
               </div>
               <div>
-                <h1 className='text-2xl sm:text-3xl font-black text-white tracking-tight'>
+                <h1 className='text-xl sm:text-3xl font-black text-white tracking-tight'>
                   Featured Hero Showcase
                 </h1>
-                <p className='text-xs text-slate-400 mt-1'>
+                {/* تم تغيير اللون إلى slate-300 ليكون منسقاً ومريحاً جداً */}
+                <p className='text-[11px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1'>
                   Explore our top-tier hero catalog selections with continuous
                   smooth preview
                 </p>
@@ -601,63 +821,81 @@ export default function HomePage() {
             </div>
 
             {/* Slider Controls for Hero Section - Mix Red & Blue Design */}
-            {heroProducts.length > 0 && !loading && (
-              <div className='flex items-center gap-3 my-4'>
-                {/* زرار التشغيل/الإيقاف (مكس أحمر وأزرق متدرج) */}
-                <button
-                  type='button'
-                  onClick={() => setIsHeroPaused(!isHeroPaused)}
-                  className='p-3.5 rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title={
-                    isHeroPaused ? 'Resume Hero Scroll' : 'Pause Hero Scroll'
-                  }
-                >
-                  {isHeroPaused ? <Play size={20} /> : <Pause size={20} />}
-                </button>
-
-                {/* زرار السابق (ChevronLeft) - تدرج أنيق */}
-                <button
-                  type='button'
-                  onClick={() => {
-                    // بنضمن تنفيذ الحركة فوراً وبأعلى استجابة
-                    if (heroScrollRef.current) {
-                      heroScrollRef.current.scrollBy({
-                        left: -420,
-                        behavior: 'smooth',
-                      });
+            <div
+              ref={heroScrollRef}
+              onMouseEnter={() => setIsHeroPaused(true)}
+              onMouseLeave={() => setIsHeroPaused(false)}
+              className='flex flex-nowrap items-center gap-6 overflow-x-auto scrollbar-none py-4 px-2'
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {heroProducts.length > 0 && !loading && (
+                <div className='flex items-center gap-2 sm:gap-3 self-end sm:self-auto'>
+                  {/* زرار التشغيل/الإيقاف */}
+                  <button
+                    type='button'
+                    onClick={() => setIsHeroPaused(!isHeroPaused)}
+                    className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                    title={
+                      isHeroPaused ? 'Resume Hero Scroll' : 'Pause Hero Scroll'
                     }
-                  }}
-                  className='p-3.5 rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title='السابق'
-                >
-                  <ChevronLeft
-                    size={22}
-                    className='text-blue-400 group-hover:text-white'
-                  />
-                </button>
+                  >
+                    {isHeroPaused ? (
+                      <Play size={16} className='sm:w-5 sm:h-5' />
+                    ) : (
+                      <Pause size={16} className='sm:w-5 sm:h-5' />
+                    )}
+                  </button>
 
-                {/* زرار التالي (ChevronRight) - تدرج أنيق */}
-                <button
-                  type='button'
-                  onClick={() => {
-                    // بنضمن تنفيذ الحركة فوراً وبأعلى استجابة بدون تعارض
-                    if (heroScrollRef.current) {
-                      heroScrollRef.current.scrollBy({
-                        left: 420,
-                        behavior: 'smooth',
-                      });
-                    }
-                  }}
-                  className='p-3.5 rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-red-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title='التالي'
-                >
-                  <ChevronRight
-                    size={22}
-                    className='text-red-400 group-hover:text-white'
-                  />
-                </button>
-              </div>
-            )}
+                  {/* زرار السابق (ChevronLeft) */}
+                  <button
+                    type='button'
+                    onClick={() => {
+                      // إيقاف مؤقت ذكي للحركة التلقائية لتجنب التعارض وتوفير أعلى استجابة
+                      if (typeof setIsHeroPaused === 'function') {
+                        setIsHeroPaused(true);
+                      }
+                      if (heroScrollRef.current) {
+                        heroScrollRef.current.scrollBy({
+                          left: -350,
+                          behavior: 'smooth',
+                        });
+                      }
+                    }}
+                    className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                    title='السابق'
+                  >
+                    <ChevronLeft
+                      size={18}
+                      className='sm:w-[22px] sm:h-[22px] text-blue-400 group-hover:text-white'
+                    />
+                  </button>
+
+                  {/* زرار التالي (ChevronRight) */}
+                  <button
+                    type='button'
+                    onClick={() => {
+                      // إيقاف مؤقت ذكي للحركة التلقائية لتجنب التعارض وتوفير أعلى استجابة
+                      if (typeof setIsHeroPaused === 'function') {
+                        setIsHeroPaused(true);
+                      }
+                      if (heroScrollRef.current) {
+                        heroScrollRef.current.scrollBy({
+                          left: 350,
+                          behavior: 'smooth',
+                        });
+                      }
+                    }}
+                    className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-red-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                    title='التالي'
+                  >
+                    <ChevronRight
+                      size={18}
+                      className='sm:w-[22px] sm:h-[22px] text-red-400 group-hover:text-white'
+                    />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {loading ? (
@@ -803,10 +1041,12 @@ export default function HomePage() {
                             {/* ================================= */}
                             {/* ================================= */}
                             {/* ================================= */}
-                            <ShareButton
-                              productId={product.id}
-                              productName={product.name}
-                            />
+                            <div className='scale-65 sm:scale-80 origin-center animate inline-block'>
+                              <ShareButton
+                                productId={product.id}
+                                productName={product.name}
+                              />
+                            </div>
                             {/* ================================= */}
                             {/* ================================= */}
                             {/* ================================= */}
@@ -896,12 +1136,11 @@ export default function HomePage() {
       </div>
 
       {/* 1. Top Announcement Bar (متحرك بـ Animation خفيف ونار من الناحيتين) */}
-      <div className='w-full py-3 px-4 bg-[#07090e] flex items-center justify-center relative z-50 border-b border-slate-800/60'>
-        <div className='inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-red-600/90 via-rose-600/90 to-blue-600/90 border border-red-500/40 text-white text-xs sm:text-sm font-extrabold py-2.5 px-6 rounded-2xl shadow-xl shadow-red-950/40 backdrop-blur-md animate-pulse'>
+      {/*Top Announcement Bar*/}
+      <div className='w-full py-3 px-4 bg-[#07090e] flex items-center justify-center border-b border-slate-800/60'>
+        <div className='inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-red-600/90 via-rose-600/90 to-blue-600/90 border border-red-500/40 text-white text-xs sm:text-sm font-extrabold py-2.5 px-6 rounded-2xl shadow-xl shadow-red-950/40 backdrop-blur-md'>
           {/* نار في البداية */}
-          <span className='animate-bounce text-sm sm:text-base flex-shrink-0'>
-            🔥
-          </span>
+          <span className='animate text-sm sm:text-base flex-shrink-0'>💸</span>
 
           <span className='tracking-wide text-center'>
             FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items!
@@ -911,7 +1150,7 @@ export default function HomePage() {
           {/* نار في النهاية */}
           <span
             className='animate-bounce text-sm sm:text-base flex-shrink-0'
-            style={{ animationDelay: '0.2s' }}
+            // style={{ animationDelay: '0.2s' }}
           >
             🔥
           </span>
@@ -920,30 +1159,41 @@ export default function HomePage() {
 
       {/* 4. SECTION 2: HOT FLASH DEALS SLIDER (ألوان متناسقة نارية مع أزرار تحكم وإمكانية تخصيص الصور من الأدمن) */}
       {flashDeals.length > 0 && (
-        <section className='max-w-7xl mx-auto px-4 sm:px-6 py-12 border-b border-slate-800/80 relative'>
-          <div className='flex items-center justify-between mb-8'>
-            <div className='flex items-center gap-3'>
-              <div className='p-2.5 bg-red-950/60 border border-red-500/30 rounded-xl text-red-500'>
-                <Flame size={22} className='animate-pulse' />
+        <section className='max-w-7xl mx-auto px-4 sm:px-6 my-6 sm:my-10 py-6 sm:py-8 border-b border-slate-800/80 relative'>
+          {/* Header & Controls: تم جعلها تتكيف بحيث تنتقل لأسفل بعضها على الموبايل لمنع التداخل */}
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4'>
+            <div className='flex items-center gap-2.5 sm:gap-3'>
+              <div className='p-2.5 bg-red-950/60 border border-red-500/30 rounded-xl text-red-500 shrink-0'>
+                <Flame
+                  size={20}
+                  className='sm:w-[22px] sm:h-[22px] animate-pulse'
+                />
               </div>
               <div>
-                <h2 className='text-xl sm:text-2xl font-black text-white tracking-tight'>
-                  Hot Flash Deals Slider
+                <h2 className='text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2'>
+                  Hot Flash Deals Slider ⚡
                 </h2>
-                <p className='text-xs text-slate-400'>
+                {/* تم ضبط اللون إلى slate-300 ليكون منسقاً ومريحاً جداً */}
+                <p className='text-[11px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1'>
                   Limited quantity discounts available now in continuous smooth
                   motion
                 </p>
               </div>
             </div>
 
+            {/* ========================== */}
+            {/* ========================== */}
+            {/* ========================== */}
+            {/* ========================== */}
+            {/* ========================== */}
             {/* Slider Controls for Flash Deals */}
             {!loading && (
-              <div className='flex items-center gap-2'>
+              <div className='flex items-center gap-2 self-end sm:self-auto'>
+                {/* زر الإيقاف / التشغيل */}
                 <button
                   type='button'
                   onClick={() => setIsFlashPaused(!isFlashPaused)}
-                  className='p-3.5 rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                   title={
                     isFlashPaused ? 'Resume Flash Deals' : 'Pause Flash Deals'
                   }
@@ -951,34 +1201,54 @@ export default function HomePage() {
                   {isFlashPaused ? <Play size={16} /> : <Pause size={16} />}
                 </button>
 
+                {/* زر السابق */}
                 <button
                   type='button'
-                  onClick={() =>
-                    handleScrollManual(flashScrollRef, 'prev', 320)
-                  }
-                  className='p-3.5 rounded-2xl bg-gradient-to-r from-blue-600/20 to-red-600/20 hover:from-blue-600/40 hover:to-red-600/40 border border-blue-500/40 hover:border-blue-400 text-slate-100 shadow-md shadow-blue-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  onClick={() => {
+                    setIsFlashPaused(true);
+                    if (flashScrollRef.current) {
+                      flashScrollRef.current.scrollBy({
+                        left: -350,
+                        behavior: 'smooth',
+                      });
+                    }
+                  }}
+                  className='p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600/20 to-red-600/20 hover:from-blue-600/40 hover:to-red-600/40 border border-blue-500/40 hover:border-blue-400 text-slate-100 shadow-md shadow-blue-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                 >
                   <ChevronLeft size={18} />
                 </button>
 
+                {/* زر التالي */}
                 <button
                   type='button'
-                  onClick={() =>
-                    handleScrollManual(flashScrollRef, 'next', 320)
-                  }
-                  className='p-3.5 rounded-2xl bg-gradient-to-r from-red-600/20 to-blue-600/20 hover:from-red-600/40 hover:to-blue-600/40 border border-red-500/40 hover:border-red-400 text-slate-100 shadow-md shadow-red-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  onClick={() => {
+                    setIsFlashPaused(true);
+                    if (flashScrollRef.current) {
+                      flashScrollRef.current.scrollBy({
+                        left: 350,
+                        behavior: 'smooth',
+                      });
+                    }
+                  }}
+                  className='p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-red-600/20 to-blue-600/20 hover:from-red-600/40 hover:to-blue-600/40 border border-red-500/40 hover:border-red-400 text-slate-100 shadow-md shadow-red-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                 >
                   <ChevronRight size={18} />
                 </button>
               </div>
             )}
+
+            {/* ===================================== */}
+            {/* ===================================== */}
+            {/* ===================================== */}
+            {/* ===================================== */}
+            {/* ===================================== */}
           </div>
 
           <div
             ref={flashScrollRef}
             onMouseEnter={() => setIsFlashPaused(true)}
             onMouseLeave={() => setIsFlashPaused(false)}
-            className='flex items-center gap-6 overflow-x-auto scrollbar-none py-4 px-1 scroll-smooth'
+            className='flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none py-4 px-1 scroll-smooth'
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {flashDeals.map((item) => {
@@ -1059,10 +1329,6 @@ export default function HomePage() {
                             ({item.rating || 5}.0)
                           </span>
                         </div>
-                        <ShareButton
-                          productId={item.id}
-                          productName={item.name}
-                        />
 
                         {/* الستوك */}
                         <span
@@ -1094,6 +1360,13 @@ export default function HomePage() {
                               <span className='text-[10px]'>EGP</span>
                             </span>
                           )}
+                        </div>
+
+                        <div className='scale-65 sm:scale-70 origin-center inline-block'>
+                          <ShareButton
+                            productId={item.id}
+                            productName={item.name}
+                          />
                         </div>
 
                         {/* شارة النار أو الـ Sale */}
@@ -1131,85 +1404,236 @@ export default function HomePage() {
           </div>
         </section>
       )}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
 
       {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION (الكاتالوج الكامل مع تحكم كامل، فلتر التصنيفات، حركة بطيئة جداً، وأزرار تحكم) */}
+
+      {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Final Fixed & Fully Optimized Version */}
       <main
         id='products-grid'
-        className='max-w-7xl mx-auto px-4 sm:px-6 py-16 space-y-8'
+        className='max-w-7xl mx-auto px-4 sm:px-6 my-6 sm:my-10 py-6 sm:py-8 space-y-6 sm:space-y-8'
       >
-        {/* =============================== */}
-        {/* Category Pill Filters & Section Title with Slider controls */}
-        <div className='flex items-center justify-between gap-3 border-b border-slate-800 pb-6'>
-          {/* العنوان والنصوص */}
+        {/* =========================== */}
+        {/* =========================== */}
+        {/* =========================== */}
+        {/* =========================== */}
+        {/* =========================== */}
+        {/* =========================== */}
+        {/* Section Title & Slider Controls */}
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5'>
           <div className='min-w-0 flex-1'>
             <h2 className='text-xl sm:text-2xl font-black text-white tracking-tight'>
               {searchQuery
                 ? `Search Results: "${searchQuery}"`
-                : 'Our Complete Product Catalog'}
+                : 'Our Complete Product Catalog 🏷️'}
             </h2>
-            <p className='text-xs sm:text-sm text-slate-400 mt-1'>
+            <p className='text-[11px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1'>
               Browse all items with continuous smooth slider
             </p>
           </div>
 
           {/* أزرار التحكم */}
-          <div className='flex items-center gap-2.5 shrink-0'>
-            {/* Slider Controls for Main Catalog */}
+          <div className='flex items-center gap-2 shrink-0 self-end sm:self-auto'>
             {!loading && filteredProducts.length > 0 && (
-              <div className='flex items-center gap-2'>
+              <div className='flex items-center gap-2 sm:gap-3'>
+                {/* زر التشغيل / الاستئناف والإيقاف */}
                 <button
                   type='button'
-                  onClick={() => setIsCatalogPaused(!isCatalogPaused)}
-                  className='p-3.5 sm:p-4 rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title={isCatalogPaused ? 'Resume Catalog' : 'Pause Catalog'}
+                  onClick={() => setIsCatalogPaused((prev) => !prev)}
+                  className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title={
+                    isCatalogPaused
+                      ? 'Resume Catalog Scroll'
+                      : 'Pause Catalog Scroll'
+                  }
                 >
-                  {isCatalogPaused ? <Play size={17} /> : <Pause size={17} />}
+                  {isCatalogPaused ? (
+                    <Play size={16} className='sm:w-5 sm:h-5 text-white' />
+                  ) : (
+                    <Pause size={16} className='sm:w-5 sm:h-5 text-white' />
+                  )}
                 </button>
 
+                {/* زر السابق */}
                 <button
                   type='button'
-                  onClick={() =>
-                    handleScrollManual(catalogScrollRef, 'prev', 320)
-                  }
-                  className='p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-600/20 to-red-600/20 hover:from-blue-600/40 hover:to-red-600/40 border border-blue-500/40 hover:border-blue-400 text-slate-100 shadow-md shadow-blue-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  onClick={() => {
+                    setIsCatalogPaused(true);
+                    if (catalogScrollRef.current) {
+                      catalogScrollRef.current.scrollBy({
+                        left: -350,
+                        behavior: 'smooth',
+                      });
+                    }
+                  }}
+                  className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='Previous'
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft
+                    size={18}
+                    className='sm:w-[22px] sm:h-[22px] text-blue-400'
+                  />
                 </button>
 
+                {/* زر التالي */}
                 <button
                   type='button'
-                  onClick={() =>
-                    handleScrollManual(catalogScrollRef, 'next', 320)
-                  }
-                  className='p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-red-600/20 to-blue-600/20 hover:from-red-600/40 hover:to-blue-600/40 border border-red-500/40 hover:border-red-400 text-slate-100 shadow-md shadow-red-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  onClick={() => {
+                    setIsCatalogPaused(true);
+                    if (catalogScrollRef.current) {
+                      catalogScrollRef.current.scrollBy({
+                        left: 350,
+                        behavior: 'smooth',
+                      });
+                    }
+                  }}
+                  className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-red-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='Next'
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight
+                    size={18}
+                    className='sm:w-[22px] sm:h-[22px] text-red-400'
+                  />
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* ============================================= */}
-        {/* Category Filter Pills */}
-        <div className='flex items-center gap-2 overflow-x-auto max-w-full pb-2 scrollbar-none'>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type='button'
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-lg shadow-red-950/40'
-                  : 'bg-[#0e1626] text-slate-400 border-slate-800 hover:border-slate-700 hover:text-white'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+
+        {/* 2. حاوية السلايدر (منفصلة تماماً في صف لوحدها تحت العنوان والأزرار) */}
+        <div className='relative mt-6'>
+          <div className='absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#07090e] to-transparent z-10 pointer-events-none' />
+          <div className='absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#07090e] to-transparent z-10 pointer-events-none' />
+
+          <div
+            ref={catalogScrollRef}
+            onMouseEnter={() => setIsCatalogPaused(true)}
+            onMouseLeave={() => setIsCatalogPaused(false)}
+            className='flex flex-nowrap items-center gap-6 overflow-x-auto scrollbar-none py-4 px-2 scroll-smooth'
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {/* البطاقات الخاصة بك هنا */}
+          </div>
         </div>
 
-        {/* Products Display (Slider Format as requested with full preservation of Link and Logic) */}
+        {/* Category Filter Cards Section with Robust Count Logic */}
+        <div className='space-y-3'>
+          <div className='flex items-center justify-between'>
+            <span className='text-xs font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1.5'>
+              ⚡ Filter by Categories (Click to filter products):
+            </span>
+          </div>
+
+          <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3'>
+            {/* All Categories Box */}
+            {(() => {
+              const allCount = products.length;
+              const isAllSelected =
+                selectedCategory === 'All' ||
+                selectedCategory === 'الكل' ||
+                !selectedCategory;
+
+              return (
+                <button
+                  type='button'
+                  onClick={() => setSelectedCategory('All')}
+                  className={`p-3.5 rounded-2xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer flex flex-col justify-between gap-2 shadow-sm ${
+                    isAllSelected
+                      ? 'bg-gradient-to-br from-red-600 to-blue-600 border-transparent text-white shadow-lg shadow-blue-950/50 scale-[1.02]'
+                      : 'bg-[#0e1626]/90 hover:bg-[#141d2f] border-slate-800 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <span className='text-xs sm:text-sm font-bold truncate w-full'>
+                    All Categories
+                  </span>
+                  <div className='flex items-center justify-between'>
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
+                        isAllSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {allCount} products
+                    </span>
+                    <span className='text-xs'>📦</span>
+                  </div>
+                </button>
+              );
+            })()}
+
+            {/* Dynamic Categories with Correct Matching */}
+            {categories.map((cat) => {
+              const catName = typeof cat === 'object' ? cat.name : cat;
+              const catId = typeof cat === 'object' ? cat.id : cat;
+
+              // حساب دقيق للأسماء والأرقام لكي لا تظهر الأصفار أبداً
+              const count = products.filter(
+                (p) =>
+                  p.category_id === catId ||
+                  p.category === catName ||
+                  p.categories?.id === catId ||
+                  p.categories?.name === catName,
+              ).length;
+
+              const isSelected =
+                selectedCategory === catName ||
+                selectedCategory === catId ||
+                selectedCategory === cat;
+
+              return (
+                <button
+                  key={`cat-box-${catId || catName}`}
+                  type='button'
+                  onClick={() => setSelectedCategory(catName)}
+                  className={`p-3.5 rounded-2xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer flex flex-col justify-between gap-2 shadow-sm ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-red-600 to-blue-600 border-transparent text-white shadow-lg shadow-blue-950/50 scale-[1.02]'
+                      : 'bg-[#0e1626]/90 hover:bg-[#141d2f] border-slate-800 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  <span className='text-xs sm:text-sm font-bold truncate w-full'>
+                    {catName}
+                  </span>
+                  <div className='flex items-center justify-between'>
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-800 text-slate-400'
+                      }`}
+                    >
+                      {count} products
+                    </span>
+                    <span className='text-xs'>🏷️</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Products Display Slider Section */}
         {loading ? (
           <div className='py-24 flex flex-col items-center justify-center text-slate-400 space-y-3'>
             <Loader2 className='w-8 h-8 animate-spin text-blue-500' />
@@ -1235,7 +1659,6 @@ export default function HomePage() {
           </div>
         ) : (
           <div className='relative'>
-            {/* Ambient Side Fades */}
             <div className='absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#07090e] to-transparent z-10 pointer-events-none' />
             <div className='absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#07090e] to-transparent z-10 pointer-events-none' />
 
@@ -1251,150 +1674,160 @@ export default function HomePage() {
                 const isWish = wishlist.includes(product.id);
                 const oldPrice = product.originalPrice || product.oldPrice;
 
+                {
+                  /* استخراج اسم التصنيف بدقة تامة من العلاقة أو الحقل المباشر */
+                }
+                const productCategoryName =
+                  product.categories?.name ||
+                  categories.find(
+                    (c) =>
+                      c.id === product.category_id ||
+                      c.name === product.category,
+                  )?.name ||
+                  product.category ||
+                  'General';
+
                 return (
-                  <Link
-                    key={`catalog-${product.id}`}
-                    href={`/products/${product.id}`}
-                    className='w-[280px] sm:w-[300px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800/90 shadow-2xl overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
-                  >
-                    <div>
-                      {/* Image Container */}
-                      <div className='w-full aspect-square bg-slate-900 relative overflow-hidden border-b border-slate-800'>
-                        {displayImage ? (
-                          <img
-                            src={displayImage}
-                            alt={product.name}
-                            className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-                          />
-                        ) : (
-                          <div className='flex items-center justify-center h-full text-slate-600 text-xs font-medium'>
-                            No Image Available
-                          </div>
-                        )}
-
-                        <button
-                          type='button'
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleWishlist(product);
-                          }}
-                          className={`absolute top-3 right-3 p-2.5 rounded-xl backdrop-blur-md border transition ${
-                            isWish
-                              ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
-                              : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
-                          }`}
-                        >
-                          <Heart
-                            size={16}
-                            className={isWish ? 'fill-rose-500' : ''}
-                          />
-                        </button>
-                      </div>
-
-                      {/* ================================ */}
-                      {/* ================================ */}
-                      {/* ================================ */}
-                      {/* details all-products */}
-                      {/* ================================ */}
-                      {/* details all-products */}
-                      <div className='p-5 space-y-2.5'>
-                        <span className='text-[10px] font-bold text-slate-400 uppercase tracking-wider block'>
-                          {product.category || 'General'}
-                        </span>
-
-                        <h3 className='font-bold text-slate-100 line-clamp-1 text-sm group-hover:text-blue-400 transition'>
-                          {product.name}
-                        </h3>
-
-                        {/* الوصف (مختصر في سطرين) */}
-                        <p className='text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
-                          {product.description ||
-                            'Explore our high-quality product collection.'}
-                        </p>
-
-                        {/* النجوم (Rating) والستوك (Stock) */}
-                        <div className='flex items-center justify-between pt-0.5'>
-                          {/* النجوم */}
-                          <div className='flex items-center gap-1 text-amber-400 text-xs'>
-                            <div className='flex items-center'>
-                              {[...Array(5)].map((_, i) => (
-                                <span
-                                  key={i}
-                                  className={`text-xs ${i < (product.rating || 5) ? 'text-amber-400' : 'text-slate-700'}`}
-                                >
-                                  ★
-                                </span>
-                              ))}
-                            </div>
-
-                            <span className='text-[10px] text-slate-400 font-medium ml-1'>
-                              ({product.rating || 5}.0)
-                            </span>
-                          </div>
-                          <ShareButton
-                            productId={product.id}
-                            productName={product.name}
-                          />
-                          {/* الستوك */}
-                          <span
-                            className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${
-                              (product.stock_quantity ?? 10) > 0
-                                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
-                                : 'bg-red-950/60 text-red-300 border-red-500/30'
-                            }`}
-                          >
-                            {(product.stock_quantity ?? 10) > 0
-                              ? `${product.stock_quantity ?? 10} in stock`
-                              : 'Out of Stock'}
-                          </span>
-                        </div>
-
-                        {/* الأسعار وتنسيقها الفخم */}
-                        <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
-                          <div className='flex items-baseline gap-2'>
-                            <span className='font-black text-base text-white tracking-tight'>
-                              {product.price}{' '}
-                              <span className='text-xs text-slate-400 font-semibold'>
-                                EGP
-                              </span>
-                            </span>
-
-                            {(product.compare_at_price || oldPrice) && (
-                              <span className='text-xs sm:text-sm text-slate-400/80 line-through font-light tracking-wide'>
-                                {product.compare_at_price || oldPrice}{' '}
-                                <span className='text-[10px]'>EGP</span>
-                              </span>
-                            )}
-                          </div>
-
-                          {/* شارة النار للخصم أو الـ Hot للعام */}
-                          {product.compare_at_price || oldPrice ? (
-                            <div className='flex items-center gap-1 bg-red-950/70 border border-red-500/40 text-red-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm animate-pulse'>
-                              <span>🔥</span>
-                              <span>Sale</span>
-                            </div>
+                  <Link key={product.id} href={`/products/${product.id}`}>
+                    <div
+                      key={`catalog-${product.id}`}
+                      onClick={() => router.push(`/products/${product.id}`)}
+                      className='w-[280px] sm:w-[300px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800/90 shadow-2xl overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                    >
+                      <div>
+                        {/* Image & Wishlist */}
+                        <div className='w-full aspect-square bg-slate-900 relative overflow-hidden border-b border-slate-800'>
+                          {displayImage ? (
+                            <img
+                              src={displayImage}
+                              alt={product.name}
+                              className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                            />
                           ) : (
-                            <div className='flex items-center gap-1 bg-blue-950/70 border border-blue-500/40 text-blue-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm'>
-                              <span>✨</span>
-                              <span>Hot</span>
+                            <div className='flex items-center justify-center h-full text-slate-600 text-xs font-medium'>
+                              No Image Available
                             </div>
                           )}
+
+                          <button
+                            type='button'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWishlist(product);
+                            }}
+                            className={`absolute top-3 right-3 p-2.5 rounded-xl backdrop-blur-md border transition z-20 ${
+                              isWish
+                                ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
+                                : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
+                            }`}
+                          >
+                            <Heart
+                              size={16}
+                              className={isWish ? 'fill-rose-500' : ''}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Product Info */}
+                        <div className='p-5 space-y-2.5'>
+                          <span className='text-[10px] font-bold text-blue-400 uppercase tracking-wider block bg-blue-950/40 px-2 py-0.5 rounded-md w-fit border border-blue-500/20'>
+                            {productCategoryName}
+                          </span>
+
+                          <h3 className='font-bold text-slate-100 line-clamp-1 text-sm group-hover:text-blue-400 transition'>
+                            {product.name}
+                          </h3>
+
+                          <p className='text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
+                            {product.description ||
+                              'Explore our high-quality product collection.'}
+                          </p>
+
+                          <div className='flex items-center justify-between pt-0.5'>
+                            <div className='flex items-center gap-1 text-amber-400 text-xs'>
+                              <div className='flex items-center'>
+                                {[...Array(5)].map((_, i) => (
+                                  <span
+                                    key={i}
+                                    className={`text-xs ${i < (product.rating || 5) ? 'text-amber-400' : 'text-slate-700'}`}
+                                  >
+                                    ★
+                                  </span>
+                                ))}
+                              </div>
+                              <span className='text-[10px] text-slate-400 font-medium ml-1'>
+                                ({product.rating || 5}.0)
+                              </span>
+                            </div>
+
+                            <span
+                              className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${
+                                (product.stock_quantity ?? 10) > 0
+                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                                  : 'bg-red-950/60 text-red-300 border-red-500/30'
+                              }`}
+                            >
+                              {(product.stock_quantity ?? 10) > 0
+                                ? `${product.stock_quantity ?? 10} in stock`
+                                : 'Out of Stock'}
+                            </span>
+                          </div>
+
+                          <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
+                            <div className='flex items-baseline gap-2'>
+                              <span className='font-black text-base text-white tracking-tight'>
+                                {product.price}{' '}
+                                <span className='text-xs text-slate-400 font-semibold'>
+                                  EGP
+                                </span>
+                              </span>
+
+                              {(product.compare_at_price || oldPrice) && (
+                                <span className='text-xs sm:text-sm text-slate-400/80 line-through font-light tracking-wide'>
+                                  {product.compare_at_price || oldPrice}{' '}
+                                  <span className='text-[10px]'>EGP</span>
+                                </span>
+                              )}
+                            </div>
+
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className='scale-65 sm:scale-75 origin-center inline-block'
+                            >
+                              <ShareButton
+                                productId={product.id}
+                                productName={product.name}
+                              />
+                            </div>
+
+                            {product.compare_at_price || oldPrice ? (
+                              <div className='flex items-center gap-1 bg-red-950/70 border border-red-500/40 text-red-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm animate-pulse'>
+                                <span>🔥</span>
+                                <span>Sale</span>
+                              </div>
+                            ) : (
+                              <div className='flex items-center gap-1 bg-blue-950/70 border border-blue-500/40 text-blue-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm'>
+                                <span>✨</span>
+                                <span>Hot</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      {/* ================================ */}
-                      {/* ================================ */}
-                      {/* ================================ */}
-                    </div>
 
-                    <div className='p-5 pt-0'>
-                      <button
-                        type='button'
-                        onClick={(e) => addToCart(e, product)}
-                        className='w-full py-3 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer'
+                      {/* Add to Cart Button */}
+                      <div
+                        className='p-5 pt-0'
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <ShoppingCart size={15} /> Add to Cart
-                      </button>
+                        <button
+                          type='button'
+                          onClick={(e) => addToCart(e, product)}
+                          className='w-full py-3 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer'
+                        >
+                          <ShoppingCart size={15} /> Add to Cart
+                        </button>
+                      </div>
                     </div>
                   </Link>
                 );
@@ -1404,6 +1837,13 @@ export default function HomePage() {
         )}
       </main>
 
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
@@ -1512,6 +1952,8 @@ export default function HomePage() {
             </a>
           </div>
         </div>
+
+        {/* ------------------------------------------------------------------ */}
 
         {/* سطر حقوق الملكية وزر العودة للأعلى (Scroll to Top) */}
         <div className='max-w-7xl mx-auto px-4 sm:px-6 border-t border-slate-800/80 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-slate-400 relative z-10'>

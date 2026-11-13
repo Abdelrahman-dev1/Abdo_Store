@@ -266,16 +266,31 @@ function ProductContent() {
       )}
 
       {/* Navbar */}
-      <nav className='bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-50'>
+      <nav className='fixed top-0 left-0 right-0 w-full z-50 bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between'>
           <Link
             href='/'
-            className='text-base sm:text-lg font-black flex items-center gap-2.5 text-white'
+            onClick={(e) => {
+              if (window.location.pathname === '/') {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className='text-sm sm:text-lg font-black flex items-center gap-2 sm:gap-3 text-white shrink-0 cursor-pointer group'
           >
-            <div className='w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-blue-600 flex items-center justify-center shadow-lg shadow-red-600/20'>
-              <ShoppingBag className='w-5 h-5 text-white' />
+            {/* تصغير حجم الصورة على الموبايل w-9 h-9 وعلى الشاشات الأكبر ترجع w-12 h-12 */}
+            <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
+              <img
+                src='/we11.jpg'
+                alt='Abdo'
+                className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
+              />
             </div>
-            <span>Online Store</span>
+
+            {/* تصغير حجم خط Abdo Store على الموبايل ليكون text-sm وفي الشاشات الأكبر sm:text-xl */}
+            <span className='text-sm sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+              Abdo Store
+            </span>
           </Link>
 
           <div className='flex items-center gap-3'>
@@ -283,13 +298,25 @@ function ProductContent() {
               href='/cart'
               className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm relative'
             >
-              <ShoppingCart size={16} />
-              <span className='hidden sm:inline'>Cart</span>
-              {cartCount > 0 && (
-                <span className='bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center absolute -top-2 -right-2 shadow-md'>
-                  {cartCount}
+              <div className='relative flex items-center gap-2 group cursor-pointer'>
+                {/* الأيقونة ملونة وبحجم صغير */}
+                <ShoppingCart
+                  size={18}
+                  className='text-red-500 group-hover:text-purple-400 transition-colors'
+                />
+
+                {/* الكلمة جنبها، ملونة، وبحجم صغير وناعم */}
+                <span className='hidden sm:inline text-sm sm:text-sm font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+                  Cart
                 </span>
-              )}
+
+                {/* عداد السلة (Badge) */}
+                {cartCount > 0 && (
+                  <span className='absolute -top-1.5 -right-2 bg-gradient-to-r from-red-600 to-blue-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-bounce'>
+                    {cartCount}
+                  </span>
+                )}
+              </div>
             </Link>
 
             <Link
@@ -297,7 +324,9 @@ function ProductContent() {
               className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
             >
               <ArrowLeft size={16} />
-              <span className='hidden sm:inline'>Storefront</span>
+              <span className='hidden sm:inline text-sm sm:text-sm md:text-sm font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+                Storefront
+              </span>
             </Link>
           </div>
         </div>
@@ -330,15 +359,12 @@ function ProductContent() {
               />
             </button>
 
-            {/* Zoom Button */}
-            <button
-              onClick={() => setIsZoomOpen(true)}
-              className='absolute bottom-3 left-3 bg-slate-900/80 hover:bg-slate-900 text-slate-200 px-3.5 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 text-xs font-bold border border-slate-700 cursor-pointer'
-            >
-              <Maximize2 size={15} /> Zoom Image
-            </button>
+
+
           </div>
 
+{/* ================== */}
+{/* ================== */}
           {/* Product Info & Actions */}
           <div className='space-y-5'>
             <span className='text-[11px] font-bold px-3 py-1.5 bg-slate-800 text-slate-300 rounded-full border border-slate-700'>
