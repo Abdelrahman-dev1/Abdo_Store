@@ -15,10 +15,17 @@ import {
   Heart,
   Loader2,
   Package,
+  ChevronLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 
 import { supabase } from '@/lib/supabase';
+import ShareButton from '@/components/ShareButton';
+// import { ChevronRight } from 'next/dist/next-devtools/dev-overlay/menu/dev-overlay-menu';
+import {
+  ChevronRight,
+  Flame,
+} from 'lucide-react';
 
 // ============================
 // المكون الفرعي الذي يحتوي على كل منطق الصفحة و useParams
@@ -37,6 +44,9 @@ function ProductContent() {
   const [currency, setCurrency] = useState('EGP');
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+
+
+
 
   // Review Form States
   const [rating, setRating] = useState(5);
@@ -294,6 +304,15 @@ function ProductContent() {
           </Link>
 
           <div className='flex items-center gap-3'>
+            {/* ================================ */}
+            {/* ================================ */}
+            {/* ================================ */}
+
+            {/* ================================ */}
+            {/* ================================ */}
+            {/* ================================ */}
+            {/* ================================ */}
+            {/* ================================ */}
             <Link
               href='/cart'
               className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm relative'
@@ -312,7 +331,7 @@ function ProductContent() {
 
                 {/* عداد السلة (Badge) */}
                 {cartCount > 0 && (
-                  <span className='absolute -top-1.5 -right-2 bg-gradient-to-r from-red-600 to-blue-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md animate-bounce'>
+                  <span className='absolute -top-3 -right-3 bg-gradient-to-r from-red-600 to-blue-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-md '>
                     {cartCount}
                   </span>
                 )}
@@ -324,7 +343,7 @@ function ProductContent() {
               className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
             >
               <ArrowLeft size={16} />
-              <span className='hidden sm:inline text-sm sm:text-sm md:text-sm font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+              <span className='hidden sm:inline text-[10] sm:text-[10] md:text-[10] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
                 Storefront
               </span>
             </Link>
@@ -358,13 +377,10 @@ function ProductContent() {
                 className={isWishlisted ? 'fill-rose-500' : ''}
               />
             </button>
-
-
-
           </div>
 
-{/* ================== */}
-{/* ================== */}
+          {/* ================== */}
+          {/* ================== */}
           {/* Product Info & Actions */}
           <div className='space-y-5'>
             <span className='text-[11px] font-bold px-3 py-1.5 bg-slate-800 text-slate-300 rounded-full border border-slate-700'>
@@ -446,50 +462,296 @@ function ProductContent() {
             </div>
           </div>
         </div>
+        {/* ====================== */}
+        {/* ====================== */}
+        {/* ====================== */}
+        {/* ====================== */}
 
-        {/* Related Products Section */}
+        {/* Related Products Section - Smooth Infinite Slider */}
         {relatedProducts.length > 0 && (
-          <div className='space-y-6 pt-4'>
-            <h2 className='text-xl font-black text-white tracking-tight'>
-              Related Products You May Like
-            </h2>
-            <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6'>
-              {relatedProducts.map((item) => {
-                const itemImg =
-                  item.image ||
-                  item.images?.[0] ||
-                  'https://via.placeholder.com/300';
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/products/${item.id}`}
-                    className='bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-slate-700 transition group flex flex-col justify-between'
-                  >
-                    <div className='aspect-square bg-slate-900 overflow-hidden relative border-b border-slate-800'>
-                      <img
-                        src={itemImg}
-                        alt={item.name}
-                        className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-                      />
+          <div className='space-y-2 pt-3 sm:pt-4 border-t border-slate-800/80'>
+            {/* Header */}
+            <div className='flex items-center justify-between'>
+              <h2 className='text-xs sm:text-base font-black text-white tracking-tight'>
+                Related Products You May Like 🛍️ ({relatedProducts.length})
+              </h2>
+
+              {/* Navigation Buttons */}
+              <div className='flex items-center gap-1.5'>
+                <button
+                  type='button'
+                  onClick={() => {
+                    const slider =
+                      document.getElementById('related-slider-ref');
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+
+                    if (slider.dataset.resumeTimer) {
+                      window.clearTimeout(Number(slider.dataset.resumeTimer));
+                    }
+
+                    slider.scrollBy({
+                      left: -220,
+                      behavior: 'smooth',
+                    });
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                        }
+                      }, 900),
+                    );
+                  }}
+                  className='p-1.5 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='السابق'
+                >
+                  <ChevronLeft size={16} className='text-blue-400' />
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => {
+                    const slider =
+                      document.getElementById('related-slider-ref');
+                    if (!slider) return;
+
+                    slider.dataset.isPaused = 'true';
+
+                    if (slider.dataset.resumeTimer) {
+                      window.clearTimeout(Number(slider.dataset.resumeTimer));
+                    }
+
+                    slider.scrollBy({
+                      left: 220,
+                      behavior: 'smooth',
+                    });
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                        }
+                      }, 900),
+                    );
+                  }}
+                  className='p-1.5 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition active:scale-95 cursor-pointer flex items-center justify-center'
+                  title='التالي'
+                >
+                  <ChevronRight size={16} className='text-red-400' />
+                </button>
+              </div>
+            </div>
+
+            {/* Slider Container */}
+            <div className='relative'>
+              <div
+                id='related-slider-ref'
+                dir='ltr'
+                onMouseEnter={(e) => {
+                  e.currentTarget.dataset.isPaused = 'true';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.dataset.isPaused = 'false';
+                }}
+                onTouchStart={(e) => {
+                  const node = e.currentTarget;
+
+                  node.dataset.isPaused = 'true';
+
+                  if (node.dataset.resumeTimer) {
+                    window.clearTimeout(Number(node.dataset.resumeTimer));
+                  }
+                }}
+                onTouchEnd={(e) => {
+                  const node = e.currentTarget;
+
+                  if (node.dataset.resumeTimer) {
+                    window.clearTimeout(Number(node.dataset.resumeTimer));
+                  }
+
+                  node.dataset.resumeTimer = String(
+                    window.setTimeout(() => {
+                      if (node.isConnected) {
+                        node.dataset.isPaused = 'false';
+                      }
+                    }, 2500),
+                  );
+                }}
+                onTouchCancel={(e) => {
+                  const node = e.currentTarget;
+
+                  node.dataset.isPaused = 'false';
+                }}
+                onWheel={(e) => {
+                  const node = e.currentTarget;
+
+                  node.dataset.isPaused = 'true';
+
+                  if (node.dataset.resumeTimer) {
+                    window.clearTimeout(Number(node.dataset.resumeTimer));
+                  }
+
+                  node.dataset.resumeTimer = String(
+                    window.setTimeout(() => {
+                      if (node.isConnected) {
+                        node.dataset.isPaused = 'false';
+                      }
+                    }, 1200),
+                  );
+                }}
+                ref={(node) => {
+                  if (!node || node.dataset.initAuto === 'true') return;
+
+                  node.dataset.initAuto = 'true';
+                  node.dataset.isPaused = 'false';
+
+                  let previousWidth = 0;
+                  let lastTime = 0;
+
+                  const animate = (time: number) => {
+                    // إيقاف الحركة عند إزالة السلايدر من الصفحة
+                    if (!node.isConnected) return;
+
+                    const firstGroup = node.querySelector<HTMLElement>(
+                      '[data-related-group="0"]',
+                    );
+
+                    if (firstGroup) {
+                      const groupWidth =
+                        firstGroup.getBoundingClientRect().width;
+
+                      if (groupWidth > node.clientWidth + 1) {
+                        // ضبط البداية في منتصف المجموعات
+                        if (Math.abs(groupWidth - previousWidth) > 1) {
+                          previousWidth = groupWidth;
+                          node.scrollLeft = groupWidth;
+                        }
+
+                        const delta = lastTime
+                          ? Math.min(time - lastTime, 40)
+                          : 0;
+
+                        // التحريك التلقائي بدون تعارض مع المستخدم
+                        if (node.dataset.isPaused !== 'true') {
+                          node.scrollLeft += delta * 0.025;
+                        }
+
+                        // الانتقال للمجموعة التالية بدون قفزة
+                        if (node.scrollLeft >= groupWidth * 2) {
+                          node.scrollLeft -= groupWidth;
+                        }
+
+                        // الانتقال للمجموعة السابقة بدون قفزة
+                        else if (node.scrollLeft <= 0) {
+                          node.scrollLeft += groupWidth;
+                        }
+                      } else {
+                        previousWidth = groupWidth;
+                        node.scrollLeft = 0;
+                      }
+                    }
+
+                    lastTime = time;
+
+                    requestAnimationFrame(animate);
+                  };
+
+                  requestAnimationFrame(animate);
+                }}
+                className='overflow-x-auto scrollbar-none py-1.5 px-0.5 touch-pan-x overscroll-x-contain'
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                  scrollBehavior: 'auto',
+                }}
+              >
+                {/* Three Identical Groups For Seamless Infinite Scrolling */}
+                <div className='flex w-max'>
+                  {[0, 1, 2].map((copy) => (
+                    <div
+                      key={`related-group-${copy}`}
+                      data-related-group={copy}
+                      aria-hidden={copy !== 1}
+                      className='flex shrink-0 items-center gap-2 sm:gap-3 pr-2 sm:pr-3'
+                    >
+                      {relatedProducts.map((item) => {
+                        const itemImg =
+                          item.image ||
+                          item.images?.[0] ||
+                          'https://via.placeholder.com/300';
+
+                        const oldPrice =
+                          item.originalPrice ||
+                          item.oldPrice ||
+                          item.compare_at_price;
+
+                        return (
+                          <Link
+                            key={`${copy}-${item.id}`}
+                            href={`/products/${item.id}`}
+                            tabIndex={copy === 1 ? undefined : -1}
+                            className='w-[140px] sm:w-[190px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-xl border border-slate-800 shadow-sm overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                          >
+                            <div>
+                              {/* Product Image */}
+                              <div className='w-full h-28 sm:h-38 bg-slate-900 overflow-hidden relative border-b border-slate-800'>
+                                <img
+                                  src={itemImg}
+                                  alt={item.name}
+                                  className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                                />
+
+                                {oldPrice && oldPrice > item.price ? (
+                                  <span className='absolute top-1.5 left-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1 py-0.5 rounded uppercase tracking-wider shadow animate-pulse'>
+                                    🔥 Sale
+                                  </span>
+                                ) : (
+                                  <span className='absolute top-1.5 left-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[7px] font-black px-1 py-0.5 rounded uppercase tracking-wider shadow'>
+                                    ✨ Hot
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Product Details */}
+                              <div className='p-2 space-y-1'>
+                                <h3 className='font-bold text-[11px] sm:text-xs text-slate-100 line-clamp-1 group-hover:text-blue-400 transition'>
+                                  {item.name}
+                                </h3>
+
+                                <div className='flex items-baseline gap-1 pt-0.5'>
+                                  <span className='text-[11px] sm:text-sm font-black text-blue-400 tracking-tight'>
+                                    {item.price}{' '}
+                                    <span className='text-[8px] text-slate-400 font-normal'>
+                                      {currency || 'EGP'}
+                                    </span>
+                                  </span>
+
+                                  {oldPrice && oldPrice > item.price && (
+                                    <span className='text-[9px] text-slate-400/80 line-through font-light'>
+                                      {oldPrice}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
-                    <div className='p-5 space-y-1'>
-                      <h3 className='font-bold text-sm text-slate-100 line-clamp-1'>
-                        {item.name}
-                      </h3>
-                      <div className='text-sm font-black text-blue-400'>
-                        {item.price}{' '}
-                        <span className='text-xs text-slate-400 font-normal'>
-                          {currency}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
-
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
+        {/* ============================ */}
         {/* Customer Reviews & Ratings Section */}
         <div className='bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800/90 shadow-2xl p-6 sm:p-8 space-y-6'>
           <div className='flex items-center gap-3 border-b border-slate-800 pb-4'>

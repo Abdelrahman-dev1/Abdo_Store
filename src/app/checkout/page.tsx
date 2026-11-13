@@ -260,10 +260,18 @@ export default function CheckoutPage() {
             href='/cart'
             className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
           >
-            <ArrowLeft size={16} />
-            <span className='text-sm sm:text-sm md:text-sm  font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+            <ArrowLeft size={14} />
+            {/* ======================= */}
+            {/* ======================= */}
+            {/* ======================= */}
+
+            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
               Return to Cart
             </span>
+
+            {/* =============== */}
+            {/* =============== */}
+            {/* =============== */}
           </Link>
         </div>
       </nav>

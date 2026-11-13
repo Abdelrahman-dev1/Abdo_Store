@@ -661,7 +661,7 @@ export default function HomePage() {
       )}
 
       {/* 2. Main Navbar (Sticky and includes Wishlist Icon linked to logic) */}
-      <nav className=' fixed top-0 left-0 right-0 w-full bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/85 z-50'>
+      <nav className=' fixed top-0 left-0 right-0  w-full bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/85 z-50'>
         {/* تم تعديل الارتفاع على الموبايل ليكون h-16 بدلاً من h-20، وزيادة المسافات الجانبية px-5 */}
         <div className='max-w-7xl mx-auto px-5 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4'>
           <Link
@@ -726,6 +726,10 @@ export default function HomePage() {
           {/* Actions & Wishlist / Account / Cart */}
           {/* تقليل المسافات البينية بين الأزرار على الموبايل gap-1.5 لتوفير مساحة */}
           <div className='flex items-center gap-1.5 sm:gap-2.5 shrink-0'>
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+
             {/* Wishlist Button in Navbar linked with Wishlist count logic */}
             <button
               type='button'
@@ -739,12 +743,14 @@ export default function HomePage() {
               />
               <span className='hidden lg:inline'>Wishlist</span>
               {wishlist.length > 0 && (
-                <span className='bg-rose-500 text-white text-[9px] sm:text-[10px] font-black w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center shadow-md'>
+                <span className='absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] sm:text-[10px] font-black w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full flex items-center justify-center shadow-md ring-2 ring-slate-900'>
                   {wishlist.length}
                 </span>
               )}
             </button>
-
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
             <Link
               href='/admin/login'
               className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60'
@@ -756,6 +762,8 @@ export default function HomePage() {
               />
               <span className='hidden lg:inline'>Admin</span>
             </Link>
+            {/* =============================== */}
+            {/* =============================== */}
 
             <button
               type='button'
@@ -777,6 +785,8 @@ export default function HomePage() {
                 {currentUser ? 'Account' : 'Sign In'}
               </span>
             </button>
+            {/* =============================== */}
+            {/* =============================== */}
 
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
@@ -785,123 +795,114 @@ export default function HomePage() {
               <ShoppingCart size={14} className='sm:w-4 sm:h-4' />
               <span className='hidden sm:inline'>Cart</span>
               {totalItemsCount > 0 && (
-                <span className='bg-white text-slate-900 text-[9px] sm:text-[10px] font-black w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-md'>
+                <span className='absolute -top-1.5 -right-1.5 bg-white text-slate-900 text-[9px] sm:text-[10px] font-black w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shadow-md ring-2 ring-red-600'>
                   {totalItemsCount}
                 </span>
               )}
             </button>
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
           </div>
         </div>
       </nav>
 
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+
       {/* 3. SECTION 1: HERO BANNER SLIDER (متوسط السرعة مع أزرار تحكم مخصصة وتخصيص للصور) */}
 
-      <section className=' my-3 sm:my-3 relative w-full py-8 sm:py-12 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80'>
+      <section className='mt-2 sm:mt-6 mb-3 relative w-full py-2 sm:py-4 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80 text-[11px] sm:text-sm'>
         {/* Background Ambient Glows */}
-        <div className='absolute top-1/4 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none' />
-        <div className='absolute bottom-1/4 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none' />
+        <div className='absolute top-1/4 left-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-blue-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
+        <div className='absolute bottom-1/4 right-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-red-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
 
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 space-y-4 sm:space-y-6 relative z-10'>
-          {/* Header & Controls: تم جعلها تتكيف تلقائياً بحيث تنتقل لأسفل بعضها على الموبايل لمنع الزحمة */}
-          <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-4 sm:pb-5 gap-4'>
-            <div className='flex items-center gap-2.5 sm:gap-3 '>
-              <div className='p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shadow-red-950/50 shrink-0'>
-                <Zap size={18} className='sm:w-5 sm:h-5 text-blue-400' />
+        <div className='max-w-7xl mx-auto px-2 sm:px-6 space-y-2 sm:space-y-4 relative z-10'>
+          {/* Header & Controls */}
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2 sm:pb-3 gap-2 sm:gap-4'>
+            <div className='flex items-center gap-2 pt-1 sm:pt-2 my-1'>
+              <div className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shrink-0'>
+                <Zap size={16} className='sm:w-5 sm:h-5 text-blue-400' />
               </div>
               <div>
-                <h1 className='text-xl sm:text-3xl font-black text-white tracking-tight'>
+                <h1 className='text-lg sm:text-2xl font-black text-white tracking-tight'>
                   Featured Hero Showcase
                 </h1>
-                {/* تم تغيير اللون إلى slate-300 ليكون منسقاً ومريحاً جداً */}
-                <p className='text-[11px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1'>
+                <p className='text-[10px] sm:text-xs text-slate-300 mt-0.5'>
                   Explore our top-tier hero catalog selections with continuous
                   smooth preview
                 </p>
               </div>
             </div>
 
-            {/* Slider Controls for Hero Section - Mix Red & Blue Design */}
-            <div
-              ref={heroScrollRef}
-              onMouseEnter={() => setIsHeroPaused(true)}
-              onMouseLeave={() => setIsHeroPaused(false)}
-              className='flex flex-nowrap items-center gap-6 overflow-x-auto scrollbar-none py-4 px-2'
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {heroProducts.length > 0 && !loading && (
-                <div className='flex items-center gap-2 sm:gap-3 self-end sm:self-auto'>
-                  {/* زرار التشغيل/الإيقاف */}
-                  <button
-                    type='button'
-                    onClick={() => setIsHeroPaused(!isHeroPaused)}
-                    className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                    title={
-                      isHeroPaused ? 'Resume Hero Scroll' : 'Pause Hero Scroll'
+            {/* Slider Controls for Hero Section */}
+            {heroProducts.length > 0 && !loading && (
+              <div className='flex items-center gap-2 self-end sm:self-auto shrink-0'>
+                <button
+                  type='button'
+                  onClick={() => setIsHeroPaused(!isHeroPaused)}
+                  className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title={
+                    isHeroPaused ? 'Resume Hero Scroll' : 'Pause Hero Scroll'
+                  }
+                >
+                  {isHeroPaused ? (
+                    <Play size={14} className='sm:w-4 sm:h-4' />
+                  ) : (
+                    <Pause size={14} className='sm:w-4 sm:h-4' />
+                  )}
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => {
+                    if (typeof setIsHeroPaused === 'function')
+                      setIsHeroPaused(true);
+                    if (heroScrollRef.current) {
+                      heroScrollRef.current.scrollBy({
+                        left: -320,
+                        behavior: 'smooth',
+                      });
                     }
-                  >
-                    {isHeroPaused ? (
-                      <Play size={16} className='sm:w-5 sm:h-5' />
-                    ) : (
-                      <Pause size={16} className='sm:w-5 sm:h-5' />
-                    )}
-                  </button>
+                  }}
+                  className='p-2 sm:p-2.5 rounded-xl bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                >
+                  <ChevronLeft
+                    size={16}
+                    className='sm:w-5 sm:h-5 text-blue-400'
+                  />
+                </button>
 
-                  {/* زرار السابق (ChevronLeft) */}
-                  <button
-                    type='button'
-                    onClick={() => {
-                      // إيقاف مؤقت ذكي للحركة التلقائية لتجنب التعارض وتوفير أعلى استجابة
-                      if (typeof setIsHeroPaused === 'function') {
-                        setIsHeroPaused(true);
-                      }
-                      if (heroScrollRef.current) {
-                        heroScrollRef.current.scrollBy({
-                          left: -350,
-                          behavior: 'smooth',
-                        });
-                      }
-                    }}
-                    className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                    title='السابق'
-                  >
-                    <ChevronLeft
-                      size={18}
-                      className='sm:w-[22px] sm:h-[22px] text-blue-400 group-hover:text-white'
-                    />
-                  </button>
-
-                  {/* زرار التالي (ChevronRight) */}
-                  <button
-                    type='button'
-                    onClick={() => {
-                      // إيقاف مؤقت ذكي للحركة التلقائية لتجنب التعارض وتوفير أعلى استجابة
-                      if (typeof setIsHeroPaused === 'function') {
-                        setIsHeroPaused(true);
-                      }
-                      if (heroScrollRef.current) {
-                        heroScrollRef.current.scrollBy({
-                          left: 350,
-                          behavior: 'smooth',
-                        });
-                      }
-                    }}
-                    className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-red-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                    title='التالي'
-                  >
-                    <ChevronRight
-                      size={18}
-                      className='sm:w-[22px] sm:h-[22px] text-red-400 group-hover:text-white'
-                    />
-                  </button>
-                </div>
-              )}
-            </div>
+                <button
+                  type='button'
+                  onClick={() => {
+                    if (typeof setIsHeroPaused === 'function')
+                      setIsHeroPaused(true);
+                    if (heroScrollRef.current) {
+                      heroScrollRef.current.scrollBy({
+                        left: 320,
+                        behavior: 'smooth',
+                      });
+                    }
+                  }}
+                  className='p-2 sm:p-2.5 rounded-xl bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                >
+                  <ChevronRight
+                    size={16}
+                    className='sm:w-5 sm:h-5 text-red-400'
+                  />
+                </button>
+              </div>
+            )}
           </div>
 
           {loading ? (
-            <div className='py-28 flex flex-col items-center justify-center text-slate-400 space-y-3'>
-              <Loader2 className='w-9 h-9 animate-spin text-blue-500' />
-              <p className='text-xs font-medium'>Loading hero collection...</p>
+            <div className='py-16 flex flex-col items-center justify-center text-slate-400 space-y-2'>
+              <Loader2 className='w-7 h-7 animate-spin text-blue-500' />
+              <p className='text-[11px] font-medium'>
+                Loading hero collection...
+              </p>
             </div>
           ) : heroProducts.length === 0 ? null : (
             <div className='relative'>
@@ -909,23 +910,33 @@ export default function HomePage() {
                 ref={heroScrollRef}
                 onMouseEnter={() => setIsHeroPaused(true)}
                 onMouseLeave={() => setIsHeroPaused(false)}
-                className='flex items-center gap-6 overflow-x-auto scrollbar-none py-4 px-1 scroll-smooth'
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth touch-pan-x'
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                }}
               >
                 {heroProducts.map((product) => {
                   const displayImage = product.image || product.images?.[0];
                   const isWish = wishlist.includes(product.id);
-                  const oldPrice = product.originalPrice || product.oldPrice;
+                  const oldPrice =
+                    product.originalPrice ||
+                    product.oldPrice ||
+                    product.compare_at_price;
+                  const stockQty =
+                    product.stock_quantity ?? product.stock ?? 10;
+                  const ratingVal = product.rating || 5;
 
                   return (
                     <Link
                       key={`hero-${product.id}`}
                       href={`/products/${product.id}`}
-                      className='w-[320px] sm:w-[400px] shrink-0 bg-[#0e172a]/80 backdrop-blur-2xl rounded-3xl border border-slate-800/90 shadow-2xl overflow-hidden hover:border-blue-500/50 hover:shadow-blue-950/30 transition duration-500 group flex flex-col justify-between cursor-pointer'
+                      className='w-[240px] sm:w-[320px] shrink-0 bg-[#0e172a]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-800/90 shadow-xl overflow-hidden hover:border-blue-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                     >
                       <div>
-                        {/* Image Container with Badge */}
-                        <div className='w-full h-64 sm:h-72 bg-slate-950 relative overflow-hidden border-b border-slate-800/80'>
+                        {/* Image Container */}
+                        <div className='w-full h-44 sm:h-56 bg-slate-950 relative overflow-hidden border-b border-slate-800/80'>
                           {displayImage ? (
                             <img
                               src={displayImage}
@@ -933,13 +944,13 @@ export default function HomePage() {
                               className='w-full h-full object-cover group-hover:scale-105 transition duration-700'
                             />
                           ) : (
-                            <div className='flex items-center justify-center h-full text-slate-600 text-xs font-medium'>
+                            <div className='flex items-center justify-center h-full text-slate-600 text-[11px] font-medium'>
                               No Image Available
                             </div>
                           )}
 
-                          <div className='absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-lg'>
-                            <Flame size={12} className='fill-white' /> Hero
+                          <div className='absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md'>
+                            <Flame size={10} className='fill-white' /> Hero
                             Featured
                           </div>
 
@@ -950,137 +961,108 @@ export default function HomePage() {
                               e.stopPropagation();
                               toggleWishlist(product);
                             }}
-                            className={`absolute top-3 right-3 p-2.5 rounded-2xl backdrop-blur-md border transition ${
+                            className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
                               isWish
                                 ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
-                                : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white hover:bg-black/80'
+                                : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
                             }`}
                           >
                             <Heart
-                              size={16}
+                              size={14}
                               className={isWish ? 'fill-rose-500' : ''}
                             />
                           </button>
                         </div>
 
-                        {/* ===================================================== */}
-                        {/* ===================================================== */}
-                        {/* ===================================================== */}
-                        {/* ===================================================== */}
-
                         {/* Details */}
-                        <div className='p-6 space-y-3'>
-                          <span className='text-[10px] font-bold text-blue-400 uppercase tracking-widest block'>
-                            {product.category || 'Hero Series'}
-                          </span>
-
-                          <h3 className='font-extrabold text-white line-clamp-1 text-base sm:text-lg group-hover:text-blue-400 transition'>
-                            {product.name}
-                          </h3>
-
-                          {/* الوصف (مختصر في سطرين) */}
-                          <p className='text-xs text-slate-400 line-clamp-2 leading-relaxed'>
-                            {product.description ||
-                              'No description available for this product.'}
-                          </p>
-
-                          {/* النجوم (Rating) والستوك (Stock) */}
-                          <div className='flex items-center justify-between pt-1'>
-                            {/* النجوم */}
-                            <div className='flex items-center gap-1 text-amber-400 text-xs'>
-                              <div className='flex items-center'>
-                                {[...Array(5)].map((_, i) => (
-                                  <span
-                                    key={i}
-                                    className={`text-xs ${i < (product.rating || 5) ? 'text-amber-400' : 'text-slate-700'}`}
-                                  >
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                              <span className='text-[10px] text-slate-400 font-medium ml-1'>
-                                ({product.rating || 5}.0)
-                              </span>
-                            </div>
-
-                            {/* الستوك */}
+                        <div className='p-3 sm:p-4 space-y-2'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-[9px] font-bold text-blue-400 uppercase tracking-widest block'>
+                              {product.category || 'Hero Series'}
+                            </span>
                             <span
-                              className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${
-                                (product.stock_quantity ?? 10) > 0
+                              className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
+                                stockQty > 0
                                   ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
                                   : 'bg-red-950/60 text-red-300 border-red-500/30'
                               }`}
                             >
-                              {(product.stock_quantity ?? 10) > 0
-                                ? `${product.stock_quantity ?? 10} in stock`
+                              {stockQty > 0
+                                ? `${stockQty} in stock`
                                 : 'Out of Stock'}
                             </span>
                           </div>
-                          {/* =============================== */}
-                          {/* الأسعار ونسبة الخصم / الشارة */}
 
-                          {/* الأسعار بلونين وتنسيق فخم */}
-                          <div className='flex items-center justify-between pt-2.5 border-t border-slate-800/80'>
-                            <div className='flex items-baseline gap-2.5'>
-                              {/* السعر الأساسي (أبيض ناصع وبارز) */}
-                              <span className='font-black text-xl text-white tracking-tight'>
+                          <h3 className='font-extrabold text-white line-clamp-1 text-xs sm:text-sm group-hover:text-blue-400 transition'>
+                            {product.name}
+                          </h3>
+
+                          <p className='text-[10px] sm:text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
+                            {product.description ||
+                              'No description available for this product.'}
+                          </p>
+
+                          {/* النجوم */}
+                          <div className='flex items-center gap-1 text-amber-400 text-[11px]'>
+                            <div className='flex items-center'>
+                              {[...Array(5)].map((_, i) => (
+                                <span
+                                  key={i}
+                                  className={
+                                    i < ratingVal
+                                      ? 'text-amber-400'
+                                      : 'text-slate-700'
+                                  }
+                                >
+                                  ★
+                                </span>
+                              ))}
+                            </div>
+                            <span className='text-[9px] text-slate-400 font-medium'>
+                              ({ratingVal}.0)
+                            </span>
+                          </div>
+
+                          {/* الأسعار والشير */}
+                          <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
+                            <div className='flex items-baseline gap-1.5'>
+                              <span className='font-black text-sm sm:text-base text-white tracking-tight'>
                                 {product.price}{' '}
-                                <span className='text-xs text-slate-400 font-semibold'>
+                                <span className='text-[9px] text-slate-400 font-semibold'>
                                   EGP
                                 </span>
                               </span>
-
-                              {/* السعر القديم (أكبر حجماً قليلاً، خط خفيف، بلون مميز) */}
-                              {(product.compare_at_price || oldPrice) && (
-                                <span className='text-xs sm:text-sm text-slate-400/80 line-through font-light tracking-wide'>
-                                  {product.compare_at_price || oldPrice}{' '}
-                                  <span className='text-[10px]'>EGP</span>
+                              {oldPrice && oldPrice > product.price && (
+                                <span className='text-[10px] text-slate-400/80 line-through font-light'>
+                                  {oldPrice}{' '}
+                                  <span className='text-[8px]'>EGP</span>
                                 </span>
                               )}
                             </div>
-                            {/* ================================= */}
-                            {/* ================================= */}
-                            {/* ================================= */}
-                            <div className='scale-65 sm:scale-80 origin-center animate inline-block'>
+
+                            <div
+                              className='scale-75 origin-center inline-block'
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <ShareButton
                                 productId={product.id}
                                 productName={product.name}
                               />
                             </div>
-                            {/* ================================= */}
-                            {/* ================================= */}
-                            {/* ================================= */}
-                            {/* ================================= */}
-                            {/* شارة النار أو الـ Sale الاحترافية */}
-                            {product.compare_at_price || oldPrice ? (
-                              <div className='flex items-center gap-1 bg-red-950/70 border border-red-500/40 text-red-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm animate-pulse'>
-                                <span>🔥</span>
-                                <span>Sale</span>
-                              </div>
-                            ) : (
-                              <div className='flex items-center gap-1 bg-blue-950/70 border border-blue-500/40 text-blue-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm'>
-                                <span>✨</span>
-                                <span>Hot</span>
-                              </div>
-                            )}
                           </div>
-
-                          {/* =============================== */}
                         </div>
-
-                        {/* ===================================================== */}
-                        {/* ===================================================== */}
-                        {/* ===================================================== */}
-                        {/* ===================================================== */}
                       </div>
 
-                      <div className='p-6 pt-0'>
+                      <div
+                        className='p-3 sm:p-4 pt-0'
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           type='button'
                           onClick={(e) => addToCart(e, product)}
-                          className='w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 hover:from-blue-500 hover:to-rose-500 text-white rounded-2xl text-xs font-black tracking-wide flex items-center justify-center gap-2 shadow-xl shadow-blue-950/50 transition cursor-pointer'
+                          className='w-full py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 hover:from-blue-500 hover:to-rose-500 text-white rounded-xl text-[11px] sm:text-xs font-black tracking-wide flex items-center justify-center gap-1.5 shadow-lg transition cursor-pointer'
                         >
-                          <ShoppingCart size={16} /> Add to Cart
+                          <ShoppingCart size={14} /> Add to Cart
                         </button>
                       </div>
                     </Link>
@@ -1092,7 +1074,14 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+
       {/* Feature Highlights Grid Info */}
+
       <div className='max-w-7xl mx-auto px-4 sm:px-6 my-10'>
         <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
           <div className='flex items-center gap-3.5 bg-[#0e1626]/70 p-4 rounded-2xl border border-slate-800/80'>
@@ -1135,6 +1124,12 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+
       {/* 1. Top Announcement Bar (متحرك بـ Animation خفيف ونار من الناحيتين) */}
       {/*Top Announcement Bar*/}
       <div className='w-full py-3 px-4 bg-[#07090e] flex items-center justify-center border-b border-slate-800/60'>
@@ -1157,113 +1152,112 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 4. SECTION 2: HOT FLASH DEALS SLIDER (ألوان متناسقة نارية مع أزرار تحكم وإمكانية تخصيص الصور من الأدمن) */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+
       {flashDeals.length > 0 && (
-        <section className='max-w-7xl mx-auto px-4 sm:px-6 my-6 sm:my-10 py-6 sm:py-8 border-b border-slate-800/80 relative'>
-          {/* Header & Controls: تم جعلها تتكيف بحيث تنتقل لأسفل بعضها على الموبايل لمنع التداخل */}
-          <div className='flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4'>
-            <div className='flex items-center gap-2.5 sm:gap-3'>
-              <div className='p-2.5 bg-red-950/60 border border-red-500/30 rounded-xl text-red-500 shrink-0'>
-                <Flame
-                  size={20}
-                  className='sm:w-[22px] sm:h-[22px] animate-pulse'
-                />
+        <section className='max-w-7xl mx-auto px-2 sm:px-6 my-3 sm:my-6 py-3 sm:py-5 border-b border-slate-800/80 relative'>
+          {/* Header & Controls */}
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-5 gap-3'>
+            <div className='flex items-center gap-2 sm:gap-3'>
+              <div className='p-2 bg-red-950/60 border border-red-500/30 rounded-xl text-red-500 shrink-0'>
+                <Flame size={16} className='sm:w-5 sm:h-5 animate-pulse' />
               </div>
               <div>
-                <h2 className='text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2'>
+                <h2 className='text-sm sm:text-xl font-black text-white tracking-tight flex items-center gap-2'>
                   Hot Flash Deals Slider ⚡
                 </h2>
-                {/* تم ضبط اللون إلى slate-300 ليكون منسقاً ومريحاً جداً */}
-                <p className='text-[11px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1'>
+                <p className='text-[10px] sm:text-xs text-slate-300 mt-0.5'>
                   Limited quantity discounts available now in continuous smooth
                   motion
                 </p>
               </div>
             </div>
 
-            {/* ========================== */}
-            {/* ========================== */}
-            {/* ========================== */}
-            {/* ========================== */}
-            {/* ========================== */}
-            {/* Slider Controls for Flash Deals */}
+            {/* Slider Controls */}
             {!loading && (
               <div className='flex items-center gap-2 self-end sm:self-auto'>
-                {/* زر الإيقاف / التشغيل */}
                 <button
                   type='button'
                   onClick={() => setIsFlashPaused(!isFlashPaused)}
-                  className='p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                   title={
                     isFlashPaused ? 'Resume Flash Deals' : 'Pause Flash Deals'
                   }
                 >
-                  {isFlashPaused ? <Play size={16} /> : <Pause size={16} />}
+                  {isFlashPaused ? (
+                    <Play size={14} className='sm:w-4 sm:h-4' />
+                  ) : (
+                    <Pause size={14} className='sm:w-4 sm:h-4' />
+                  )}
                 </button>
 
-                {/* زر السابق */}
                 <button
                   type='button'
                   onClick={() => {
                     setIsFlashPaused(true);
                     if (flashScrollRef.current) {
                       flashScrollRef.current.scrollBy({
-                        left: -350,
+                        left: -280,
                         behavior: 'smooth',
                       });
                     }
                   }}
-                  className='p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600/20 to-red-600/20 hover:from-blue-600/40 hover:to-red-600/40 border border-blue-500/40 hover:border-blue-400 text-slate-100 shadow-md shadow-blue-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-red-600/20 border border-blue-500/40 text-slate-100 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={16} className='sm:w-5 sm:h-5' />
                 </button>
 
-                {/* زر التالي */}
                 <button
                   type='button'
                   onClick={() => {
                     setIsFlashPaused(true);
                     if (flashScrollRef.current) {
                       flashScrollRef.current.scrollBy({
-                        left: 350,
+                        left: 280,
                         behavior: 'smooth',
                       });
                     }
                   }}
-                  className='p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-red-600/20 to-blue-600/20 hover:from-red-600/40 hover:to-blue-600/40 border border-red-500/40 hover:border-red-400 text-slate-100 shadow-md shadow-red-900/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-r from-red-600/20 to-blue-600/20 border border-red-500/40 text-slate-100 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight size={16} className='sm:w-5 sm:h-5' />
                 </button>
               </div>
             )}
-
-            {/* ===================================== */}
-            {/* ===================================== */}
-            {/* ===================================== */}
-            {/* ===================================== */}
-            {/* ===================================== */}
           </div>
 
           <div
             ref={flashScrollRef}
             onMouseEnter={() => setIsFlashPaused(true)}
             onMouseLeave={() => setIsFlashPaused(false)}
-            className='flex items-center gap-4 sm:gap-6 overflow-x-auto scrollbar-none py-4 px-1 scroll-smooth'
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className='flex items-center gap-2.5 sm:gap-4 overflow-x-auto scrollbar-none py-2 px-1 scroll-smooth touch-pan-x'
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}
           >
             {flashDeals.map((item) => {
               const displayImage = item.image || item.images?.[0];
               const isWish = wishlist.includes(item.id);
-              const oldPrice = item.originalPrice || item.oldPrice;
+              const oldPrice =
+                item.originalPrice || item.oldPrice || item.compare_at_price;
+              const stockQty = item.stock_quantity ?? item.stock ?? 10;
+              const ratingVal = item.rating || 5;
 
               return (
                 <Link
                   key={`flash-${item.id}`}
                   href={`/products/${item.id}`}
-                  className='w-[280px] sm:w-[300px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-red-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                  className='w-[220px> sm:w-[260px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-red-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                 >
                   <div>
-                    <div className='relative aspect-square bg-slate-900 border-b border-slate-800 overflow-hidden'>
+                    <div className='relative w-full h-38 sm:h-48 bg-slate-900 border-b border-slate-800 overflow-hidden'>
                       <img
                         src={displayImage || 'https://via.placeholder.com/300'}
                         alt={item.name}
@@ -1276,126 +1270,107 @@ export default function HomePage() {
                           e.stopPropagation();
                           toggleWishlist(item);
                         }}
-                        className={`absolute top-3 right-3 p-2.5 rounded-xl backdrop-blur-md border transition ${
+                        className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
                           isWish
                             ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
                             : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
                         }`}
                       >
                         <Heart
-                          size={16}
+                          size={14}
                           className={isWish ? 'fill-rose-500' : ''}
                         />
                       </button>
-                      <span className='absolute top-3 left-3 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider shadow-md'>
+                      <span className='absolute top-2.5 left-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md'>
                         Hot Deal
                       </span>
                     </div>
-                    {/* =================================== */}
-                    {/* =================================== */}
-                    {/* =================================== */}
 
-                    {/* details flash */}
-                    <div className='p-5 space-y-2.5'>
-                      <span className='text-[10px] font-bold text-red-400 uppercase tracking-wider block'>
-                        {item.category || 'Special Offer'}
-                      </span>
-
-                      <h3 className='font-bold text-sm text-slate-100 line-clamp-1 group-hover:text-red-400 transition'>
-                        {item.name}
-                      </h3>
-
-                      {/* الوصف (مختصر في سطرين) */}
-                      <p className='text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
-                        {item.description ||
-                          'Limited time flash deal offer available now.'}
-                      </p>
-
-                      {/* النجوم (Rating) والستوك (Stock) */}
-                      <div className='flex items-center justify-between pt-0.5'>
-                        {/* النجوم */}
-                        <div className='flex items-center gap-1 text-amber-400 text-xs'>
-                          <div className='flex items-center'>
-                            {[...Array(5)].map((_, i) => (
-                              <span
-                                key={i}
-                                className={`text-xs ${i < (item.rating || 5) ? 'text-amber-400' : 'text-slate-700'}`}
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                          <span className='text-[10px] text-slate-400 font-medium ml-1'>
-                            ({item.rating || 5}.0)
-                          </span>
-                        </div>
-
-                        {/* الستوك */}
+                    <div className='p-3 sm:p-3.5 space-y-1.5'>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-[9px] font-bold text-red-400 uppercase tracking-wider block'>
+                          {item.category || 'Special Offer'}
+                        </span>
                         <span
-                          className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${
-                            (item.stock_quantity ?? 10) > 0
+                          className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
+                            stockQty > 0
                               ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
                               : 'bg-red-950/60 text-red-300 border-red-500/30'
                           }`}
                         >
-                          {(item.stock_quantity ?? 10) > 0
-                            ? `${item.stock_quantity ?? 10} in stock`
+                          {stockQty > 0
+                            ? `${stockQty} in stock`
                             : 'Out of Stock'}
                         </span>
                       </div>
 
-                      {/* الأسعار وتنسيقها الفخم */}
-                      <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
-                        <div className='flex items-baseline gap-2'>
-                          <span className='text-base font-black text-white tracking-tight'>
+                      <h3 className='font-bold text-xs sm:text-sm text-slate-100 line-clamp-1 group-hover:text-red-400 transition'>
+                        {item.name}
+                      </h3>
+
+                      <p className='text-[10px] text-slate-400 line-clamp-1 leading-relaxed'>
+                        {item.description ||
+                          'Limited time flash deal offer available now.'}
+                      </p>
+
+                      <div className='flex items-center gap-1 text-amber-400 text-[11px] pt-0.5'>
+                        <div className='flex items-center'>
+                          {[...Array(5)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={
+                                i < ratingVal
+                                  ? 'text-amber-400'
+                                  : 'text-slate-700'
+                              }
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <span className='text-[9px] text-slate-400 font-medium'>
+                          ({ratingVal}.0)
+                        </span>
+                      </div>
+
+                      <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
+                        <div className='flex items-baseline gap-1.5'>
+                          <span className='text-sm sm:text-base font-black text-white tracking-tight'>
                             {item.price}{' '}
-                            <span className='text-xs text-slate-400 font-semibold'>
+                            <span className='text-[9px] text-slate-400 font-semibold'>
                               EGP
                             </span>
                           </span>
-
-                          {(item.compare_at_price || oldPrice) && (
-                            <span className='text-xs sm:text-sm text-slate-400/80 line-through font-light tracking-wide'>
-                              {item.compare_at_price || oldPrice}{' '}
-                              <span className='text-[10px]'>EGP</span>
+                          {oldPrice && oldPrice > item.price && (
+                            <span className='text-[10px] text-slate-400/80 line-through font-light'>
+                              {oldPrice} <span className='text-[8px]'>EGP</span>
                             </span>
                           )}
                         </div>
 
-                        <div className='scale-65 sm:scale-70 origin-center inline-block'>
+                        <div
+                          className='scale-75 origin-center inline-block'
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <ShareButton
                             productId={item.id}
                             productName={item.name}
                           />
                         </div>
-
-                        {/* شارة النار أو الـ Sale */}
-                        {item.compare_at_price || oldPrice ? (
-                          <div className='flex items-center gap-1 bg-red-950/70 border border-red-500/40 text-red-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm animate-pulse'>
-                            <span>🔥</span>
-                            <span>Sale</span>
-                          </div>
-                        ) : (
-                          <div className='flex items-center gap-1 bg-red-950/70 border border-red-500/40 text-red-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm'>
-                            <span>⚡</span>
-                            <span>Flash</span>
-                          </div>
-                        )}
                       </div>
                     </div>
-
-                    {/* ================================== */}
-                    {/* ================================== */}
-                    {/* ================================== */}
                   </div>
 
-                  <div className='p-5 pt-0'>
+                  <div
+                    className='p-3 sm:p-3.5 pt-0'
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       type='button'
                       onClick={(e) => addToCart(e, item)}
-                      className='w-full py-3 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg cursor-pointer'
+                      className='w-full py-2.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg cursor-pointer'
                     >
-                      <ShoppingCart size={15} /> Add to Cart
+                      <ShoppingCart size={14} /> Add to Cart
                     </button>
                   </div>
                 </Link>
@@ -1404,6 +1379,7 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
       {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
@@ -1421,131 +1397,87 @@ export default function HomePage() {
 
       {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION (الكاتالوج الكامل مع تحكم كامل، فلتر التصنيفات، حركة بطيئة جداً، وأزرار تحكم) */}
 
-      {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Final Fixed & Fully Optimized Version */}
+      {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Ultra Compact & Optimized */}
+
+      {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Ultra Compact & Fully Detailed */}
       <main
         id='products-grid'
-        className='max-w-7xl mx-auto px-4 sm:px-6 my-6 sm:my-10 py-6 sm:py-8 space-y-6 sm:space-y-8'
+        className='max-w-7xl mx-auto px-2 sm:px-4 my-2 sm:my-4 py-2 sm:py-4 space-y-3 sm:space-y-4'
       >
-        {/* =========================== */}
-        {/* =========================== */}
-        {/* =========================== */}
-        {/* =========================== */}
-        {/* =========================== */}
-        {/* =========================== */}
         {/* Section Title & Slider Controls */}
-        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5'>
+        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2'>
           <div className='min-w-0 flex-1'>
-            <h2 className='text-xl sm:text-2xl font-black text-white tracking-tight'>
+            <h2 className='text-sm sm:text-lg font-black text-white tracking-tight'>
               {searchQuery
                 ? `Search Results: "${searchQuery}"`
                 : 'Our Complete Product Catalog 🏷️'}
             </h2>
-            <p className='text-[11px] sm:text-xs text-slate-300 mt-0.5 sm:mt-1'>
+            <p className='text-[9px] sm:text-[11px] text-slate-300'>
               Browse all items with continuous smooth slider
             </p>
           </div>
 
           {/* أزرار التحكم */}
-          <div className='flex items-center gap-2 shrink-0 self-end sm:self-auto'>
+          <div className='flex items-center gap-1.5 shrink-0 self-end sm:self-auto'>
             {!loading && filteredProducts.length > 0 && (
-              <div className='flex items-center gap-2 sm:gap-3'>
-                {/* زر التشغيل / الاستئناف والإيقاف */}
+              <div className='flex items-center gap-1.5'>
                 <button
                   type='button'
                   onClick={() => setIsCatalogPaused((prev) => !prev)}
-                  className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg shadow-blue-600/20 transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  className='p-1.5 sm:p-2 rounded-lg bg-gradient-to-tr from-red-600/90 to-blue-600/90 text-white shadow transition-all active:scale-95 cursor-pointer flex items-center justify-center'
                   title={
                     isCatalogPaused
                       ? 'Resume Catalog Scroll'
                       : 'Pause Catalog Scroll'
                   }
                 >
-                  {isCatalogPaused ? (
-                    <Play size={16} className='sm:w-5 sm:h-5 text-white' />
-                  ) : (
-                    <Pause size={16} className='sm:w-5 sm:h-5 text-white' />
-                  )}
+                  {isCatalogPaused ? <Play size={12} /> : <Pause size={12} />}
                 </button>
 
-                {/* زر السابق */}
                 <button
                   type='button'
                   onClick={() => {
                     setIsCatalogPaused(true);
                     if (catalogScrollRef.current) {
                       catalogScrollRef.current.scrollBy({
-                        left: -350,
+                        left: -260,
                         behavior: 'smooth',
                       });
                     }
                   }}
-                  className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-blue-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title='Previous'
+                  className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center'
                 >
-                  <ChevronLeft
-                    size={18}
-                    className='sm:w-[22px] sm:h-[22px] text-blue-400'
-                  />
+                  <ChevronLeft size={14} className='text-blue-400' />
                 </button>
 
-                {/* زر التالي */}
                 <button
                   type='button'
                   onClick={() => {
                     setIsCatalogPaused(true);
                     if (catalogScrollRef.current) {
                       catalogScrollRef.current.scrollBy({
-                        left: 350,
+                        left: 260,
                         behavior: 'smooth',
                       });
                     }
                   }}
-                  className='p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-[#0e1626]/90 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-red-600/30 border border-slate-700 hover:border-red-500/50 text-slate-200 hover:text-white shadow-md transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
-                  title='Next'
+                  className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center'
                 >
-                  <ChevronRight
-                    size={18}
-                    className='sm:w-[22px] sm:h-[22px] text-red-400'
-                  />
+                  <ChevronRight size={14} className='text-red-400' />
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
+        {/* Category Filter Cards Section - Ultra Mini */}
+        <div className='space-y-1.5'>
+          <span className='text-[9px] sm:text-[10px] font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1'>
+            ⚡ Filter by Categories:
+          </span>
 
-        {/* 2. حاوية السلايدر (منفصلة تماماً في صف لوحدها تحت العنوان والأزرار) */}
-        <div className='relative mt-6'>
-          <div className='absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#07090e] to-transparent z-10 pointer-events-none' />
-          <div className='absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#07090e] to-transparent z-10 pointer-events-none' />
-
-          <div
-            ref={catalogScrollRef}
-            onMouseEnter={() => setIsCatalogPaused(true)}
-            onMouseLeave={() => setIsCatalogPaused(false)}
-            className='flex flex-nowrap items-center gap-6 overflow-x-auto scrollbar-none py-4 px-2 scroll-smooth'
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {/* البطاقات الخاصة بك هنا */}
-          </div>
-        </div>
-
-        {/* Category Filter Cards Section with Robust Count Logic */}
-        <div className='space-y-3'>
-          <div className='flex items-center justify-between'>
-            <span className='text-xs font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1.5'>
-              ⚡ Filter by Categories (Click to filter products):
-            </span>
-          </div>
-
-          <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3'>
-            {/* All Categories Box */}
+          <div className='grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-8 gap-1'>
+            {/* All Categories */}
             {(() => {
               const allCount = products.length;
               const isAllSelected =
@@ -1557,37 +1489,32 @@ export default function HomePage() {
                 <button
                   type='button'
                   onClick={() => setSelectedCategory('All')}
-                  className={`p-3.5 rounded-2xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer flex flex-col justify-between gap-2 shadow-sm ${
+                  className={`p-1.5 sm:p-2 rounded-lg border text-left transition-all active:scale-95 cursor-pointer flex flex-col justify-between gap-0.5 ${
                     isAllSelected
-                      ? 'bg-gradient-to-br from-red-600 to-blue-600 border-transparent text-white shadow-lg shadow-blue-950/50 scale-[1.02]'
-                      : 'bg-[#0e1626]/90 hover:bg-[#141d2f] border-slate-800 hover:border-slate-700 text-slate-300'
+                      ? 'bg-gradient-to-br from-red-600 to-blue-600 border-transparent text-white shadow'
+                      : 'bg-[#0e1626]/90 hover:bg-[#141d2f] border-slate-800 text-slate-300'
                   }`}
                 >
-                  <span className='text-xs sm:text-sm font-bold truncate w-full'>
-                    All Categories
+                  <span className='text-[10px] font-bold truncate w-full'>
+                    All
                   </span>
-                  <div className='flex items-center justify-between'>
+                  <div className='flex items-center justify-between text-[8px]'>
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
-                        isAllSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-800 text-slate-400'
-                      }`}
+                      className={`px-1 rounded ${isAllSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}
                     >
-                      {allCount} products
+                      {allCount}
                     </span>
-                    <span className='text-xs'>📦</span>
+                    <span>📦</span>
                   </div>
                 </button>
               );
             })()}
 
-            {/* Dynamic Categories with Correct Matching */}
+            {/* Dynamic Categories */}
             {categories.map((cat) => {
               const catName = typeof cat === 'object' ? cat.name : cat;
               const catId = typeof cat === 'object' ? cat.id : cat;
 
-              // حساب دقيق للأسماء والأرقام لكي لا تظهر الأصفار أبداً
               const count = products.filter(
                 (p) =>
                   p.category_id === catId ||
@@ -1606,26 +1533,22 @@ export default function HomePage() {
                   key={`cat-box-${catId || catName}`}
                   type='button'
                   onClick={() => setSelectedCategory(catName)}
-                  className={`p-3.5 rounded-2xl border text-left transition-all duration-300 transform active:scale-95 cursor-pointer flex flex-col justify-between gap-2 shadow-sm ${
+                  className={`p-1.5 sm:p-2 rounded-lg border text-left transition-all active:scale-95 cursor-pointer flex flex-col justify-between gap-0.5 ${
                     isSelected
-                      ? 'bg-gradient-to-br from-red-600 to-blue-600 border-transparent text-white shadow-lg shadow-blue-950/50 scale-[1.02]'
-                      : 'bg-[#0e1626]/90 hover:bg-[#141d2f] border-slate-800 hover:border-slate-700 text-slate-300'
+                      ? 'bg-gradient-to-br from-red-600 to-blue-600 border-transparent text-white shadow'
+                      : 'bg-[#0e1626]/90 hover:bg-[#141d2f] border-slate-800 text-slate-300'
                   }`}
                 >
-                  <span className='text-xs sm:text-sm font-bold truncate w-full'>
+                  <span className='text-[10px] font-bold truncate w-full'>
                     {catName}
                   </span>
-                  <div className='flex items-center justify-between'>
+                  <div className='flex items-center justify-between text-[8px]'>
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
-                        isSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-slate-800 text-slate-400'
-                      }`}
+                      className={`px-1 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'}`}
                     >
-                      {count} products
+                      {count}
                     </span>
-                    <span className='text-xs'>🏷️</span>
+                    <span>🏷️</span>
                   </div>
                 </button>
               );
@@ -1633,50 +1556,50 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Products Display Slider Section */}
+        {/* Products Display Slider Section - Fully Integrated Data */}
         {loading ? (
-          <div className='py-24 flex flex-col items-center justify-center text-slate-400 space-y-3'>
-            <Loader2 className='w-8 h-8 animate-spin text-blue-500' />
-            <p className='text-xs font-medium'>Loading store products...</p>
+          <div className='py-12 flex flex-col items-center justify-center text-slate-400 space-y-1.5'>
+            <Loader2 className='w-6 h-6 animate-spin text-blue-500' />
+            <p className='text-[10px] font-medium'>Loading store products...</p>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className='text-center py-20 bg-[#0e1626]/90 rounded-3xl border border-slate-800 shadow-2xl max-w-md mx-auto space-y-4'>
-            <ShoppingBag size={48} className='mx-auto text-slate-600' />
-            <p className='text-sm font-bold text-white'>No products found</p>
-            <p className='text-xs text-slate-400'>
-              Try adjusting your search or category filters.
-            </p>
+          <div className='text-center py-8 bg-[#0e1626]/90 rounded-xl border border-slate-800 shadow max-w-xs mx-auto space-y-2'>
+            <ShoppingBag size={28} className='mx-auto text-slate-600' />
+            <p className='text-xs font-bold text-white'>No products found</p>
             <button
               type='button'
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('All');
               }}
-              className='px-6 py-3 bg-gradient-to-r from-red-600 to-blue-600 text-white text-xs font-bold rounded-xl shadow-lg cursor-pointer'
+              className='px-3 py-1.5 bg-gradient-to-r from-red-600 to-blue-600 text-white text-[10px] font-bold rounded-lg cursor-pointer'
             >
               Reset Filters
             </button>
           </div>
         ) : (
           <div className='relative'>
-            <div className='absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#07090e] to-transparent z-10 pointer-events-none' />
-            <div className='absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#07090e] to-transparent z-10 pointer-events-none' />
-
             <div
               ref={catalogScrollRef}
               onMouseEnter={() => setIsCatalogPaused(true)}
               onMouseLeave={() => setIsCatalogPaused(false)}
-              className='flex items-center gap-6 overflow-x-auto scrollbar-none py-4 px-2 scroll-smooth'
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              className='flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none py-1.5 px-0.5 scroll-smooth touch-pan-x overscroll-x-contain'
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
             >
               {filteredProducts.map((product) => {
                 const displayImage = product.image || product.images?.[0];
                 const isWish = wishlist.includes(product.id);
-                const oldPrice = product.originalPrice || product.oldPrice;
+                const oldPrice =
+                  product.originalPrice ||
+                  product.oldPrice ||
+                  product.compare_at_price;
+                const stockQty = product.stock_quantity ?? product.stock ?? 10;
+                const ratingVal = product.rating || 5;
 
-                {
-                  /* استخراج اسم التصنيف بدقة تامة من العلاقة أو الحقل المباشر */
-                }
                 const productCategoryName =
                   product.categories?.name ||
                   categories.find(
@@ -1688,146 +1611,138 @@ export default function HomePage() {
                   'General';
 
                 return (
-                  <Link key={product.id} href={`/products/${product.id}`}>
-                    <div
-                      key={`catalog-${product.id}`}
-                      onClick={() => router.push(`/products/${product.id}`)}
-                      className='w-[280px] sm:w-[300px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800/90 shadow-2xl overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
-                    >
-                      <div>
-                        {/* Image & Wishlist */}
-                        <div className='w-full aspect-square bg-slate-900 relative overflow-hidden border-b border-slate-800'>
-                          {displayImage ? (
-                            <img
-                              src={displayImage}
-                              alt={product.name}
-                              className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-                            />
-                          ) : (
-                            <div className='flex items-center justify-center h-full text-slate-600 text-xs font-medium'>
-                              No Image Available
-                            </div>
-                          )}
+                  <Link
+                    key={`catalog-${product.id}`}
+                    href={`/products/${product.id}`}
+                    className='w-[210px] sm:w-[240px] shrink-0 bg-[#0e1626]/95 backdrop-blur-xl rounded-xl border border-slate-800 shadow-md overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
+                  >
+                    <div>
+                      {/* Image & Wishlist & Badges */}
+                      <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800'>
+                        {displayImage ? (
+                          <img
+                            src={displayImage}
+                            alt={product.name}
+                            className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                          />
+                        ) : (
+                          <div className='flex items-center justify-center h-full text-slate-600 text-[10px]'>
+                            No Image
+                          </div>
+                        )}
 
-                          <button
-                            type='button'
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleWishlist(product);
-                            }}
-                            className={`absolute top-3 right-3 p-2.5 rounded-xl backdrop-blur-md border transition z-20 ${
-                              isWish
-                                ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
-                                : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
-                            }`}
-                          >
-                            <Heart
-                              size={16}
-                              className={isWish ? 'fill-rose-500' : ''}
-                            />
-                          </button>
-                        </div>
+                        <button
+                          type='button'
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleWishlist(product);
+                          }}
+                          className={`absolute top-2 right-2 p-1.5 rounded-lg backdrop-blur-md border transition z-20 ${
+                            isWish
+                              ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
+                              : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
+                          }`}
+                        >
+                          <Heart
+                            size={12}
+                            className={isWish ? 'fill-rose-500' : ''}
+                          />
+                        </button>
+                      </div>
 
-                        {/* Product Info */}
-                        <div className='p-5 space-y-2.5'>
-                          <span className='text-[10px] font-bold text-blue-400 uppercase tracking-wider block bg-blue-950/40 px-2 py-0.5 rounded-md w-fit border border-blue-500/20'>
+                      {/* Product Info (Ultra Compact & Full Admin Data) */}
+                      <div className='p-2 sm:p-2.5 space-y-1.5'>
+                        <div className='flex items-center justify-between'>
+                          <span className='text-[8px] font-bold text-blue-400 uppercase tracking-wider block bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[110px]'>
                             {productCategoryName}
                           </span>
 
-                          <h3 className='font-bold text-slate-100 line-clamp-1 text-sm group-hover:text-blue-400 transition'>
-                            {product.name}
-                          </h3>
+                          {/* ستوك الأدمن الحقيقي */}
+                          <span
+                            className={`px-1 py-0.5 rounded font-bold text-[8px] border ${
+                              stockQty > 0
+                                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                                : 'bg-red-950/60 text-red-300 border-red-500/30'
+                            }`}
+                          >
+                            {stockQty > 0
+                              ? `${stockQty} in stock`
+                              : 'Out of Stock'}
+                          </span>
+                        </div>
 
-                          <p className='text-[11px] text-slate-400 line-clamp-2 leading-relaxed'>
-                            {product.description ||
-                              'Explore our high-quality product collection.'}
-                          </p>
+                        <h3 className='font-bold text-slate-100 line-clamp-1 text-[11px] sm:text-xs group-hover:text-blue-400 transition'>
+                          {product.name}
+                        </h3>
 
-                          <div className='flex items-center justify-between pt-0.5'>
-                            <div className='flex items-center gap-1 text-amber-400 text-xs'>
-                              <div className='flex items-center'>
-                                {[...Array(5)].map((_, i) => (
-                                  <span
-                                    key={i}
-                                    className={`text-xs ${i < (product.rating || 5) ? 'text-amber-400' : 'text-slate-700'}`}
-                                  >
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                              <span className='text-[10px] text-slate-400 font-medium ml-1'>
-                                ({product.rating || 5}.0)
+                        <p className='text-[9px] text-slate-400 line-clamp-1 leading-relaxed'>
+                          {product.description ||
+                            'Explore our high-quality product collection.'}
+                        </p>
+
+                        {/* النجوم والتقييم */}
+                        <div className='flex items-center justify-between text-[10px] text-amber-400 pt-0.5'>
+                          <div className='flex items-center'>
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-[9px] ${i < ratingVal ? 'text-amber-400' : 'text-slate-700'}`}
+                              >
+                                ★
                               </span>
-                            </div>
-
-                            <span
-                              className={`px-2 py-0.5 rounded-md font-bold text-[10px] border ${
-                                (product.stock_quantity ?? 10) > 0
-                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
-                                  : 'bg-red-950/60 text-red-300 border-red-500/30'
-                              }`}
-                            >
-                              {(product.stock_quantity ?? 10) > 0
-                                ? `${product.stock_quantity ?? 10} in stock`
-                                : 'Out of Stock'}
+                            ))}
+                            <span className='text-[8px] text-slate-400 font-medium ml-1'>
+                              ({ratingVal}.0)
                             </span>
                           </div>
+                        </div>
 
-                          <div className='flex items-center justify-between pt-2 border-t border-slate-800/80'>
-                            <div className='flex items-baseline gap-2'>
-                              <span className='font-black text-base text-white tracking-tight'>
-                                {product.price}{' '}
-                                <span className='text-xs text-slate-400 font-semibold'>
-                                  EGP
-                                </span>
+                        {/* الأسعار وزر المشاركة ShareButton */}
+                        <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
+                          <div className='flex items-baseline gap-1'>
+                            <span className='font-black text-xs sm:text-sm text-white tracking-tight'>
+                              {product.price}{' '}
+                              <span className='text-[8px] text-slate-400 font-semibold'>
+                                EGP
                               </span>
+                            </span>
 
-                              {(product.compare_at_price || oldPrice) && (
-                                <span className='text-xs sm:text-sm text-slate-400/80 line-through font-light tracking-wide'>
-                                  {product.compare_at_price || oldPrice}{' '}
-                                  <span className='text-[10px]'>EGP</span>
-                                </span>
-                              )}
-                            </div>
+                            {oldPrice && oldPrice > product.price && (
+                              <span className='text-[9px] text-slate-400/80 line-through font-light'>
+                                {oldPrice}{' '}
+                                <span className='text-[7px]'>EGP</span>
+                              </span>
+                            )}
+                          </div>
 
+                          <div className='flex items-center gap-1'>
                             <div
+                              className='scale-65 origin-center inline-block'
                               onClick={(e) => e.stopPropagation()}
-                              className='scale-65 sm:scale-75 origin-center inline-block'
                             >
                               <ShareButton
                                 productId={product.id}
                                 productName={product.name}
                               />
                             </div>
-
-                            {product.compare_at_price || oldPrice ? (
-                              <div className='flex items-center gap-1 bg-red-950/70 border border-red-500/40 text-red-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm animate-pulse'>
-                                <span>🔥</span>
-                                <span>Sale</span>
-                              </div>
-                            ) : (
-                              <div className='flex items-center gap-1 bg-blue-950/70 border border-blue-500/40 text-blue-400 px-2 py-0.5 rounded-lg text-[10px] font-bold shadow-sm'>
-                                <span>✨</span>
-                                <span>Hot</span>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Add to Cart Button */}
-                      <div
-                        className='p-5 pt-0'
-                        onClick={(e) => e.stopPropagation()}
+                    {/* Add to Cart Button */}
+                    <div
+                      className='p-2 sm:p-2.5 pt-0'
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type='button'
+                        onClick={(e) => addToCart(e, product)}
+                        className='w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center justify-center gap-1 shadow transition cursor-pointer'
                       >
-                        <button
-                          type='button'
-                          onClick={(e) => addToCart(e, product)}
-                          className='w-full py-3 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-950/50 transition cursor-pointer'
-                        >
-                          <ShoppingCart size={15} /> Add to Cart
-                        </button>
-                      </div>
+                        <ShoppingCart size={12} /> Add to Cart
+                      </button>
                     </div>
                   </Link>
                 );
