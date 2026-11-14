@@ -21,8 +21,12 @@ import {
   Filter,
 } from 'lucide-react';
 import Link from 'next/link';
+import { router } from 'next/client';
+import { useRouter } from 'next/navigation';
 
 export default function AdminProductsPage() {
+  const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
+
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -281,7 +285,7 @@ export default function AdminProductsPage() {
     setShowInCatalog(product.show_in_catalog ?? false);
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };;
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -323,7 +327,7 @@ export default function AdminProductsPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/admin/login';
+    router.push('/admin/login');
   };
 
   // فلترة المنتجات المعروضة في جدول الأدمن بناءً على اختيار البوكسات

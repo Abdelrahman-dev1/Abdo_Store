@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation'; // أو 'next/router' إذا كنت تستخدم Pages Router
 import {
   ShoppingBag,
   ArrowLeft,
@@ -20,8 +21,10 @@ import {
   Mail,
 } from 'lucide-react';
 import Link from 'next/link';
+import { router } from 'next/client';
 
 export default function ProfilePage() {
+  const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -42,7 +45,7 @@ export default function ProfilePage() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      window.location.href = '/';
+      router.push('/');
       return;
     }
     setUser(user);
@@ -104,7 +107,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/';
+    router.push('/');
   };
 
   const handleCancelOrder = async (orderId: string) => {
@@ -315,8 +318,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-              <div>
+            <div className='sm:grid-cols-2 gap-4'>
+              {/* <div>
                 <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
                   Governorate / City *
                 </label>
@@ -328,7 +331,7 @@ export default function ProfilePage() {
                   placeholder='e.g. Cairo'
                   required
                 />
-              </div>
+              </div> */}
               <div>
                 <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
                   Detailed Address *

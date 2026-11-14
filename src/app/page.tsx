@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './../lib/supabase';
+import { useRouter } from 'next/navigation'; // أو 'next/router' إذا كنت تستخدم Pages Router
 import {
   ShoppingBag,
   ShoppingCart,
@@ -31,7 +32,9 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import ShareButton from '@/components/ShareButton';
+import { router } from 'next/client';
 export default function HomePage() {
+  const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -51,9 +54,10 @@ export default function HomePage() {
   const [isWishlistModalOpen, setIsWishlistModalOpen] = useState(false);
 
   // References for Sliders Auto-scroll control
-  const heroScrollRef = useRef(null);
-  const flashScrollRef = useRef(null);
-  const catalogScrollRef = useRef(null);
+
+  const heroScrollRef = useRef<HTMLDivElement | null>(null);
+  const flashScrollRef = useRef<HTMLDivElement | null>(null);
+  const catalogScrollRef = useRef<HTMLDivElement | null>(null);
 
   // States for pause/play on each slider
   const [isHeroPaused, setIsHeroPaused] = useState(false);
@@ -71,37 +75,567 @@ const [announcementBar, setAnnouncementBar] = useState<{
   // ==========================================
   // ==========================================
   // ==========================================
-useEffect(() => {
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // Control slider with Hero
+  // ==========================================
+
+  const setSliderPauseState = (
+    node: HTMLDivElement | null,
+    paused: boolean,
+    isManualToggle = false,
+  ) => {
+    if (!node) return;
+
+    if (node.dataset.resumeTimer) {
+      clearTimeout(Number(node.dataset.resumeTimer));
+      node.dataset.resumeTimer = '';
+    }
+
+    if (isManualToggle) {
+      node.dataset.manualPaused = paused ? 'true' : 'false';
+    }
+
+    node.dataset.isPaused = paused ? 'true' : 'false';
+
+    if (typeof setIsHeroPaused === 'function') {
+      setIsHeroPaused(paused);
+    }
+  };
+
+  const handleSliderTempPause = (e: React.SyntheticEvent<HTMLDivElement>) => {
+    const node = e.currentTarget;
+    if (node.dataset.resumeTimer) {
+      clearTimeout(Number(node.dataset.resumeTimer));
+      node.dataset.resumeTimer = '';
+    }
+    node.dataset.isPaused = 'true';
+  };
+
+  const handleSliderTempResume = (
+    e: React.SyntheticEvent<HTMLDivElement>,
+    delay = 0,
+  ) => {
+    const node = e.currentTarget;
+
+    if (node.dataset.resumeTimer) {
+      clearTimeout(Number(node.dataset.resumeTimer));
+      node.dataset.resumeTimer = '';
+    }
+
+    // لو المستخدم موقفه من الزر بإيده، متشغلوش تلقائي لما تخرج بالماوس أو تشيل إيدك
+    if (node.dataset.manualPaused === 'true') {
+      node.dataset.isPaused = 'true';
+      if (typeof setIsHeroPaused === 'function') {
+        setIsHeroPaused(true);
+      }
+      return;
+    }
+
+    node.dataset.resumeTimer = String(
+      window.setTimeout(() => {
+        if (!node.isConnected) return;
+        if (node.dataset.manualPaused === 'true') {
+          node.dataset.isPaused = 'true';
+          if (typeof setIsHeroPaused === 'function') {
+            setIsHeroPaused(true);
+          }
+          return;
+        }
+        node.dataset.isPaused = 'false';
+        if (typeof setIsHeroPaused === 'function') {
+          setIsHeroPaused(false);
+        }
+      }, delay),
+    );
+  };
+
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // Control slider with flash-2
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // Control Slider with Flash
+  // ==========================================
+
+  const setFlashSliderPauseState = (
+    node: HTMLDivElement | null,
+    paused: boolean,
+    isManualToggle = false,
+  ) => {
+    if (!node) return;
+
+    if (node.dataset.resumeTimer) {
+      clearTimeout(Number(node.dataset.resumeTimer));
+      node.dataset.resumeTimer = '';
+    }
+
+    if (isManualToggle) {
+      node.dataset.manualPaused = paused ? 'true' : 'false';
+    }
+
+    const shouldPause =
+      paused ||
+      node.dataset.manualPaused === 'true' ||
+      node.dataset.mouseHovered === 'true' ||
+      node.dataset.touchActive === 'true';
+
+    node.dataset.isPaused = shouldPause ? 'true' : 'false';
+
+    if (typeof setIsFlashPaused === 'function') {
+      setIsFlashPaused(shouldPause);
+    }
+  };
+
+  // Temporary Pause
+  const handleFlashTempPause = (e: React.SyntheticEvent<HTMLDivElement>) => {
+    const node = e.currentTarget;
+
+    if (node.dataset.resumeTimer) {
+      clearTimeout(Number(node.dataset.resumeTimer));
+      node.dataset.resumeTimer = '';
+    }
+
+    node.dataset.isPaused = 'true';
+
+    if (typeof setIsFlashPaused === 'function') {
+      setIsFlashPaused(true);
+    }
+  };
+
+  // Temporary Resume
+  const handleFlashTempResume = (
+    e: React.SyntheticEvent<HTMLDivElement>,
+    delay = 0,
+  ) => {
+    const node = e.currentTarget;
+
+    if (node.dataset.resumeTimer) {
+      clearTimeout(Number(node.dataset.resumeTimer));
+      node.dataset.resumeTimer = '';
+    }
+
+    // Never resume while touching, hovering, or manually paused
+    const shouldStayPaused = () =>
+      node.dataset.manualPaused === 'true' ||
+      node.dataset.mouseHovered === 'true' ||
+      node.dataset.touchActive === 'true';
+
+    if (shouldStayPaused()) {
+      node.dataset.isPaused = 'true';
+
+      if (typeof setIsFlashPaused === 'function') {
+        setIsFlashPaused(true);
+      }
+
+      return;
+    }
+
+    node.dataset.resumeTimer = String(
+      window.setTimeout(() => {
+        if (!node.isConnected) return;
+
+        if (shouldStayPaused()) {
+          node.dataset.isPaused = 'true';
+
+          if (typeof setIsFlashPaused === 'function') {
+            setIsFlashPaused(true);
+          }
+
+          return;
+        }
+
+        node.dataset.isPaused = 'false';
+
+        if (typeof setIsFlashPaused === 'function') {
+          setIsFlashPaused(false);
+        }
+
+        node.dataset.resumeTimer = '';
+      }, delay),
+    );
+  };
+
+  // ==========================================
+  // Mouse Hover
+  // ==========================================
+
+  const handleFlashMouseEnter = (e: React.SyntheticEvent<HTMLDivElement>) => {
+    const node = e.currentTarget;
+
+    node.dataset.mouseHovered = 'true';
+
+    handleFlashTempPause(e);
+  };
+
+  const handleFlashMouseLeave = (e: React.SyntheticEvent<HTMLDivElement>) => {
+    const node = e.currentTarget;
+
+    node.dataset.mouseHovered = 'false';
+
+    handleFlashTempResume(e, 0);
+  };
+
+  // ==========================================
+  // Touch Control
+  // ==========================================
+
+  const handleFlashTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const node = e.currentTarget;
+
+    node.dataset.touchActive = 'true';
+
+    handleFlashTempPause(e);
+  };
+
+  const handleFlashTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const node = e.currentTarget;
+
+    node.dataset.touchActive = 'false';
+
+    handleFlashTempResume(e, 1600);
+  };
+
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // Control slider with flash-1
+  // ==========================================
+  // const setFlashSliderPauseState = (
+  //   node: HTMLDivElement | null,
+  //   paused: boolean,
+  //   isManualToggle = false,
+  // ) => {
+  //   if (!node) return;
+
+  //   if (node.dataset.resumeTimer) {
+  //     clearTimeout(Number(node.dataset.resumeTimer));
+  //     node.dataset.resumeTimer = '';
+  //   }
+
+  //   if (isManualToggle) {
+  //     node.dataset.manualPaused = paused ? 'true' : 'false';
+  //   }
+
+  //   node.dataset.isPaused = paused ? 'true' : 'false';
+
+  //   if (typeof setIsFlashPaused === 'function') {
+  //     setIsFlashPaused(paused);
+  //   }
+  // };
+
+  // const handleFlashTempPause = (e: React.SyntheticEvent<HTMLDivElement>) => {
+  //   const node = e.currentTarget;
+  //   if (node.dataset.resumeTimer) {
+  //     clearTimeout(Number(node.dataset.resumeTimer));
+  //     node.dataset.resumeTimer = '';
+  //   }
+  //   node.dataset.isPaused = 'true';
+  // };
+
+  // const handleFlashTempResume = (
+  //   e: React.SyntheticEvent<HTMLDivElement>,
+  //   delay = 0,
+  // ) => {
+  //   const node = e.currentTarget;
+
+  //   if (node.dataset.resumeTimer) {
+  //     clearTimeout(Number(node.dataset.resumeTimer));
+  //     node.dataset.resumeTimer = '';
+  //   }
+
+  //   if (node.dataset.manualPaused === 'true') {
+  //     node.dataset.isPaused = 'true';
+  //     if (typeof setIsFlashPaused === 'function') {
+  //       setIsFlashPaused(true);
+  //     }
+  //     return;
+  //   }
+
+  //   node.dataset.resumeTimer = String(
+  //     window.setTimeout(() => {
+  //       if (!node.isConnected) return;
+  //       if (node.dataset.manualPaused === 'true') {
+  //         node.dataset.isPaused = 'true';
+  //         if (typeof setIsFlashPaused === 'function') {
+  //           setIsFlashPaused(true);
+  //         }
+  //         return;
+  //       }
+  //       node.dataset.isPaused = 'false';
+  //       if (typeof setIsFlashPaused === 'function') {
+  //         setIsFlashPaused(false);
+  //       }
+  //     }, delay),
+  //   );
+  // };
+  // ==========================================
+
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ============ ==============================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // Control slider with Catalog
+
+  // ==========================================
+  // Catalog Slider Pause Control
+  /// ==========================================
+  // Catalog Slider Pause Control
+  // ==========================================
+
+  const isCatalogPausedRef = useRef(false);
+  const catalogResumeTimerRef = useRef<number | null>(null);
+  const isCatalogHoveredRef = useRef(false);
+
+  // Clear Resume Timer
+  const clearCatalogResumeTimer = () => {
+    if (catalogResumeTimerRef.current !== null) {
+      window.clearTimeout(catalogResumeTimerRef.current);
+      catalogResumeTimerRef.current = null;
+    }
+  };
+
+  // Sync Pause State
+  const syncCatalogPauseState = (paused: boolean) => {
+    const slider = document.getElementById(
+      'catalog-slider-ref',
+    ) as HTMLDivElement | null;
+
+    isCatalogPausedRef.current = paused;
+
+    if (slider) {
+      slider.dataset.isPaused = paused ? 'true' : 'false';
+    }
+
+    if (typeof setIsCatalogPaused === 'function') {
+      setIsCatalogPaused(paused);
+    }
+  };
+
+  // Manual Pause / Resume
+  const setCatalogSliderPauseState = (
+    paused: boolean,
+    isManualToggle = false,
+  ) => {
+    clearCatalogResumeTimer();
+
+    const slider = document.getElementById('catalog-slider-ref');
+
+    if (isManualToggle && slider) {
+      slider.dataset.manualPaused = paused ? 'true' : 'false';
+    }
+
+    const shouldPause =
+      paused ||
+      slider?.dataset.manualPaused === 'true' ||
+      isCatalogHoveredRef.current;
+
+    syncCatalogPauseState(shouldPause);
+  };
+
+  // Pause Immediately
+  const handleCatalogPause = () => {
+    clearCatalogResumeTimer();
+    syncCatalogPauseState(true);
+  };
+
+  // Resume After Delay
+  const handleCatalogResume = (delay = 0) => {
+    clearCatalogResumeTimer();
+
+    const slider = document.getElementById('catalog-slider-ref');
+
+    // Don't resume while manually paused or hovered
+    if (
+      slider?.dataset.manualPaused === 'true' ||
+      isCatalogHoveredRef.current
+    ) {
+      syncCatalogPauseState(true);
+      return;
+    }
+
+    catalogResumeTimerRef.current = window.setTimeout(() => {
+      catalogResumeTimerRef.current = null;
+
+      const currentSlider = document.getElementById('catalog-slider-ref');
+
+      if (
+        currentSlider?.dataset.manualPaused === 'true' ||
+        isCatalogHoveredRef.current
+      ) {
+        syncCatalogPauseState(true);
+        return;
+      }
+
+      syncCatalogPauseState(false);
+    }, delay);
+  };
+
+  // Mouse Hover
+  const handleCatalogMouseEnter = () => {
+    isCatalogHoveredRef.current = true;
+    handleCatalogPause();
+  };
+
+  const handleCatalogMouseLeave = () => {
+    isCatalogHoveredRef.current = false;
+    handleCatalogResume(0);
+  };
+
+  // Temporary Pause (Wheel / Interaction)
+  const handleCatalogTempPause = handleCatalogPause;
+  const handleCatalogTempResume = handleCatalogResume;
+
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  useEffect(() => {
   let active = true;
+  let requestInProgress = false;
 
   const loadAnnouncementBar = async () => {
-    const { data } = await supabase
-      .from('settings')
-      .select(
-        'announcement_enabled, announcement_text, announcement_emoji_start, announcement_emoji_end',
-      )
-      .limit(1)
-      .maybeSingle();
+    if (requestInProgress) return;
 
-    if (!active) return;
+    requestInProgress = true;
 
-    setAnnouncementBar({
-      enabled: data?.announcement_enabled ?? true,
-      text:
-        data?.announcement_text ||
-        'FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items! Limited Time Only.',
-      startEmoji: data?.announcement_emoji_start || '💸',
-      endEmoji: data?.announcement_emoji_end || '🔥',
-    });
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select(
+          'announcement_enabled, announcement_text, announcement_emoji_start, announcement_emoji_end'
+        )
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+        console.error('Announcement loading error:', error);
+        return;
+      }
+
+      if (!data) {
+        setAnnouncementBar(null);
+        return;
+      }
+
+      setAnnouncementBar({
+        enabled: data.announcement_enabled ?? true,
+        text:
+          data.announcement_text ??
+          'FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items! Limited Time Only.',
+        startEmoji: data.announcement_emoji_start || '💸',
+        endEmoji: data.announcement_emoji_end || '🔥',
+      });
+
+    } catch (error) {
+      console.error('Announcement error:', error);
+    } finally {
+      requestInProgress = false;
+    }
   };
 
   void loadAnnouncementBar();
+
+  // تحديث تلقائي كل 20 ثانية
+  const refreshTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      void loadAnnouncementBar();
+    }
+  }, 20000);
+
+  const handleFocus = () => {
+    void loadAnnouncementBar();
+  };
+
+  window.addEventListener('focus', handleFocus);
+
   return () => {
     active = false;
+    window.clearInterval(refreshTimer);
+    window.removeEventListener('focus', handleFocus);
   };
 }, []);
-
-  // ==========================================
   // ==========================================
   // ==========================================
   // ==========================================
@@ -592,6 +1126,20 @@ useEffect(() => {
   // =======================
   // =======================
   // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
 
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 font-sans relative selection:bg-red-500 selection:text-white'>
@@ -616,6 +1164,11 @@ useEffect(() => {
         </div>
       )}
 
+      {/* ========================================== */}
+      {/* ========================================== */}
+      {/* ========================================== */}
+      {/* ========================================== */}
+
       {/* Cart Drawer Overlay */}
       {isCartOpen && (
         <div className='fixed inset-0 z-50 overflow-hidden font-sans'>
@@ -624,25 +1177,59 @@ useEffect(() => {
             onClick={() => setIsCartOpen(false)}
           />
           <div className='absolute inset-y-0 right-0 max-w-full flex pl-10'>
-            <div className='w-screen max-w-md bg-[#0e1626] border-l border-slate-800 shadow-2xl flex flex-col'>
-              <div className='flex items-center justify-between p-5 border-b border-slate-800'>
-                <h2 className='text-base font-black text-white flex items-center gap-2.5'>
-                  <ShoppingCart size={20} className='text-blue-400' />
-                  <span>Shopping Cart ({totalItemsCount})</span>
-                </h2>
-                <button
-                  onClick={() => setIsCartOpen(false)}
-                  className='p-2 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 transition'
-                >
-                  <X size={18} />
-                </button>
+            <div className='w-screen max-w-md bg-[#0e1626]/95 backdrop-blur-xl border-l border-slate-800/90 shadow-2xl flex flex-col relative overflow-hidden'>
+              {/* Background Glow Orbs */}
+              <div className='absolute -top-20 -right-20 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none'></div>
+              <div className='absolute -bottom-20 -left-20 w-40 h-40 bg-rose-600/10 rounded-full blur-3xl pointer-events-none'></div>
+
+              {/* Header */}
+              <div className='flex items-center justify-between p-5 border-b border-slate-800/80 relative z-10'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400'>
+                    <ShoppingCart size={18} />
+                  </div>
+                  <div>
+                    <h2 className='text-sm sm:text-base font-black text-white tracking-tight'>
+                      Shopping Cart
+                    </h2>
+                    <p className='text-[10px] text-slate-400 font-medium'>
+                      {totalItemsCount}{' '}
+                      {totalItemsCount === 1 ? 'item' : 'items'} in your cart
+                    </p>
+                  </div>
+                </div>
+
+                <div className='flex items-center gap-2'>
+                  {cart.length > 0 && (
+                    <button
+                      type='button'
+                      onClick={() => {
+                        if (typeof clearCart === 'function') clearCart();
+                        else setCart([]);
+                      }}
+                      className='text-[10px] font-bold px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition cursor-pointer'
+                    >
+                      Clear All
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    className='p-2 text-slate-400 hover:text-white rounded-xl bg-slate-900/90 border border-slate-800 transition cursor-pointer'
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
 
-              <div className='flex-1 overflow-y-auto p-5 space-y-4'>
+              {/* Items List */}
+              <div className='flex-1 overflow-y-auto p-5 space-y-3.5 custom-scrollbar relative z-10'>
                 {cart.length === 0 ? (
-                  <div className='text-center py-24 text-slate-500 space-y-3'>
-                    <ShoppingBag size={48} className='mx-auto text-slate-700' />
-                    <p className='text-xs font-bold'>
+                  <div className='text-center py-28 text-slate-500 space-y-3'>
+                    <ShoppingBag
+                      size={48}
+                      className='mx-auto text-slate-700 animate-pulse'
+                    />
+                    <p className='text-xs font-bold text-slate-400'>
                       Your cart is currently empty.
                     </p>
                   </div>
@@ -652,67 +1239,124 @@ useEffect(() => {
                       item.image ||
                       item.images?.[0] ||
                       'https://via.placeholder.com/80';
+                    const currentPrice = item.price || 0;
+                    const oldPrice =
+                      item.oldPrice ||
+                      item.original_price ||
+                      currentPrice + 200;
+                    const itemDesc =
+                      item.description ||
+                      item.details ||
+                      item.short_description ||
+                      'High quality premium product';
+                    const qty = item.quantity || 1;
+
                     return (
                       <div
                         key={item.id}
-                        className='flex items-center gap-4 bg-[#141d2f]/70 p-3.5 rounded-2xl border border-slate-800'
+                        className='group relative bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 backdrop-blur-xl p-3.5 rounded-2xl border border-slate-800/95 hover:border-slate-700/80 transition-all duration-300 shadow-md flex items-center gap-3.5'
                       >
-                        <img
-                          src={itemImg}
-                          alt={item.name}
-                          className='w-16 h-16 object-cover rounded-xl border border-slate-700 bg-slate-900'
-                        />
+                        {/* Product Image + Hot Deal Sticker */}
+                        <div className='relative w-16 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-sm'>
+                          <img
+                            src={itemImg}
+                            alt={item.name}
+                            className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
+                          />
+                          <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
+                            Hot Deal
+                          </span>
+                        </div>
+
+                        {/* Info & Prices */}
                         <div className='flex-1 min-w-0'>
-                          <h4 className='font-bold text-xs text-slate-100 truncate'>
+                          <h4 className='font-black text-xs text-slate-100 truncate tracking-tight'>
                             {item.name}
                           </h4>
-                          <div className='text-xs font-black text-blue-400 mt-1'>
-                            {item.price} EGP
-                          </div>
-                          <div className='flex items-center gap-2 mt-2'>
-                            <button
-                              onClick={() => updateQuantity(item.id, -1)}
-                              className='p-1 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 border border-slate-700 transition'
-                            >
-                              <Minus size={12} />
-                            </button>
-                            <span className='text-xs font-black px-2 text-white'>
-                              {item.quantity}
+                          <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
+                            {itemDesc}
+                          </p>
+
+                          <div className='flex items-center gap-2 mt-1.5'>
+                            <span className='text-xs font-black text-emerald-400'>
+                              {currentPrice} EGP
                             </span>
-                            <button
-                              onClick={() => updateQuantity(item.id, 1)}
-                              className='p-1 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 border border-slate-700 transition'
-                            >
-                              <Plus size={12} />
-                            </button>
+                            {oldPrice > currentPrice && (
+                              <span className='text-[9px] text-slate-500 line-through font-semibold'>
+                                {oldPrice} EGP
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Quantity Controls */}
+                          <div className='flex items-center gap-2 mt-2'>
+                            <div className='flex items-center bg-slate-900/90 border border-slate-800 rounded-lg overflow-hidden p-0.5 shadow-inner'>
+                              <button
+                                onClick={() => updateQuantity(item.id, -1)}
+                                className='w-5 h-5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded transition text-xs font-bold cursor-pointer'
+                              >
+                                <Minus size={11} />
+                              </button>
+                              <span className='w-6 text-center text-xs font-black text-white'>
+                                {qty}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, 1)}
+                                className='w-5 h-5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded transition text-xs font-bold cursor-pointer'
+                              >
+                                <Plus size={11} />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className='p-2 bg-red-950/40 text-red-400 hover:bg-red-900/40 rounded-xl border border-red-500/30 transition'
-                        >
-                          <Trash2 size={15} />
-                        </button>
+
+                        {/* Total & Remove */}
+                        <div className='flex flex-col items-end justify-between h-full gap-4 shrink-0'>
+                          <button
+                            onClick={() => removeItem(item.id)}
+                            className='p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg border border-red-500/20 transition cursor-pointer shadow-sm'
+                            title='Remove'
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                          <span className='text-xs font-black text-white'>
+                            {currentPrice * qty} EGP
+                          </span>
+                        </div>
                       </div>
                     );
                   })
                 )}
               </div>
 
+              {/* Footer Summary & Checkout */}
               {cart.length > 0 && (
-                <div className='p-5 border-t border-slate-800 bg-[#07090e] space-y-3'>
-                  <div className='flex justify-between text-xs font-bold text-slate-400'>
-                    <span>Subtotal:</span>
-                    <span className='text-base text-white font-black'>
+                <div className='p-5 border-t border-slate-800/80 bg-[#07090e]/95 backdrop-blur-xl space-y-3.5 relative z-10'>
+                  <div className='flex justify-between items-center text-xs text-slate-300'>
+                    <span className='text-slate-400'>Subtotal:</span>
+                    <span className='text-sm font-bold text-white'>
                       {subtotal} EGP
                     </span>
                   </div>
+                  <div className='flex justify-between items-center text-xs text-slate-300'>
+                    <span className='text-slate-400'>Shipping:</span>
+                    <span className='text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg text-[10px]'>
+                      Calculated on Delivery
+                    </span>
+                  </div>
+                  <div className='border-t border-slate-800/80 pt-3 flex justify-between items-center font-black text-base text-white'>
+                    <span>Total Amount:</span>
+                    <span className='text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-blue-400 text-lg'>
+                      {subtotal} EGP
+                    </span>
+                  </div>
+
                   <Link
                     href='/checkout'
                     onClick={() => setIsCartOpen(false)}
-                    className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-center rounded-xl font-bold block shadow-lg shadow-red-950/50 transition text-xs'
+                    className='w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-center rounded-xl font-bold block shadow-xl shadow-red-950/50 transition text-xs cursor-pointer'
                   >
-                    Proceed to Checkout
+                    Proceed to Checkout ({subtotal} EGP)
                   </Link>
                 </div>
               )}
@@ -721,8 +1365,14 @@ useEffect(() => {
         </div>
       )}
 
+      {/* ========================================== */}
+      {/* ========================================== */}
+      {/* ========================================== */}
+      {/* ========================================== */}
+      {/* ========================================== */}
+
       {/* 2. Main Navbar (Sticky and includes Wishlist Icon linked to logic) */}
-      <nav className=' fixed top-0 left-0 right-0  w-full bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/85 z-50'>
+      <nav className=' fixed top-0 left-0 right-0  w-full bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/85 z-50 '>
         {/* تم تعديل الارتفاع على الموبايل ليكون h-16 بدلاً من h-20، وزيادة المسافات الجانبية px-5 */}
         <div className='max-w-7xl mx-auto px-5 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4'>
           <Link
@@ -792,23 +1442,20 @@ useEffect(() => {
             {/* =============================== */}
 
             {/* Wishlist Button in Navbar linked with Wishlist count logic */}
+
             <button
-              type='button'
-              onClick={() => setIsWishlistModalOpen(true)}
-              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60 relative cursor-pointer'
-              title='My Wishlist'
+              onClick={() => setIsWishlistModalOpen(!isWishlistModalOpen)}
+              className='relative p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer shadow-sm'
+              title='Wishlist'
             >
-              <Heart
-                size={14}
-                className='sm:w-[15px] sm:h-[15px] text-rose-500 fill-rose-500'
-              />
-              <span className='hidden lg:inline'>Wishlist</span>
+              <Heart size={18} className='text-rose-500 fill-rose-500' />
               {wishlist.length > 0 && (
-                <span className='absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[9px] sm:text-[10px] font-black w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full flex items-center justify-center shadow-md ring-2 ring-slate-900'>
+                <span className='absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md ring-2 ring-[#07090e]'>
                   {wishlist.length}
                 </span>
               )}
             </button>
+
             {/* =============================== */}
             {/* =============================== */}
             {/* =============================== */}
@@ -830,12 +1477,12 @@ useEffect(() => {
               type='button'
               onClick={() => {
                 if (currentUser) {
-                  window.location.href = '/profile';
+                  router.push('/profile'); // التعديل
                 } else {
                   setIsAuthModalOpen(true);
                 }
               }}
-              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60 cursor-pointer'
+              className='flex items-center gap-1.5 bg-slate-800/85 hover:bg-slate-700/80 text-slate-300 p-2 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs font-bold transition border border-slate-700/60 cursor-pointer'
               title={currentUser ? 'My Profile' : 'Sign In'}
             >
               <User
@@ -873,20 +1520,20 @@ useEffect(() => {
       {/* =============================== */}
 
       {/* 3. SECTION 1: HERO BANNER SLIDER (متوسط السرعة مع أزرار تحكم مخصصة وتخصيص للصور وحركة أوتوماتيكية ذكية) */}
-      <section className='mt-2 sm:mt-6 mb-3 relative w-full py-2 sm:py-4 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80 text-[11px] sm:text-sm'>
+      <section className=' sm:mt-6 mb-3 relative w-full py-2 sm:py-4 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80 text-[11px] sm:text-sm'>
         {/* Background Ambient Glows */}
-        <div className='absolute top-1/4 left-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-blue-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
-        <div className='absolute bottom-1/4 right-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-red-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
+        <div className=' absolute top-1/4 left-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-blue-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
+        <div className=' absolute bottom-1/4 right-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-red-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
 
-        <div className='max-w-7xl mx-auto px-2 sm:px-6 space-y-2 sm:space-y-4 relative z-10'>
+        <div className='max-w-7xl mx-auto px-2 sm:px-6 space-y-2 sm:space-y-4 relative z-10 '>
           {/* Header & Controls */}
-          <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2 sm:pb-3 gap-2 sm:gap-4'>
-            <div className='flex items-center gap-2 pt-1 sm:pt-2 my-1'>
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2 sm:pb-3 gap-2 sm:gap-4 mt-5'>
+            <div className='flex items-center gap-2 pt-1 sm:pt-2  '>
               <div className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shrink-0'>
                 <Zap size={16} className='sm:w-5 sm:h-5 text-blue-400' />
               </div>
               <div>
-                <h1 className='text-lg sm:text-2xl font-black text-white tracking-tight'>
+                <h1 className='text-lg sm:text-2xl font-black text-white tracking-tight '>
                   Featured Hero Showcase
                 </h1>
                 <p className='text-[10px] sm:text-xs text-slate-300 mt-0.5'>
@@ -896,20 +1543,33 @@ useEffect(() => {
               </div>
             </div>
 
+            {/* =========================================== */}
+            {/* =========================================== */}
+            {/* =========================================== */}
+            {/* =========================================== */}
+
             {/* Slider Controls for Hero Section */}
             {heroProducts.length > 0 && !loading && (
               <div className='flex items-center gap-2 self-end sm:self-auto shrink-0'>
+                {/* ==================== */}
+                {/* ==================== */}
+
                 {/* Pause / Resume Button */}
+                {/* ok */}
                 <button
                   type='button'
                   onClick={() => {
-                    const slider = document.getElementById('hero-slider-ref');
+                    const slider = document.getElementById(
+                      'hero-slider-ref',
+                    ) as HTMLDivElement | null;
                     if (!slider) return;
-                    const currentPaused = slider.dataset.isPaused === 'true';
-                    slider.dataset.isPaused = currentPaused ? 'false' : 'true';
-                    if (typeof setIsHeroPaused === 'function') {
-                      setIsHeroPaused(!currentPaused);
-                    }
+
+                    const currentlyPaused =
+                      slider.dataset.manualPaused === 'true' ||
+                      slider.dataset.isPaused === 'true';
+                    const nextPaused = !currentlyPaused;
+
+                    setSliderPauseState(slider, nextPaused, true);
                   }}
                   className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                   title='Toggle Hero Scroll'
@@ -920,6 +1580,9 @@ useEffect(() => {
                     <Pause size={14} className='sm:w-4 sm:h-4' />
                   )}
                 </button>
+
+                {/* ==================== */}
+                {/* ==================== */}
 
                 {/* Scroll Left Button */}
                 <button
@@ -990,7 +1653,13 @@ useEffect(() => {
                 </button>
               </div>
             )}
+
+            {/* =========================================== */}
+            {/* =========================================== */}
           </div>
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
 
           {loading ? (
             <div className='py-16 flex flex-col items-center justify-center text-slate-400 space-y-2'>
@@ -1002,57 +1671,14 @@ useEffect(() => {
           ) : heroProducts.length === 0 ? null : (
             <div className='relative'>
               <div
+                // ok
                 id='hero-slider-ref'
                 dir='ltr'
-                onPointerDown={(e) => {
-                  const node = e.currentTarget;
-                  node.dataset.isPaused = 'true';
-                  if (node.dataset.resumeTimer) {
-                    clearTimeout(Number(node.dataset.resumeTimer));
-                  }
-                }}
-                onPointerUp={(e) => {
-                  const node = e.currentTarget;
-                  node.dataset.resumeTimer = String(
-                    window.setTimeout(() => {
-                      if (node.isConnected) {
-                        node.dataset.isPaused = 'false';
-                      }
-                    }, 1600),
-                  );
-                }}
-                onPointerCancel={(e) => {
-                  const node = e.currentTarget;
-                  node.dataset.resumeTimer = String(
-                    window.setTimeout(() => {
-                      if (node.isConnected) {
-                        node.dataset.isPaused = 'false';
-                      }
-                    }, 600),
-                  );
-                }}
-                onWheel={(e) => {
-                  const node = e.currentTarget;
-                  node.dataset.isPaused = 'true';
-                  if (node.dataset.resumeTimer) {
-                    clearTimeout(Number(node.dataset.resumeTimer));
-                  }
-                  node.dataset.resumeTimer = String(
-                    window.setTimeout(() => {
-                      if (node.isConnected) {
-                        node.dataset.isPaused = 'false';
-                      }
-                    }, 1200),
-                  );
-                }}
-                onMouseEnter={() => {
-                  const node = document.getElementById('hero-slider-ref');
-                  if (node) node.dataset.isPaused = 'true';
-                }}
-                onMouseLeave={() => {
-                  const node = document.getElementById('hero-slider-ref');
-                  if (node) node.dataset.isPaused = 'false';
-                }}
+                onTouchStart={handleSliderTempPause}
+                onTouchEnd={(e) => handleSliderTempResume(e, 0)}
+                onTouchCancel={(e) => handleSliderTempResume(e, 0)}
+                onMouseEnter={handleSliderTempPause}
+                onMouseLeave={(e) => handleSliderTempResume(e, 0)}
                 ref={(node) => {
                   if (!node || node.dataset.initAuto === 'true') return;
 
@@ -1106,7 +1732,7 @@ useEffect(() => {
 
                   requestAnimationFrame(animate);
                 }}
-                className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x overscroll-x-contain'
+                className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x touch-pan-y overscroll-x-none overscroll-y-auto select-none'
                 style={{
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
@@ -1114,6 +1740,9 @@ useEffect(() => {
                   scrollBehavior: 'auto',
                 }}
               >
+                {/* ============================ */}
+                {/* ============================ */}
+                {/* ============================ */}
                 {/* 9 Repeated Groups for Infinite Seamless Flow */}
                 <div className='flex w-max'>
                   {Array.from({ length: 9 }, (_, copy) => (
@@ -1282,6 +1911,12 @@ useEffect(() => {
               </div>
             </div>
           )}
+
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
         </div>
       </section>
 
@@ -1387,19 +2022,23 @@ useEffect(() => {
             </div>
 
             {/* Slider Controls */}
-            {!loading && (
-              <div className='flex items-center gap-2 self-end sm:self-auto'>
+            {flashDeals.length > 0 && !loading && (
+              <div className='flex items-center gap-2 self-end sm:self-auto shrink-0'>
                 {/* Pause / Resume Button */}
                 <button
                   type='button'
                   onClick={() => {
-                    const slider = document.getElementById('flash-slider-ref');
+                    const slider = document.getElementById(
+                      'flash-slider-ref',
+                    ) as HTMLDivElement | null;
                     if (!slider) return;
-                    const currentPaused = slider.dataset.isPaused === 'true';
-                    slider.dataset.isPaused = currentPaused ? 'false' : 'true';
-                    if (typeof setIsFlashPaused === 'function') {
-                      setIsFlashPaused(!currentPaused);
-                    }
+
+                    const currentlyPaused =
+                      slider.dataset.manualPaused === 'true' ||
+                      slider.dataset.isPaused === 'true';
+                    const nextPaused = !currentlyPaused;
+
+                    setFlashSliderPauseState(slider, nextPaused, true);
                   }}
                   className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow-lg transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
                   title={
@@ -1477,66 +2116,50 @@ useEffect(() => {
               </div>
             )}
           </div>
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* Slider Container with flash */}
 
-          {/* Slider Container */}
           <div className='relative'>
+            {/* =================== */}
+            {/* =================== */}
+            {/* =================== */}
+            {/* =================== */}
+
             <div
               id='flash-slider-ref'
               dir='ltr'
-              onPointerDown={(e) => {
-                const node = e.currentTarget;
-                node.dataset.isPaused = 'true';
-                if (node.dataset.resumeTimer) {
-                  clearTimeout(Number(node.dataset.resumeTimer));
+              // Mouse Hover
+              onPointerEnter={(e) => {
+                if (e.pointerType === 'mouse') {
+                  handleFlashMouseEnter(e);
                 }
               }}
-              onPointerUp={(e) => {
-                const node = e.currentTarget;
-                node.dataset.resumeTimer = String(
-                  window.setTimeout(() => {
-                    if (node.isConnected) {
-                      node.dataset.isPaused = 'false';
-                    }
-                  }, 1600),
-                );
+              onPointerLeave={(e) => {
+                if (e.pointerType === 'mouse') {
+                  handleFlashMouseLeave(e);
+                }
               }}
-              onPointerCancel={(e) => {
-                const node = e.currentTarget;
-                node.dataset.resumeTimer = String(
-                  window.setTimeout(() => {
-                    if (node.isConnected) {
-                      node.dataset.isPaused = 'false';
-                    }
-                  }, 600),
-                );
-              }}
+              // Touch Control
+              onTouchStart={handleFlashTouchStart}
+              onTouchEnd={handleFlashTouchEnd}
+              // Wheel Control
               onWheel={(e) => {
-                const node = e.currentTarget;
-                node.dataset.isPaused = 'true';
-                if (node.dataset.resumeTimer) {
-                  clearTimeout(Number(node.dataset.resumeTimer));
-                }
-                node.dataset.resumeTimer = String(
-                  window.setTimeout(() => {
-                    if (node.isConnected) {
-                      node.dataset.isPaused = 'false';
-                    }
-                  }, 1200),
-                );
-              }}
-              onMouseEnter={() => {
-                const node = document.getElementById('flash-slider-ref');
-                if (node) node.dataset.isPaused = 'true';
-              }}
-              onMouseLeave={() => {
-                const node = document.getElementById('flash-slider-ref');
-                if (node) node.dataset.isPaused = 'false';
+                handleFlashTempPause(e);
+                handleFlashTempResume(e, 1200);
               }}
               ref={(node) => {
                 if (!node || node.dataset.initAuto === 'true') return;
 
                 node.dataset.initAuto = 'true';
                 node.dataset.isPaused = 'false';
+                node.dataset.manualPaused = 'false';
+                node.dataset.mouseHovered = 'false';
+                node.dataset.touchActive = 'false';
 
                 let groupWidth = 0;
                 let lastTime = 0;
@@ -1561,8 +2184,14 @@ useEffect(() => {
                         ? Math.min(time - lastTime, 40)
                         : 0;
 
-                      // سرعة عروض الفلاش (40px/s لحركة أسرع وأكثر حيوية)
-                      if (node.dataset.isPaused !== 'true') {
+                      // Check ALL pause conditions
+                      const isPaused =
+                        node.dataset.isPaused === 'true' ||
+                        node.dataset.manualPaused === 'true' ||
+                        node.dataset.mouseHovered === 'true' ||
+                        node.dataset.touchActive === 'true';
+
+                      if (!isPaused) {
                         node.scrollLeft += (40 * delta) / 1000;
                       }
 
@@ -1570,6 +2199,7 @@ useEffect(() => {
                       if (node.scrollLeft >= groupWidth * 5) {
                         node.scrollLeft -= groupWidth;
                       }
+
                       // Infinite Loop Backward
                       else if (node.scrollLeft <= groupWidth * 3) {
                         node.scrollLeft += groupWidth;
@@ -1583,7 +2213,7 @@ useEffect(() => {
 
                 requestAnimationFrame(animate);
               }}
-              className='overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x overscroll-x-contain'
+              className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x touch-pan-y overscroll-x-none overscroll-y-auto select-none'
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
@@ -1603,10 +2233,12 @@ useEffect(() => {
                     {flashDeals.map((item) => {
                       const displayImage = item.image || item.images?.[0];
                       const isWish = wishlist.includes(item.id);
+
                       const oldPrice =
                         item.originalPrice ||
                         item.oldPrice ||
                         item.compare_at_price;
+
                       const stockQty = item.stock_quantity ?? item.stock ?? 10;
                       const ratingVal = item.rating || 5;
 
@@ -1627,6 +2259,7 @@ useEffect(() => {
                                 alt={item.name}
                                 className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
                               />
+
                               <button
                                 type='button'
                                 onClick={(e) => {
@@ -1645,6 +2278,7 @@ useEffect(() => {
                                   className={isWish ? 'fill-rose-500' : ''}
                                 />
                               </button>
+
                               <span className='absolute top-2.5 left-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md'>
                                 Hot Deal
                               </span>
@@ -1655,6 +2289,7 @@ useEffect(() => {
                                 <span className='text-[9px] font-bold text-red-400 uppercase tracking-wider block'>
                                   {item.category || 'Special Offer'}
                                 </span>
+
                                 <span
                                   className={`px-1.5 py-0.5 rounded font-bold text-[9px] border ${
                                     stockQty > 0
@@ -1692,6 +2327,7 @@ useEffect(() => {
                                     </span>
                                   ))}
                                 </div>
+
                                 <span className='text-[9px] text-slate-400 font-medium'>
                                   ({ratingVal}.0)
                                 </span>
@@ -1705,6 +2341,7 @@ useEffect(() => {
                                       EGP
                                     </span>
                                   </span>
+
                                   {oldPrice && oldPrice > item.price && (
                                     <span className='text-[10px] text-slate-400/80 line-through font-light'>
                                       {oldPrice}{' '}
@@ -1745,6 +2382,11 @@ useEffect(() => {
                 ))}
               </div>
             </div>
+
+            {/* ============================= */}
+            {/* ============================= */}
+            {/* ============================= */}
+            {/* ============================= */}
           </div>
         </section>
       )}
@@ -1784,34 +2426,75 @@ useEffect(() => {
               Browse all items with smooth touch & scroll preview
             </p>
           </div>
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* ======================================= */}
 
           {/* Slider Navigation */}
+
           <div className='flex items-center gap-1.5 shrink-0 self-end sm:self-auto'>
             {!loading && catalogProducts.length > 0 && (
               <div className='flex items-center gap-1.5'>
+                {/* Pause / Resume Button */}
+                <button
+                  type='button'
+                  onClick={() => {
+                    const slider = document.getElementById(
+                      'catalog-slider-ref',
+                    ) as HTMLDivElement | null;
+                    if (!slider) return;
+
+                    const currentlyPaused =
+                      slider.dataset.manualPaused === 'true' ||
+                      slider.dataset.isPaused === 'true';
+                    const nextPaused = !currentlyPaused;
+
+                    setCatalogSliderPauseState(nextPaused, true);
+                  }}
+                  className='p-1.5 sm:p-2 rounded-lg bg-gradient-to-tr from-red-600/90 to-blue-600/90 hover:from-red-500 hover:to-blue-500 border border-blue-500/30 text-white shadow transition-all transform active:scale-95 cursor-pointer flex items-center justify-center'
+                  title={isCatalogPaused ? 'Resume Catalog' : 'Pause Catalog'}
+                >
+                  {isCatalogPaused ? (
+                    <Play size={14} className='sm:w-4 sm:h-4' />
+                  ) : (
+                    <Pause size={14} className='sm:w-4 sm:h-4' />
+                  )}
+                </button>
+
                 {/* Previous */}
                 <button
                   type='button'
                   onClick={() => {
-                    const slider = catalogScrollRef.current;
+                    const slider =
+                      document.getElementById('catalog-slider-ref');
                     if (!slider) return;
 
                     slider.dataset.isPaused = 'true';
-
                     if (slider.dataset.resumeTimer) {
                       clearTimeout(Number(slider.dataset.resumeTimer));
-                      delete slider.dataset.resumeTimer;
                     }
 
                     const maxScroll = Math.max(
                       0,
                       slider.scrollWidth - slider.clientWidth,
                     );
-
                     const target = slider.scrollLeft - 260;
-
                     slider.dataset.manualTarget = String(
                       Math.max(0, Math.min(maxScroll, target)),
+                    );
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                          delete slider.dataset.manualTarget;
+                        }
+                      }, 1500),
                     );
                   }}
                   className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow'
@@ -1824,25 +2507,31 @@ useEffect(() => {
                 <button
                   type='button'
                   onClick={() => {
-                    const slider = catalogScrollRef.current;
+                    const slider =
+                      document.getElementById('catalog-slider-ref');
                     if (!slider) return;
 
                     slider.dataset.isPaused = 'true';
-
                     if (slider.dataset.resumeTimer) {
                       clearTimeout(Number(slider.dataset.resumeTimer));
-                      delete slider.dataset.resumeTimer;
                     }
 
                     const maxScroll = Math.max(
                       0,
                       slider.scrollWidth - slider.clientWidth,
                     );
-
                     const target = slider.scrollLeft + 260;
-
                     slider.dataset.manualTarget = String(
                       Math.max(0, Math.min(maxScroll, target)),
+                    );
+
+                    slider.dataset.resumeTimer = String(
+                      window.setTimeout(() => {
+                        if (slider.isConnected) {
+                          slider.dataset.isPaused = 'false';
+                          delete slider.dataset.manualTarget;
+                        }
+                      }, 1500),
                     );
                   }}
                   className='p-1.5 sm:p-2 rounded-lg bg-[#0e1626]/90 border border-slate-700 text-slate-200 hover:text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center shadow'
@@ -1853,6 +2542,15 @@ useEffect(() => {
               </div>
             )}
           </div>
+
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
+          {/* =========================================== */}
         </div>
 
         {/* Category Filter Cards */}
@@ -1957,20 +2655,28 @@ useEffect(() => {
             })}
           </div>
         </div>
-
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
         {/* Products Slider */}
+
         {loading ? (
           <div className='py-12 flex flex-col items-center justify-center text-slate-400 space-y-1.5'>
             <Loader2 className='w-6 h-6 animate-spin text-blue-500' />
-
             <p className='text-[10px] font-medium'>Loading store products...</p>
           </div>
         ) : catalogProducts.length === 0 ? (
           <div className='text-center py-8 bg-[#0e1626]/90 rounded-xl border border-slate-800 shadow max-w-xs mx-auto space-y-2'>
             <ShoppingBag size={28} className='mx-auto text-slate-600' />
-
             <p className='text-xs font-bold text-white'>No products found</p>
-
             <button
               type='button'
               onClick={() => {
@@ -1984,11 +2690,65 @@ useEffect(() => {
           </div>
         ) : (
           <div className='relative'>
-            {/* Slider Container */}
+            {/* ============================================ */}
+            {/* ============================================ */}
+            {/* ============================================ */}
+            {/* ============================================ */}
             <div
               id='catalog-slider-ref'
+              dir='ltr'
+              // onMouseEnter={handleCatalogPause}
+              // onMouseLeave={() => handleCatalogResume(0)}
+              // onTouchStart={handleCatalogPause}
+              // onTouchEnd={() => handleCatalogResume(1600)}
+              // onTouchCancel={() => handleCatalogResume(600)}
+              // onPointerDown={handleCatalogPause}
+              // onPointerUp={() => handleCatalogResume(1600)}
+
+              // onWheel={(e) => {
+              //   handleCatalogTempPause();
+              //   handleCatalogTempResume(1200);
+              // }}
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+
+              onPointerEnter={(e) => {
+                if (e.pointerType === 'mouse') {
+                  handleCatalogMouseEnter();
+                }
+              }}
+              onPointerLeave={(e) => {
+                if (e.pointerType === 'mouse') {
+                  handleCatalogMouseLeave();
+                }
+              }}
+              onTouchStart={() => {
+                handleCatalogPause();
+              }}
+              onTouchEnd={() => {
+                handleCatalogResume(1600);
+              }}
+              onWheel={() => {
+                handleCatalogTempPause();
+                handleCatalogTempResume(1200);
+              }}
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+              // =====================================
+
               ref={(node) => {
-                catalogScrollRef.current = node;
+                if (catalogScrollRef) {
+                  catalogScrollRef.current = node;
+                }
 
                 if (!node || node.dataset.initAuto === 'true') return;
 
@@ -2002,19 +2762,15 @@ useEffect(() => {
                 const animate = (time: number) => {
                   if (!node.isConnected) return;
 
-                  // تحديد المجموعات الموجودة حاليًا
                   const groups = node.querySelectorAll<HTMLElement>(
                     '[data-catalog-group]',
                   );
-
                   const shouldLoop = groups.length === 3;
-
                   const centerGroup = groups[shouldLoop ? 1 : 0];
 
                   if (centerGroup) {
                     const newWidth = centerGroup.getBoundingClientRect().width;
 
-                    // تحديث القياسات عند تغيير الشاشة أو عدد المجموعات
                     if (
                       newWidth > 0 &&
                       (Math.abs(newWidth - groupWidth) > 1 ||
@@ -2022,9 +2778,7 @@ useEffect(() => {
                     ) {
                       groupWidth = newWidth;
                       lastLoopMode = shouldLoop;
-
                       node.scrollLeft = shouldLoop ? groupWidth : 0;
-
                       delete node.dataset.manualTarget;
                     }
 
@@ -2033,26 +2787,19 @@ useEffect(() => {
                         0,
                         node.scrollWidth - node.clientWidth,
                       );
-
                       const rightBoundary = Math.min(groupWidth * 2, maxScroll);
-
-                      // Manual Navigation Animation
                       const manualTarget = node.dataset.manualTarget;
 
                       if (manualTarget !== undefined) {
                         const target = Number(manualTarget);
-
                         const distance = target - node.scrollLeft;
 
                         if (Math.abs(distance) > 0.8) {
-                          // حركة ناعمة للأسهم بدون تعارض مع Auto Scroll
                           node.scrollLeft += distance * 0.2;
                         } else {
                           node.scrollLeft = target;
-
                           delete node.dataset.manualTarget;
 
-                          // الحفاظ على Infinite Loop بعد حركة الأسهم
                           if (shouldLoop) {
                             if (node.scrollLeft >= rightBoundary - 1) {
                               node.scrollLeft = Math.max(
@@ -2066,33 +2813,18 @@ useEffect(() => {
                               );
                             }
                           }
-
-                          // استئناف الحركة التلقائية بعد انتهاء تحريك الزر
-                          if (node.dataset.resumeTimer) {
-                            clearTimeout(Number(node.dataset.resumeTimer));
-                          }
-
-                          node.dataset.resumeTimer = String(
-                            window.setTimeout(() => {
-                              if (
-                                node.isConnected &&
-                                node.dataset.manualTarget === undefined
-                              ) {
-                                node.dataset.isPaused = 'false';
-                              }
-                            }, 800),
-                          );
                         }
-                      }
-
-                      // Automatic Infinite Scroll
-                      else if (shouldLoop) {
+                      } else if (shouldLoop) {
                         const delta = lastTime
                           ? Math.min(time - lastTime, 40)
                           : 0;
 
-                        // سرعة الحركة التلقائية: 15px per second
-                        if (node.dataset.isPaused !== 'true') {
+                        // التحقق الحاسم من حالة الـ Pause
+                        // السلاير مش هتحرك خطوة واحدة لو الـ isPaused بـ true بأي شكل
+                        if (
+                          node.dataset.isPaused !== 'true' &&
+                          node.dataset.manualPaused !== 'true'
+                        ) {
                           node.scrollLeft += (15 * delta) / 1000;
                         }
 
@@ -2103,7 +2835,6 @@ useEffect(() => {
                             node.scrollLeft - groupWidth,
                           );
                         }
-
                         // Infinite Loop Backward
                         else if (node.scrollLeft <= 1) {
                           node.scrollLeft = Math.min(
@@ -2116,68 +2847,12 @@ useEffect(() => {
                   }
 
                   lastTime = time;
-
                   requestAnimationFrame(animate);
                 };
 
                 requestAnimationFrame(animate);
               }}
-              dir='ltr'
-              onPointerDown={(e) => {
-                const node = e.currentTarget;
-
-                node.dataset.isPaused = 'true';
-
-                delete node.dataset.manualTarget;
-
-                if (node.dataset.resumeTimer) {
-                  clearTimeout(Number(node.dataset.resumeTimer));
-                  delete node.dataset.resumeTimer;
-                }
-              }}
-              onPointerUp={(e) => {
-                const node = e.currentTarget;
-
-                node.dataset.resumeTimer = String(
-                  window.setTimeout(() => {
-                    if (node.isConnected) {
-                      node.dataset.isPaused = 'false';
-                    }
-                  }, 1600),
-                );
-              }}
-              onPointerCancel={(e) => {
-                const node = e.currentTarget;
-
-                node.dataset.resumeTimer = String(
-                  window.setTimeout(() => {
-                    if (node.isConnected) {
-                      node.dataset.isPaused = 'false';
-                    }
-                  }, 500),
-                );
-              }}
-              onWheel={(e) => {
-                const node = e.currentTarget;
-
-                node.dataset.isPaused = 'true';
-
-                delete node.dataset.manualTarget;
-
-                if (node.dataset.resumeTimer) {
-                  clearTimeout(Number(node.dataset.resumeTimer));
-                  delete node.dataset.resumeTimer;
-                }
-
-                node.dataset.resumeTimer = String(
-                  window.setTimeout(() => {
-                    if (node.isConnected) {
-                      node.dataset.isPaused = 'false';
-                    }
-                  }, 1000),
-                );
-              }}
-              className='overflow-x-auto scrollbar-none py-1.5 px-0.5 touch-pan-x overscroll-x-contain'
+              className='flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-none py-2 px-1 touch-pan-x touch-pan-y overscroll-x-none overscroll-y-auto select-none'
               style={{
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
@@ -2185,7 +2860,6 @@ useEffect(() => {
                 scrollBehavior: 'auto',
               }}
             >
-              {/* 3 Groups Only When There Are Enough Products */}
               <div className='flex w-max'>
                 {Array.from(
                   {
@@ -2201,19 +2875,14 @@ useEffect(() => {
                       {catalogProducts.map((product) => {
                         const displayImage =
                           product.image || product.images?.[0];
-
                         const isWish = wishlist.includes(product.id);
-
                         const oldPrice =
                           product.originalPrice ||
                           product.oldPrice ||
                           product.compare_at_price;
-
                         const stockQty =
                           product.stock_quantity ?? product.stock ?? 10;
-
                         const ratingVal = product.rating || 5;
-
                         const productCategoryName =
                           product.categories?.name ||
                           categories.find(
@@ -2226,7 +2895,7 @@ useEffect(() => {
 
                         return (
                           <Link
-                            key={`${copy}-${product.id}`}
+                            key={`catalog-${copy}-${product.id}`}
                             href={`/products/${product.id}`}
                             tabIndex={
                               catalogProducts.length >= 5 && copy !== 1
@@ -2236,7 +2905,6 @@ useEffect(() => {
                             className='w-[210px] sm:w-[240px] shrink-0 bg-[#0e1626]/95 backdrop-blur-xl rounded-xl border border-slate-800 shadow-md overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
                           >
                             <div>
-                              {/* Image & Wishlist */}
                               <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800'>
                                 {displayImage ? (
                                   <img
@@ -2270,7 +2938,6 @@ useEffect(() => {
                                 </button>
                               </div>
 
-                              {/* Product Info */}
                               <div className='p-2 sm:p-2.5 space-y-1.5'>
                                 <div className='flex items-center justify-between'>
                                   <span className='text-[8px] font-bold text-blue-400 uppercase tracking-wider block bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-500/20 truncate max-w-[110px]'>
@@ -2299,7 +2966,6 @@ useEffect(() => {
                                     'Explore our high-quality product collection.'}
                                 </p>
 
-                                {/* Rating */}
                                 <div className='flex items-center justify-between text-[10px] text-amber-400 pt-0.5'>
                                   <div className='flex items-center'>
                                     {[...Array(5)].map((_, i) => (
@@ -2314,14 +2980,12 @@ useEffect(() => {
                                         ★
                                       </span>
                                     ))}
-
                                     <span className='text-[8px] text-slate-400 font-medium ml-1'>
                                       ({ratingVal}.0)
                                     </span>
                                   </div>
                                 </div>
 
-                                {/* Prices */}
                                 <div className='flex items-center justify-between pt-1.5 border-t border-slate-800/80'>
                                   <div className='flex items-baseline gap-1'>
                                     <span className='font-black text-xs sm:text-sm text-white tracking-tight'>
@@ -2354,7 +3018,6 @@ useEffect(() => {
                               </div>
                             </div>
 
-                            {/* Add to Cart */}
                             <div
                               className='p-2 sm:p-2.5 pt-0'
                               onClick={(e) => e.stopPropagation()}
@@ -2376,8 +3039,18 @@ useEffect(() => {
                 )}
               </div>
             </div>
+            {/* ============================================ */}
+            {/* ============================================ */}
+            {/* ============================================ */}
+            {/* ============================================ */}
+            {/* ============================================ */}
           </div>
         )}
+
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
+        {/* ======================================= */}
       </main>
 
       {/* ====================================== */}
@@ -2649,33 +3322,56 @@ useEffect(() => {
 
       {/* ------------------------------------------------------------------ */}
       {/* WISHLIST DRAWER / MODAL (عرض منتجات المفضلة) */}
+
       {/* ------------------------------------------------------------------ */}
       {isWishlistModalOpen && (
-        <div className='fixed inset-0 z-50 overflow-hidden font-sans'>
+        <div className='fixed inset-0 z-[100] overflow-hidden font-sans'>
+          {/* Backdrop */}
           <div
             className='absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity'
             onClick={() => setIsWishlistModalOpen(false)}
           />
+
           <div className='absolute inset-y-0 right-0 max-w-full flex pl-10'>
-            <div className='w-screen max-w-md bg-[#0e1626] border-l border-slate-800 shadow-2xl flex flex-col'>
-              <div className='flex items-center justify-between p-5 border-b border-slate-800'>
-                <h2 className='text-base font-black text-white flex items-center gap-2.5'>
-                  <Heart size={20} className='text-rose-500 fill-rose-500' />
-                  <span>Saved Wishlist ({wishlist.length})</span>
-                </h2>
+            <div className='w-screen max-w-md bg-[#0e1626]/95 backdrop-blur-xl border-l border-slate-800/90 shadow-2xl flex flex-col relative overflow-hidden'>
+              {/* Background Glow Orbs */}
+              <div className='absolute -top-20 -right-20 w-40 h-40 bg-rose-600/10 rounded-full blur-3xl pointer-events-none'></div>
+              <div className='absolute -bottom-20 -left-20 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl pointer-events-none'></div>
+
+              {/* Header */}
+              <div className='flex items-center justify-between p-5 border-b border-slate-800/80 relative z-10'>
+                <div className='flex items-center gap-2.5'>
+                  <div className='p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500'>
+                    <Heart size={18} className='fill-rose-500' />
+                  </div>
+                  <div>
+                    <h2 className='text-sm sm:text-base font-black text-white tracking-tight'>
+                      Saved Wishlist
+                    </h2>
+                    <p className='text-[10px] text-slate-400 font-medium'>
+                      {wishlist.length}{' '}
+                      {wishlist.length === 1 ? 'item' : 'items'} saved
+                    </p>
+                  </div>
+                </div>
+
                 <button
                   onClick={() => setIsWishlistModalOpen(false)}
-                  className='p-2 text-slate-400 hover:text-white rounded-xl bg-slate-900 border border-slate-800 transition'
+                  className='p-2 text-slate-400 hover:text-white rounded-xl bg-slate-900/90 border border-slate-800 transition cursor-pointer'
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              <div className='flex-1 overflow-y-auto p-5 space-y-4'>
+              {/* Wishlist Items List with Scroll */}
+              <div className='flex-1 overflow-y-auto p-5 space-y-3.5 custom-scrollbar relative z-10'>
                 {wishlist.length === 0 ? (
-                  <div className='text-center py-24 text-slate-500 space-y-3'>
-                    <Heart size={48} className='mx-auto text-slate-700' />
-                    <p className='text-xs font-bold'>
+                  <div className='text-center py-28 text-slate-500 space-y-3'>
+                    <Heart
+                      size={48}
+                      className='mx-auto text-slate-700 animate-pulse'
+                    />
+                    <p className='text-xs font-bold text-slate-400'>
                       Your wishlist is empty right now.
                     </p>
                   </div>
@@ -2687,43 +3383,78 @@ useEffect(() => {
                         item.image ||
                         item.images?.[0] ||
                         'https://via.placeholder.com/80';
+                      const currentPrice = item.price || 0;
+                      const oldPrice =
+                        item.oldPrice ||
+                        item.original_price ||
+                        currentPrice + 200;
+                      const itemDesc =
+                        item.description ||
+                        // product.description ||
+                        item.details ||
+                        item.short_description ||
+                        'High quality premium product';
+
                       return (
                         <div
                           key={`wish-item-${item.id}`}
-                          className='flex items-center gap-4 bg-[#141d2f]/70 p-3.5 rounded-2xl border border-slate-800 hover:border-slate-700 transition'
+                          className='group relative bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 backdrop-blur-xl p-3.5 rounded-2xl border border-slate-800/95 hover:border-slate-700/80 transition-all duration-300 shadow-md flex items-center gap-3.5'
                         >
-                          <img
-                            src={itemImg}
-                            alt={item.name}
-                            className='w-16 h-16 object-cover rounded-xl border border-slate-700 bg-slate-900'
-                          />
+                          {/* Product Image + Hot Deal Sticker */}
+                          <div className='relative w-16 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-sm'>
+                            <img
+                              src={itemImg}
+                              alt={item.name}
+                              className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
+                            />
+                            <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
+                              Hot Deal
+                            </span>
+                          </div>
+
+                          {/* Info & Prices */}
                           <div className='flex-1 min-w-0'>
                             <Link
                               href={`/products/${item.id}`}
                               onClick={() => setIsWishlistModalOpen(false)}
-                              className='font-bold text-xs text-slate-100 truncate block hover:text-blue-400 transition'
+                              className='font-black text-xs text-slate-100 truncate block hover:text-blue-400 transition tracking-tight'
                             >
                               {item.name}
                             </Link>
-                            <div className='text-xs font-black text-blue-400 mt-1'>
-                              {item.price} EGP
+                            <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
+                              {itemDesc}
+                            </p>
+
+                            <div className='flex items-center gap-2 mt-1.5'>
+                              <span className='text-xs font-black text-emerald-400'>
+                                {currentPrice} EGP
+                              </span>
+                              {oldPrice > currentPrice && (
+                                <span className='text-[9px] text-slate-500 line-through font-semibold'>
+                                  {oldPrice} EGP
+                                </span>
+                              )}
                             </div>
                           </div>
 
-                          <div className='flex items-center gap-1.5'>
-                            <button
-                              onClick={(e) => addToCart(e, item)}
-                              className='p-2.5 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-xl border border-blue-500/30 transition'
-                              title='Add to Cart'
-                            >
-                              <ShoppingCart size={15} />
-                            </button>
+                          {/* Actions: Add to Cart & Remove */}
+                          <div className='flex flex-col items-end justify-between h-full gap-3 shrink-0'>
                             <button
                               onClick={() => toggleWishlist(item)}
-                              className='p-2.5 bg-red-950/40 text-red-400 hover:bg-red-900/40 rounded-xl border border-red-500/30 transition'
+                              className='p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg border border-red-500/20 transition cursor-pointer shadow-sm'
                               title='Remove from Wishlist'
                             >
-                              <Trash2 size={15} />
+                              <Trash2 size={13} />
+                            </button>
+
+                            <button
+                              onClick={(e) => {
+                                addToCart(e, item);
+                              }}
+                              className='p-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl shadow-md transition cursor-pointer flex items-center justify-center'
+                              title='Add to Cart'
+                            >
+                              <ShoppingCart size={13} />
                             </button>
                           </div>
                         </div>
@@ -2731,6 +3462,19 @@ useEffect(() => {
                     })
                 )}
               </div>
+
+              {/* Footer: Quick Link to Cart Page */}
+              {wishlist.length > 0 && (
+                <div className='p-5 border-t border-slate-800/80 bg-[#07090e]/95 backdrop-blur-xl relative z-10'>
+                  <Link
+                    href='/cart'
+                    onClick={() => setIsWishlistModalOpen(false)}
+                    className='w-full py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white text-center rounded-xl font-bold block shadow-xl shadow-blue-950/50 transition text-xs cursor-pointer'
+                  >
+                    View Shopping Cart & Checkout 🛍️
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -24,8 +24,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { router } from 'next/client';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardPage() {
+  const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
 
@@ -191,7 +194,7 @@ export default function AdminDashboardPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/admin/login';
+    router.push('/admin/login');
   };
 
   return (
@@ -222,7 +225,7 @@ export default function AdminDashboardPage() {
               href='/'
               className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
             >
-              <Home size={16}  />
+              <Home size={16} />
               <span className='hidden sm:inline font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent  tracking-wide'>
                 Storefront
               </span>

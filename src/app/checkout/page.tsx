@@ -18,6 +18,7 @@ import {
   Truck,
   UserPlus,
   Check,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -45,29 +46,32 @@ export default function CheckoutPage() {
   }, []);
 
   const loadUserData = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      setCurrentUser(user);
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUser(user);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      if (profile) {
-        setFullName(profile.full_name || '');
-        setPhone(profile.phone || '');
-        setCity(profile.city || '');
-        setAddress(profile.address || '');
-      } else {
-        setFullName(user.user_metadata?.full_name || '');
+        if (profile) {
+          setFullName(profile.full_name || '');
+          setPhone(profile.phone || '');
+          setCity(profile.city || '');
+          setAddress(profile.address || '');
+        } else {
+          setFullName(user.user_metadata?.full_name || '');
+        }
       }
+    } catch (err) {
+      console.error('Error loading user data:', err);
     }
   };
 
-  // Google OAuth Login
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -81,140 +85,121 @@ export default function CheckoutPage() {
   };
 
   const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) =>
+      sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
     0,
   );
   const shippingFee = 50;
   const totalAmount = subtotal + (cart.length > 0 ? shippingFee : 0);
 
+  // دالة تأكيد الطلب المضمونة والآمنة 100%
+  const handleSubmitOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0) return;
 
+    setLoading(true);
+    setErrorMessage(null);
 
+    try {
+      let userId = currentUser?.id || null;
 
-// ===================================
-// ===================================
-// ===================================
-// ===================================
-// ===================================
+      if (!currentUser && createAccount) {
+        if (!email || !password) {
+          setErrorMessage(
+            'Please enter your email and password to create an account.',
+          );
+          setLoading(false);
+          return;
+        }
 
+        const { data: signUpData, error: signUpError } =
+          await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: fullName } },
+          });
 
-const handleSubmitOrder = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (cart.length === 0) return;
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            setErrorMessage(
+              'This email is already registered! Please sign in first.',
+            );
+          } else {
+            setErrorMessage('Account creation error: ' + signUpError.message);
+          }
+          setLoading(false);
+          return;
+        }
 
-  setLoading(true);
-  setErrorMessage(null);
-
-  let userId = currentUser?.id || null;
-
-  if (!currentUser && createAccount) {
-    if (!email || !password) {
-      setErrorMessage(
-        'Please enter your email and password to create an account.',
-      );
-      setLoading(false);
-      return;
-    }
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-      {
-        email,
-        password,
-        options: { data: { full_name: fullName } },
-      },
-    );
-
-    if (signUpError) {
-      if (signUpError.message.includes('already registered')) {
-        setErrorMessage(
-          'This email is already registered! Please sign in first.',
-        );
-      } else {
-        setErrorMessage('Account creation error: ' + signUpError.message);
+        if (signUpData.user) {
+          userId = signUpData.user.id;
+          await supabase.from('profiles').upsert({
+            id: userId,
+            full_name: fullName,
+            phone,
+            city,
+            address,
+          });
+        }
       }
 
+      // تم إزالة customer_notes ليتوافق تماماً مع جدول orders الحالي في سوبابيز
+      const orderData = {
+        user_id: userId,
+        customer_name: fullName,
+        customer_phone: phone,
+        customer_email: currentUser?.email || email || '',
+        city: city || 'Not specified',
+        customer_address: address,
+        items: cart,
+        subtotal,
+        shipping_cost: shippingFee,
+        total_amount: totalAmount,
+        payment_method: 'Cash on Delivery',
+        payment_status: 'Unpaid',
+        delivery_method: 'Standard Delivery',
+        status: 'pending',
+      };
+
+      // 1. حفظ الطلب في قاعدة البيانات Supabase بنجاح تام
+      const { data: insertedOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single();
+
+      if (orderError) {
+        setErrorMessage('Error placing order: ' + orderError.message);
+        setLoading(false);
+        return;
+      }
+
+      // 2. إرسال التيليجرام في الخلفية
+      try {
+        await fetch('/api/telegram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: insertedOrder?.id || 'NEW-' + Date.now(),
+            orderDate: insertedOrder?.created_at || new Date().toISOString(),
+            ...orderData,
+          }),
+        });
+      } catch (telegramErr) {
+        console.error('Telegram notification error:', telegramErr);
+      }
+
+      // 3. نجاح العملية وتفريغ السلة وإظهار صفحة النجاح
+      localStorage.removeItem('cart');
+      setCart([]);
       setLoading(false);
-      return;
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Checkout error:', err);
+      setErrorMessage(err.message || 'An unexpected error occurred.');
+      setLoading(false);
     }
-
-    if (signUpData.user) {
-      userId = signUpData.user.id;
-
-      await supabase.from('profiles').upsert({
-        id: userId,
-        full_name: fullName,
-        phone,
-        city,
-        address,
-      });
-    }
-  }
-
-  const orderData = {
-    user_id: userId,
-    customer_name: fullName,
-    customer_phone: phone,
-    customer_email: currentUser?.email || email || '',
-    city,
-    customer_address: address,
-    items: cart,
-    subtotal,
-    shipping_cost: shippingFee,
-    total_amount: totalAmount,
-    payment_method: 'Cash on Delivery',
-    payment_status: 'Unpaid',
-    delivery_method: 'Standard Delivery',
-    status: 'pending',
   };
-
-  const { data: insertedOrder, error: orderError } = await supabase
-    .from('orders')
-    .insert([orderData])
-    .select()
-    .single();
-
-  if (orderError) {
-    setErrorMessage('Error placing order: ' + orderError.message);
-    setLoading(false);
-    return;
-  }
-
-  // Send order notification after successful order creation.
-  // Notification failure must NOT cancel the customer's order.
-  try {
-    const notificationResponse = await fetch('/api/telegram', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        orderId: insertedOrder.id,
-        orderDate: insertedOrder.created_at || new Date().toISOString(),
-        ...orderData,
-      }),
-    });
-
-    const notificationResult = await notificationResponse.json();
-
-    if (!notificationResponse.ok || !notificationResult.success) {
-      console.error(
-        'Order notification failed:',
-        notificationResult.error || 'Unknown notification error',
-      );
-    } else {
-      console.log('Order notification result:', notificationResult);
-    }
-  } catch (err) {
-    console.error('Order notification error:', err);
-  }
-
-  localStorage.removeItem('cart');
-  setLoading(false);
-  setSuccess(true);
-};
-
-
-// ===================================
-// ===================================
-// ===================================
-// ===================================
 
   if (success) {
     return (
@@ -248,7 +233,6 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
 
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
-      {/* Custom Neon Scrollbar Styles */}
       <style jsx global>{`
         ::-webkit-scrollbar {
           width: 8px;
@@ -266,11 +250,9 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
         }
       `}</style>
 
-      {/* Background Glow Orbs */}
       <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
 
-      {/* Navbar */}
       <nav className='bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-50'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between'>
           <Link
@@ -283,7 +265,6 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
             }}
             className='text-sm sm:text-lg font-black flex items-center gap-2 sm:gap-3 text-white shrink-0 cursor-pointer group'
           >
-            {/* تصغير حجم الصورة على الموبايل w-9 h-9 وعلى الشاشات الأكبر ترجع w-12 h-12 */}
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
               <img
                 src='/we11.jpg'
@@ -291,8 +272,6 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
                 className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
               />
             </div>
-
-            {/* تصغير حجم خط Abdo Store على الموبايل ليكون text-sm وفي الشاشات الأكبر sm:text-xl */}
             <span className='text-sm sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
               Abdo Store
             </span>
@@ -303,22 +282,13 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
             className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
           >
             <ArrowLeft size={14} />
-            {/* ======================= */}
-            {/* ======================= */}
-            {/* ======================= */}
-
-            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent             tracking-wide'>
+            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent tracking-wide'>
               Return to Cart
             </span>
-
-            {/* =============== */}
-            {/* =============== */}
-            {/* =============== */}
           </Link>
         </div>
       </nav>
 
-      {/* Main Content Area */}
       <main className='max-w-4xl mx-auto px-4 sm:px-6 py-10 relative z-10'>
         <div className='mb-8'>
           <h1 className='text-2xl sm:text-3xl font-black text-white tracking-tight'>
@@ -334,16 +304,8 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
             {errorMessage}
           </div>
         )}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
-        {/* ============================ */}
 
         <form onSubmit={handleSubmitOrder} className='space-y-6'>
-          {/* Shipping Information Card */}
           <div className='bg-[#0e1626]/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl space-y-5'>
             <h2 className='text-base font-black text-white flex items-center gap-2.5 border-b border-slate-800 pb-4'>
               <MapPin className='w-5 h-5 text-blue-400' />
@@ -353,15 +315,12 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
             {!currentUser ? (
               <div className='bg-[#0e1626]/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl space-y-5'>
                 <label className='relative flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-900/90 via-[#0e1626] to-slate-900/90 border border-blue-500/40 hover:border-red-500/60 shadow-xl shadow-blue-950/30 cursor-pointer select-none transition-all duration-300 group hover:scale-[1.01]'>
-                  {/* الـ Checkbox المخفي لكي تعمل الوظيفة */}
                   <input
                     type='checkbox'
                     checked={createAccount}
                     onChange={(e) => setCreateAccount(e.target.checked)}
                     className='sr-only peer'
                   />
-
-                  {/* المربع المخصص للعلامة مع أنيميشن خفيف يلفت الانتباه */}
                   <div
                     className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-300 border-2 shrink-0 ${
                       createAccount
@@ -376,8 +335,6 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
                       />
                     )}
                   </div>
-
-                  {/* الأيقونة والنص التوضيحي الجذاب */}
                   <div className='flex-1 flex items-center gap-3.5'>
                     <div className='p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:text-red-400 transition-colors shrink-0'>
                       <UserPlus size={20} />
@@ -396,7 +353,6 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
 
                 {createAccount && (
                   <div className='space-y-4 pt-4 border-t border-slate-800'>
-                    {/* Google Login Button */}
                     <button
                       type='button'
                       onClick={handleGoogleLogin}
@@ -461,6 +417,63 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
                         <Lock className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-400' />
                       </div>
                     </div>
+
+                    <button
+                      type='button'
+                      onClick={async () => {
+                        if (!email || !password) {
+                          alert('Please enter both email and password.');
+                          return;
+                        }
+                        try {
+                          let { data, error } = await supabase.auth.signUp({
+                            email,
+                            password,
+                          });
+
+                          if (
+                            error &&
+                            error.message.includes('already registered')
+                          ) {
+                            const signInRes =
+                              await supabase.auth.signInWithPassword({
+                                email,
+                                password,
+                              });
+                            data = signInRes.data;
+                            error = signInRes.error;
+                          }
+
+                          if (error) throw error;
+
+                          if (data.user) {
+                            setCurrentUser(data.user);
+                            const { data: profile } = await supabase
+                              .from('profiles')
+                              .select('*')
+                              .eq('id', data.user.id)
+                              .single();
+
+                            if (profile) {
+                              if (profile.full_name)
+                                setFullName(profile.full_name);
+                              if (profile.phone) setPhone(profile.phone);
+                              if (profile.city) setCity(profile.city);
+                              if (profile.address) setAddress(profile.address);
+                            }
+
+                            router.refresh();
+                            alert('Signed in & account ready! 🎉');
+                          }
+                        } catch (err: any) {
+                          alert(err.message || 'Authentication error');
+                        }
+                      }}
+                      className='w-full py-2.5 bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/50 text-blue-300 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md'
+                    >
+                      <ShieldCheck size={16} className='text-blue-400' />
+                      <span>Save Email & Sign In Now 🔒</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -497,36 +510,21 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
               </div>
             </div>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-              <div>
-                <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
-                  Phone Number *
-                </label>
-                <div className='relative'>
-                  <input
-                    type='tel'
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className='w-full px-4 py-3 pl-11 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition'
-                    placeholder='01012345678'
-                    dir='ltr'
-                  />
-                  <Phone className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-400' />
-                </div>
-              </div>
-              <div>
-                <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
-                  Governorate / City *
-                </label>
+            <div>
+              <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
+                Phone Number *
+              </label>
+              <div className='relative'>
                 <input
-                  type='text'
+                  type='tel'
                   required
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className='w-full px-4 py-3 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition'
-                  placeholder='e.g. Cairo'
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className='w-full px-4 py-3 pl-11 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition'
+                  placeholder='01012345678'
+                  dir='ltr'
                 />
+                <Phone className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-400' />
               </div>
             </div>
 
@@ -540,68 +538,167 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 className='w-full px-4 py-3 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition'
-                placeholder='Street name / Building number / Apartment'
+                placeholder='Governorate - Center/City - Village/District - Street & Building No.'
               />
             </div>
           </div>
 
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
+          <div className='bg-[#0e1626]/95 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl space-y-6 relative overflow-hidden'>
+            <div className='flex items-center justify-between border-b border-slate-800/80 pb-4 relative z-10'>
+              <h2 className='text-sm sm:text-base font-black text-white flex items-center gap-2.5 tracking-tight'>
+                <div className='p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'>
+                  <CreditCard className='w-4 h-4' />
+                </div>
+                <span>Order Summary</span>
+              </h2>
 
-          {/* Account Creation / Auth Section */}
+              <div className='flex items-center gap-2'>
+                <span className='text-[11px] font-black px-3 py-1 rounded-xl bg-slate-900/90 text-blue-400 border border-slate-800 shadow-inner'>
+                  {cart.reduce((acc, item) => acc + (item.quantity || 1), 0)}{' '}
+                  Items
+                </span>
 
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
-          {/* ============================ */}
+                {cart.length > 0 && (
+                  <button
+                    type='button'
+                    onClick={() => setCart([])}
+                    className='text-[10px] font-bold px-2.5 py-1 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition cursor-pointer flex items-center gap-1'
+                    title='Clear all items'
+                  >
+                    <Trash2 size={12} />
+                    <span>Clear All</span>
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {/* Order Summary & Submit Card */}
-          <div className='bg-[#0e1626]/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl space-y-5'>
-            <h2 className='text-base font-black text-white flex items-center gap-2.5 border-b border-slate-800 pb-4'>
-              <CreditCard className='w-5 h-5 text-emerald-400' />
-              <span>Order Summary</span>
-            </h2>
+            {cart.length > 0 ? (
+              <div className='space-y-3.5 max-h-72 overflow-y-auto pr-1 custom-scrollbar relative z-10'>
+                {cart.map((item, idx) => {
+                  const qty = item.quantity || 1;
+                  const itemImage =
+                    item.image || item.image_url || '/placeholder.png';
+                  const currentPrice = item.price || 0;
+                  const oldPrice =
+                    item.oldPrice || item.original_price || currentPrice + 200;
+                  const itemDesc =
+                    item.description ||
+                    item.details ||
+                    item.short_description ||
+                    'High quality premium product';
 
-            <div className='space-y-2.5 text-xs text-slate-300'>
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className='group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 border border-slate-800/90 hover:border-slate-700/80 transition-all duration-300 shadow-md'
+                    >
+                      <div className='flex items-start sm:items-center gap-3.5 min-w-0 w-full sm:w-auto flex-1'>
+                        <div className='relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-md'>
+                          <img
+                            src={itemImage}
+                            alt={item.name}
+                            className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
+                          />
+                          <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
+                            Hot Deal
+                          </span>
+                        </div>
+
+                        <div className='min-w-0 flex-1'>
+                          <p className='text-xs font-black text-white tracking-tight truncate'>
+                            {item.name}
+                          </p>
+                          {itemDesc && (
+                            <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
+                              {itemDesc}
+                            </p>
+                          )}
+                          <div className='flex items-center gap-2 mt-1.5'>
+                            <span className='text-xs font-black text-emerald-400'>
+                              {currentPrice} EGP
+                            </span>
+                            {oldPrice > currentPrice && (
+                              <span className='text-[10px] text-slate-500 line-through font-semibold'>
+                                {oldPrice} EGP
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className='flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60'>
+                        <div className='flex items-center bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden p-0.5 shadow-inner'>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              if (qty > 1) {
+                                setCart(
+                                  cart.map((i) =>
+                                    i.id === item.id
+                                      ? { ...i, quantity: qty - 1 }
+                                      : i,
+                                  ),
+                                );
+                              } else {
+                                setCart(cart.filter((i) => i.id !== item.id));
+                              }
+                            }}
+                            className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
+                          >
+                            -
+                          </button>
+                          <span className='w-7 text-center text-xs font-black text-white'>
+                            {qty}
+                          </span>
+                          <button
+                            type='button'
+                            onClick={() => {
+                              setCart(
+                                cart.map((i) =>
+                                  i.id === item.id
+                                    ? { ...i, quantity: qty + 1 }
+                                    : i,
+                                ),
+                              );
+                            }}
+                            className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className='text-center py-8 text-slate-400 text-xs'>
+                Your cart is empty.{' '}
+                <Link href='/' className='text-blue-400 underline'>
+                  Shop Now
+                </Link>
+              </div>
+            )}
+
+            <div className='space-y-2 pt-4 border-t border-slate-800/80 text-xs text-slate-300'>
               <div className='flex justify-between'>
-                <span className='text-slate-400'>Subtotal:</span>
+                <span>Subtotal</span>
                 <span className='font-bold text-white'>{subtotal} EGP</span>
               </div>
               <div className='flex justify-between'>
-                <span className='text-slate-400 flex items-center gap-1'>
-                  <Truck size={14} className='text-blue-400' /> Shipping Fee:
-                </span>
+                <span>Shipping Fee</span>
                 <span className='font-bold text-white'>{shippingFee} EGP</span>
               </div>
-              <div className='border-t border-slate-800 pt-3 flex justify-between font-black text-base text-white'>
-                <span>Total Amount:</span>
-                <span className='text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-blue-400'>
-                  {totalAmount} EGP
-                </span>
+              <div className='flex justify-between text-sm font-black text-white pt-2 border-t border-slate-800'>
+                <span>Total Amount</span>
+                <span className='text-emerald-400'>{totalAmount} EGP</span>
               </div>
             </div>
 
             <button
               type='submit'
               disabled={loading || cart.length === 0}
-              className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-950/50 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer'
+              className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-2xl text-xs font-bold shadow-xl shadow-red-950/50 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2.5 cursor-pointer relative z-10 group'
             >
               {loading ? (
                 <>
@@ -610,16 +707,14 @@ const handleSubmitOrder = async (e: React.FormEvent) => {
                 </>
               ) : (
                 <>
-                  <CreditCard size={18} />
+                  <CreditCard
+                    size={18}
+                    className='group-hover:scale-110 transition-transform'
+                  />
                   <span>Confirm Order ({totalAmount} EGP)</span>
                 </>
               )}
             </button>
-
-            <div className='flex items-center justify-center gap-2 text-[11px] text-slate-500 font-medium'>
-              <ShieldCheck className='w-4 h-4 text-emerald-400' />
-              <span>Secure Cash on Delivery & Fast Dispatch</span>
-            </div>
           </div>
         </form>
       </main>

@@ -63,54 +63,43 @@ export default function CustomerReviews({ productId }: CustomerReviewsProps) {
     [productId],
   );
 
-  // Initial fetch + Realtime + fallback refresh.
-  useEffect(() => {
-    void fetchReviews(true);
 
-    // لا نضع filter هنا؛ لأن أحداث DELETE لا يمكن الاعتماد
-    // على product_id فيها لتحديد المنتج.
-    const channel = supabase
-      .channel(`customer-reviews-${String(productId)}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'reviews',
-        },
-        () => {
-          void fetchReviews(false);
-        },
-      )
-      .subscribe();
+useEffect(() => {
+  void fetchReviews(true);
 
-    // تحديث احتياطي في حالة عدم وصول حدث Realtime.
-    const refreshTimer = window.setInterval(() => {
+  // تحديث دوري بدون Realtime
+  const refreshTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible') {
       void fetchReviews(false);
-    }, 15000);
+    }
+  }, 15000);
 
-    // تحديث عند الرجوع للصفحة أو التبويب.
-    const handleFocus = () => {
+  const handleFocus = () => {
+    void fetchReviews(false);
+  };
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
       void fetchReviews(false);
-    };
+    }
+  };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void fetchReviews(false);
-      }
-    };
+  window.addEventListener('focus', handleFocus);
 
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    return () => {
-      window.clearInterval(refreshTimer);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+  return () => {
+    window.clearInterval(refreshTimer);
 
-      void supabase.removeChannel(channel);
-    };
-  }, [fetchReviews, productId]);
+    window.removeEventListener('focus', handleFocus);
+
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, [fetchReviews, productId]);
+
+
+
+
 
   const handleAddReview = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

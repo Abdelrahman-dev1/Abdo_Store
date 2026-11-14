@@ -21,8 +21,12 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import Link from 'next/link';
+import { router } from 'next/client';
+import { useRouter } from 'next/navigation';
 
 export default function AdminOrdersPage() {
+  const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
+
   const [orders, setOrders] = useState<any[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +100,7 @@ export default function AdminOrdersPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/admin/login';
+    router.push('/admin/login');
   };
 
   return (
