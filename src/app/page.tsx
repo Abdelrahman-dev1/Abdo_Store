@@ -1884,6 +1884,8 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                     <ShareButton
                                       productId={product.id}
                                       productName={product.name}
+                                      productPrice={product.price}
+                                      compareAtPrice={product.compare_at_price}
                                     />
                                   </div>
                                 </div>
@@ -2357,6 +2359,8 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                   <ShareButton
                                     productId={item.id}
                                     productName={item.name}
+                                    productPrice={item.price}
+                                    compareAtPrice={item.compare_at_price}
                                   />
                                 </div>
                               </div>
@@ -3011,6 +3015,10 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                       <ShareButton
                                         productId={product.id}
                                         productName={product.name}
+                                        productPrice={product.price}
+                                        compareAtPrice={
+                                          product.compare_at_price
+                                        }
                                       />
                                     </div>
                                   </div>

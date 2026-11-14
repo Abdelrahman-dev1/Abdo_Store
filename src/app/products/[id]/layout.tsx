@@ -2,30 +2,26 @@ import { createClient } from '@supabase/supabase-js';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-// =============================================
-// 1. إعدادات الموقع
-// =============================================
 const SITE_URL = 'https://abdo-store-kappa.vercel.app';
 const FALLBACK_IMAGE = `${SITE_URL}/we11.jpg`;
 
-// =============================================
-// 2. تجهيز رابط الصورة
-// =============================================
 function getImageUrl(image: unknown): string {
   if (typeof image !== 'string' || !image.trim()) {
     return FALLBACK_IMAGE;
   }
 
+  const trimmed = image.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
   try {
-    return new URL(image.trim(), SITE_URL).toString();
+    return new URL(trimmed, SITE_URL).toString();
   } catch {
     return FALLBACK_IMAGE;
   }
 }
 
-// =============================================
-// 3. جلب بيانات المنتج من Supabase
-// =============================================
 async function getProduct(id: string) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,16 +55,11 @@ async function getProduct(id: string) {
   }
 }
 
-// =============================================
-// 4. Metadata لكل منتج (متوافقة مع cacheComponents)
-// =============================================
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  'use cache'; // <-- هذا هو التوجيه الصحيح المتوافق مع cacheComponents لحل مشكلة الكاش
-
   const { id } = await params;
   const product = await getProduct(id);
 
@@ -79,7 +70,7 @@ export async function generateMetadata({
 
   const currentPrice = Number.isFinite(price) ? price : 0;
   const compareAtPrice = Number.isFinite(oldPrice) ? oldPrice : 0;
-  const hasDiscount = compareAtPrice > currentPrice;
+  const hasDiscount = compareAtPrice > currentPrice && currentPrice > 0;
 
   const formatPrice = (value: number) =>
     new Intl.NumberFormat('en-EG', {
@@ -89,16 +80,24 @@ export async function generateMetadata({
   const imageUrl = getImageUrl(product?.image);
   const productUrl = `${SITE_URL}/products/${encodeURIComponent(id)}`;
 
-  const title = `⚡ ${productName} | Abdo Store`;
+  // حساب نسبة الخصم للمعاونة في الوصف
+  let discountBadge = '';
+  if (hasDiscount) {
+    const savingPercent = Math.round(
+      ((compareAtPrice - currentPrice) / compareAtPrice) * 100,
+    );
+    discountBadge = `🔥 خصم نار ${savingPercent}%!`;
+  }
 
+  // 🎛️ [مكان التحكم في عنوان المعاينة الذي يظهر في كارت الشات]
+  const title = hasDiscount
+    ? `⚡ ${discountBadge} ${productName} | Abdo Store`
+    : `⚡ ${productName} | Abdo Store`;
+
+  // 🎛️ [مكان التحكم في تفاصيل الكارت (السعر قبل وبعد والوصف)]
   const description = hasDiscount
-    ? `🔥 اطلب ${productName} دلوقتي من Abdo Store!
-💰 السعر الحالي: ${formatPrice(currentPrice)} EGP
-بدلاً من ${formatPrice(compareAtPrice)} EGP
-🚀 جودة ممتازة وتوصيل سريع حتى باب البيت!`
-    : `🔥 ${productName} متوفر الآن في Abdo Store!
-💰 السعر: ${formatPrice(currentPrice)} EGP
-🚀 جودة ممتازة وتوصيل سريع حتى باب البيت!`;
+    ? `🔥 الحق العرض من Abdo Store!\n💰 السعر الحالي: ${formatPrice(currentPrice)} EGP\n❌ بدلاً من: ${formatPrice(compareAtPrice)} EGP\n🚀 جودة ممتازة وتوصيل سريع حتى باب البيت!`
+    : `🔥 متوفر الآن في Abdo Store!\n💰 السعر: ${formatPrice(currentPrice)} EGP\n🚀 جودة ممتازة وتوصيل سريع حتى باب البيت!`;
 
   return {
     title,
@@ -113,7 +112,6 @@ export async function generateMetadata({
       description,
       url: productUrl,
       siteName: 'Abdo Store',
-
       images: [
         {
           url: imageUrl,
@@ -122,7 +120,6 @@ export async function generateMetadata({
           alt: productName,
         },
       ],
-
       locale: 'ar_EG',
       type: 'website',
     },
@@ -136,9 +133,13 @@ export async function generateMetadata({
   };
 }
 
-// =============================================
-// 5. Product Layout
-// =============================================
 export default function ProductLayout({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
+
+// title;
+// description;
+// description;
+
+// جلب بيانات المنتج: دالة getProduct لو احتجت تزود حقول تانية بتجيبها من جدول
+// products في Supabase (زي القسم، التقييم، إلخ).
