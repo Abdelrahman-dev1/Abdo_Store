@@ -1766,8 +1766,8 @@ const [announcementBar, setAnnouncementBar] = useState<{
 
                         return (
                           <Link
-                            key={`hero-${copy}-${product.id}`}
-                            href={`/products/${product.id}`}
+                            key={`hero-${copy}-${product.slug}`}
+                            href={`/products/${product.slug}`}
                             tabIndex={copy === 4 ? undefined : -1}
                             className='w-[240px] sm:w-[320px] shrink-0 bg-[#0e172a]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-800/90 shadow-xl overflow-hidden hover:border-blue-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                           >
@@ -1882,7 +1882,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                     onClick={(e) => e.stopPropagation()}
                                   >
                                     <ShareButton
-                                      productId={product.id}
+                                      productSlug={product.slug} // تم التعديل هنا ليمرر الـ slug
                                       productName={product.name}
                                       productPrice={product.price}
                                       compareAtPrice={product.compare_at_price}
@@ -2246,8 +2246,8 @@ const [announcementBar, setAnnouncementBar] = useState<{
 
                       return (
                         <Link
-                          key={`flash-${copy}-${item.id}`}
-                          href={`/products/${item.id}`}
+                          key={`flash-${copy}-${item.slug}`}
+                          href={`/products/${item.slug}`}
                           tabIndex={copy === 4 ? undefined : -1}
                           className='w-[220px] sm:w-[260px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-red-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                         >
@@ -2357,7 +2357,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   <ShareButton
-                                    productId={item.id}
+                                    productSlug={item.slug} // تم التعديل هنا ليمرر الـ slug
                                     productName={item.name}
                                     productPrice={item.price}
                                     compareAtPrice={item.compare_at_price}
@@ -2899,8 +2899,8 @@ const [announcementBar, setAnnouncementBar] = useState<{
 
                         return (
                           <Link
-                            key={`catalog-${copy}-${product.id}`}
-                            href={`/products/${product.id}`}
+                            key={`catalog-${copy}-${product.slug}`}
+                            href={`/products/${product.slug}`}
                             tabIndex={
                               catalogProducts.length >= 5 && copy !== 1
                                 ? -1
@@ -3013,7 +3013,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <ShareButton
-                                        productId={product.id}
+                                        productSlug={product.slug} // تم التعديل هنا ليمرر الـ slug
                                         productName={product.name}
                                         productPrice={product.price}
                                         compareAtPrice={
@@ -3423,7 +3423,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                           {/* Info & Prices */}
                           <div className='flex-1 min-w-0'>
                             <Link
-                              href={`/products/${item.id}`}
+                              href={`/products/${item.slug}`}
                               onClick={() => setIsWishlistModalOpen(false)}
                               className='font-black text-xs text-slate-100 truncate block hover:text-blue-400 transition tracking-tight'
                             >

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 interface ShareButtonProps {
-  productId: string | number;
+  productSlug: string | number; // تم استخدام الـ slug بدلاً من الـ id لجعل الرابط احترافي
   productName: string;
   productPrice?: number | string;
   compareAtPrice?: number | string; // السعر القديم لحساب الخصم
@@ -12,7 +12,7 @@ interface ShareButtonProps {
 }
 
 export default function ShareButton({
-  productId,
+  productSlug,
   productName,
   productPrice,
   compareAtPrice,
@@ -29,7 +29,8 @@ export default function ShareButton({
       onShare();
     }
 
-    const productUrl = `${window.location.origin}/products/${productId}`;
+    // بناء رابط المنتج باستخدام الـ slug
+    const productUrl = `${window.location.origin}/products/${productSlug}`;
 
     // حساب الخصم لو السعر القديم أكبر من الحالي
     const current = Number(productPrice) || 0;
@@ -49,7 +50,7 @@ export default function ShareButton({
     const shareTitle = `⚡ ${productName} | Abdo Store`;
     const shareText = `🔥 شاهد هذا المنتج الرائع: ${productName}\n${discountText}🚀 اطلبه الآن من متجرنا:`;
 
-    // 2. استخدام واجهة المشاركة الأصلية
+    // 1. استخدام واجهة المشاركة الأصلية (للهواتف)
     if (navigator.share) {
       try {
         await navigator.share({
@@ -65,7 +66,7 @@ export default function ShareButton({
       }
     }
 
-    // 3. النسخ الاحتياطي للحافظة
+    // 2. النسخ الاحتياطي للحافظة (للكمبيوتر أو المتصفحات الأخرى)
     try {
       const fullClipboardMessage = `${shareText}\n${productUrl}`;
       await navigator.clipboard.writeText(fullClipboardMessage);
@@ -102,5 +103,5 @@ export default function ShareButton({
     </button>
   );
 }
-// shareText;
-// discountText;
+
+// 🔑 كلمات مفتاحية للبحث للتعديل: [ShareButtonProps, productUrl, shareText, discountText]
