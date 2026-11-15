@@ -46,19 +46,29 @@ export async function middleware(request: NextRequest) {
   // 1. إذا كان زائر محاولاً دخول مسار الأدمن (وليس صفحة تسجيل الدخول) وهو غير مسجل
   if (isAdminRoute && !isLoginPage && !user) {
     const loginUrl = new URL('/admin/login', request.url);
+    // 💡 [تحسين UX]: حفظ المسار الذي كان يحاول زيارته للعودة إليه بعد تسجيل الدخول
+    loginUrl.searchParams.set('redirect_to', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. إذا كان زائر محاولاً دخول مسار الأدمن ولكنه مسجل كـ customer عادي وليس admin
+  // 2. إذا كان مستخدماً مسجلاً (لكنه customer عادي وليس admin) وحاول دخول مسار الأدمن
   if (isAdminRoute && !isLoginPage && user && userRole !== 'admin') {
     const homeUrl = new URL('/', request.url);
     return NextResponse.redirect(homeUrl);
   }
 
-  // 3. إذا كان الأدمن مسجل بالفعل ويحاول فتح صفحة اللوجن
-  if (isLoginPage && user && userRole === 'admin') {
-    const adminUrl = new URL('/admin', request.url);
-    return NextResponse.redirect(adminUrl);
+  // 3. إذا كان المستخدم مسجلاً دخول بالفعل وحاول فتح صفحة اللوجن
+  if (isLoginPage && user) {
+    const redirectUrl = request.nextUrl.searchParams.get('redirect_to');
+
+    if (userRole === 'admin') {
+      // إذا كان أدمن، نتوجه لوحة التحكم أو لصفحة العودة إن وجدت
+      const targetUrl = redirectUrl || '/admin';
+      return NextResponse.redirect(new URL(targetUrl, request.url));
+    } else {
+      // إذا كان مستخدماً عادياً (Customer) وحاول فتح صفحة اللوجن، نوجهه للرئيسية
+      return NextResponse.redirect(new URL('/', request.url));
+    }
   }
 
   return response;

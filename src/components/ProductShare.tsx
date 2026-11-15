@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import Image from 'next/image';
+
 import ShareButton from './ShareButton';
 
 // 1. الاتصال بـ Supabase
@@ -73,7 +75,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   return (
     <div className='min-h-screen bg-[#0a0f1d] text-white p-6 flex flex-col items-center justify-center'>
       <div className='max-w-xl w-full bg-slate-900/60 p-6 rounded-2xl border border-blue-500/30 shadow-xl'>
-
         {/* اسم المنتج */}
         <h1 className='text-3xl font-black bg-gradient-to-r from-red-500 to-blue-500 bg-clip-text text-transparent mb-2'>
           {product.name}
@@ -87,7 +88,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {/* صورة المنتج القادمة من Cloudinary ومحفوظة في Supabase */}
         {product.image && (
           <div className='w-full h-64 rounded-xl overflow-hidden border border-blue-500/20 mb-6'>
-            <img src={product.image} alt={product.name} className='w-full h-full object-cover' />
+            <Image
+              src={product.image}
+              alt={product.name || 'Product Image'}
+              width={800}
+              height={800}
+              className='w-full h-full object-cover'
+            />
           </div>
         )}
 
@@ -95,7 +102,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         <div className='flex justify-end'>
           <ShareButton productId={product.id} productName={product.name} />
         </div>
-
       </div>
     </div>
   );

@@ -1,10 +1,9 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation'; // أو 'next/router' إذا كنت تستخدم Pages Router
+import { useRouter } from 'next/navigation';
 import {
-  ShoppingBag,
   ArrowLeft,
   User,
   Phone,
@@ -21,26 +20,37 @@ import {
   Mail,
 } from 'lucide-react';
 import Link from 'next/link';
-import { router } from 'next/client';
 
 export default function ProfilePage() {
-  const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [orderFilter, setOrderFilter] = useState('all');
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [city, setCity] = useState('');
   const [address, setAddress] = useState('');
 
-  useEffect(() => {
-    fetchUserDataAndOrders();
-  }, []);
+  // جلب الأوردرات الخاصة بالمستخدم من Supabase
+  const fetchOrders = async (userId: string) => {
+    const { data: userOrders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  const fetchUserDataAndOrders = async () => {
+    if (!error && userOrders) {
+      setOrders(userOrders);
+    }
+    setLoading(false);
+  };
+
+  // جلب بيانات البروفايل والأوردرات عند فتح الصفحة
+  async function fetchUserDataAndOrders() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -50,7 +60,7 @@ export default function ProfilePage() {
     }
     setUser(user);
 
-    // 1. Fetch Profile Data
+    // 1. جلب بيانات ملف المستخدم من جدول profiles
     const { data: profileData } = await supabase
       .from('profiles')
       .select('*')
@@ -66,23 +76,16 @@ export default function ProfilePage() {
       setFullName(user.user_metadata?.full_name || '');
     }
 
-    // 2. Fetch Customer Orders
+    // 2. جلب أوردرات العميل
     fetchOrders(user.id);
-  };
+  }
 
-  const fetchOrders = async (userId: string) => {
-    const { data: userOrders, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+  // استدعاء دالة جلب البيانات عند التحميل الأولي
+  useEffect(() => {
+    fetchUserDataAndOrders();
+  }, []);
 
-    if (!error && userOrders) {
-      setOrders(userOrders);
-    }
-    setLoading(false);
-  };
-
+  // حفظ تعديلات البروفايل في قاعدة البيانات
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -105,11 +108,13 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
+  // تسجيل الخروج
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
   };
 
+  // إلغاء الأوردر
   const handleCancelOrder = async (orderId: string) => {
     if (!confirm('Are you sure you want to cancel this order?')) return;
 
@@ -126,38 +131,39 @@ export default function ProfilePage() {
     }
   };
 
+  // دالة عرض شارة الحالة للأوردرات
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
         return (
-          <span className='bg-amber-950/40 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 w-fit'>
-            <Clock size={13} /> Pending Review
+          <span className='bg-amber-950/40 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center gap-1 w-fit'>
+            <Clock size={11} /> Pending Review
           </span>
         );
       case 'shipping':
       case 'جاري الشحن':
         return (
-          <span className='bg-blue-950/40 text-blue-300 border border-blue-500/40 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 w-fit'>
-            <Truck size={13} /> Shipping
+          <span className='bg-blue-950/40 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center gap-1 w-fit'>
+            <Truck size={11} /> Shipping
           </span>
         );
       case 'delivered':
       case 'تم التسليم':
         return (
-          <span className='bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 w-fit'>
-            <CheckCircle2 size={13} /> Delivered
+          <span className='bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center gap-1 w-fit'>
+            <CheckCircle2 size={11} /> Delivered
           </span>
         );
       case 'cancelled':
       case 'ملغي':
         return (
-          <span className='bg-red-950/40 text-red-300 border border-red-500/40 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 w-fit'>
-            <XCircle size={13} /> Cancelled
+          <span className='bg-red-950/40 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold flex items-center gap-1 w-fit'>
+            <XCircle size={11} /> Cancelled
           </span>
         );
       default:
         return (
-          <span className='bg-slate-800 text-slate-300 px-3 py-1 rounded-xl text-xs font-bold border border-slate-700'>
+          <span className='bg-slate-800 text-slate-300 px-2 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-bold border border-slate-700'>
             {status}
           </span>
         );
@@ -175,31 +181,31 @@ export default function ProfilePage() {
 
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
-      {/* Custom Neon Scrollbar Styles */}
+      {/* تخصيص الـ Scrollbar */}
       <style jsx global>{`
         ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 5px;
+          height: 5px;
         }
         ::-webkit-scrollbar-track {
           background: #07090e;
         }
         ::-webkit-scrollbar-thumb {
           background: linear-gradient(180deg, #ef4444, #3b82f6);
-          border-radius: 4px;
+          border-radius: 3px;
         }
         ::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(180deg, #dc2626, #2563eb);
         }
       `}</style>
 
-      {/* Background Glow Orbs */}
+      {/* خلفيات مضيئة جمالية */}
       <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
 
-      {/* Navbar */}
-      <nav className='bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-50'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between'>
+      {/* شريط التنقل الرئيسي (Navbar) */}
+      <nav className='bg-[#0e1626]/95 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-50'>
+        <div className='max-w-4xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between'>
           <Link
             href='/'
             onClick={(e) => {
@@ -210,65 +216,66 @@ export default function ProfilePage() {
             }}
             className='text-sm sm:text-lg font-black flex items-center gap-2 sm:gap-3 text-white shrink-0 cursor-pointer group'
           >
-            {/* تصغير حجم الصورة على الموبايل w-9 h-9 وعلى الشاشات الأكبر ترجع w-12 h-12 */}
-            <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
-              <img
-                src='/we11.jpg'
+            <div className='w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-lg shadow-red-600/20 overflow-hidden flex items-center justify-center'>
+              <Image
+                src='/fav-me-2.webp'
                 alt='Abdo'
-                className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
+                width={300}
+                height={300}
+                className='w-full h-full object-cover object-[50%_5%] rounded-[10px] transform group-hover:scale-110 transition-transform duration-500'
               />
             </div>
-
-            {/* تصغير حجم خط Abdo Store على الموبايل ليكون text-sm وفي الشاشات الأكبر sm:text-xl */}
-            <span className='text-sm sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
+            <span className='text-xs sm:text-lg font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent tracking-wide'>
               Abdo Store
             </span>
           </Link>
 
-          <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-2'>
             <Link
               href='/'
-              className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
+              className='flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
             >
-              <ArrowLeft size={16} />
+              <ArrowLeft size={14} />
               <span className='hidden sm:inline'>Storefront</span>
             </Link>
             <button
               onClick={handleLogout}
-              className='flex items-center gap-1.5 bg-red-950/40 hover:bg-red-900/40 text-red-400 px-4 py-2 rounded-xl text-xs font-bold transition border border-red-500/30 shadow-sm cursor-pointer'
+              className='flex items-center gap-1.5 bg-red-950/40 hover:bg-red-900/40 text-red-400 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition border border-red-500/30 shadow-sm cursor-pointer'
             >
-              <LogOut size={15} />
+              <LogOut size={13} />
               <span className='hidden sm:inline'>Sign Out</span>
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Main Content Area */}
-      <main className='max-w-4xl mx-auto px-4 sm:px-6 py-10 relative z-10 space-y-10'>
-        {/* Profile Details & Shipping Address Form */}
-        <div className='bg-[#0e1626]/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl space-y-6'>
-          <div className='border-b border-slate-800 pb-4 flex items-center gap-3'>
-            <User className='w-6 h-6 text-blue-400' />
+      {/* المحتوى الرئيسي للقسمين */}
+      <main className='max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 space-y-6 sm:space-y-8'>
+        {/* ================================================= */}
+        {/* السكشن الأول: فورم البيانات الشخصية وعنوان الشحن */}
+        {/* ================================================= */}
+        <section className='bg-[#0e1626]/90 backdrop-blur-xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800/95 shadow-xl space-y-4'>
+          <div className='border-b border-slate-800/80 pb-3 flex items-center gap-2.5'>
+            <User className='w-5 h-5 text-blue-400' />
             <div>
-              <h1 className='text-lg font-black text-white'>
+              <h1 className='text-sm sm:text-base font-black text-white'>
                 Profile & Delivery Address
               </h1>
-              <p className='text-xs text-slate-400'>
+              <p className='text-[10px] sm:text-xs text-slate-400'>
                 Manage your personal information and default shipping address
               </p>
             </div>
           </div>
 
           {success && (
-            <div className='bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 p-4 rounded-2xl text-xs flex items-center gap-2 backdrop-blur-md'>
-              <CheckCircle2 size={18} /> Profile details saved successfully!
+            <div className='bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 p-2.5 sm:p-3 rounded-xl text-xs flex items-center gap-2 backdrop-blur-md'>
+              <CheckCircle2 size={15} /> Profile details saved successfully!
             </div>
           )}
 
-          <form onSubmit={handleSaveProfile} className='space-y-4'>
+          <form onSubmit={handleSaveProfile} className='space-y-3.5'>
             <div>
-              <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
+              <label className='block text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1'>
                 Email Address
               </label>
               <div className='relative'>
@@ -276,15 +283,15 @@ export default function ProfilePage() {
                   type='text'
                   disabled
                   value={user?.email || ''}
-                  className='w-full px-4 py-3 pl-11 bg-slate-900/80 border border-slate-800 rounded-xl text-xs text-slate-500 cursor-not-allowed'
+                  className='w-full px-3.5 py-2.5 pl-10 bg-slate-900/80 border border-slate-800 rounded-xl text-xs text-slate-500 cursor-not-allowed'
                 />
-                <Mail className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-600' />
+                <Mail className='w-4 h-4 absolute left-3 top-3 text-slate-600' />
               </div>
             </div>
 
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
               <div>
-                <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
+                <label className='block text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1'>
                   Full Name *
                 </label>
                 <div className='relative'>
@@ -292,15 +299,16 @@ export default function ProfilePage() {
                     type='text'
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className='w-full px-4 py-3 pl-11 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
+                    className='w-full px-3.5 py-2.5 pl-10 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
                     placeholder='Enter your full name'
                     required
                   />
-                  <User className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-400' />
+                  <User className='w-4 h-4 absolute left-3 top-3 text-slate-400' />
                 </div>
               </div>
+
               <div>
-                <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
+                <label className='block text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1'>
                   Phone Number *
                 </label>
                 <div className='relative'>
@@ -308,52 +316,37 @@ export default function ProfilePage() {
                     type='tel'
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className='w-full px-4 py-3 pl-11 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
+                    className='w-full px-3.5 py-2.5 pl-10 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
                     placeholder='01012345678'
                     dir='ltr'
                     required
                   />
-                  <Phone className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-400' />
+                  <Phone className='w-4 h-4 absolute left-3 top-3 text-slate-400' />
                 </div>
               </div>
             </div>
 
-            <div className='sm:grid-cols-2 gap-4'>
-              {/* <div>
-                <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
-                  Governorate / City *
-                </label>
+            <div>
+              <label className='block text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1'>
+                Detailed Address *
+              </label>
+              <div className='relative'>
                 <input
                   type='text'
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className='w-full px-4 py-3 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
-                  placeholder='e.g. Cairo'
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className='w-full px-3.5 py-2.5 pl-10 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
+                  placeholder='Street name / Building number / Apartment'
                   required
                 />
-              </div> */}
-              <div>
-                <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2'>
-                  Detailed Address *
-                </label>
-                <div className='relative'>
-                  <input
-                    type='text'
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className='w-full px-4 py-3 pl-11 bg-[#141d2f] border border-slate-700/80 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 transition'
-                    placeholder='Street name / Building number / Apartment'
-                    required
-                  />
-                  <MapPin className='w-4 h-4 absolute left-3.5 top-3.5 text-slate-400' />
-                </div>
+                <MapPin className='w-4 h-4 absolute left-3 top-3 text-slate-400' />
               </div>
             </div>
 
             <button
               type='submit'
               disabled={saving}
-              className='w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-950/50 transition duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50'
+              className='w-full py-2.5 sm:py-3 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-950/40 transition duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50'
             >
               {saving ? (
                 <>
@@ -362,98 +355,274 @@ export default function ProfilePage() {
                 </>
               ) : (
                 <>
-                  <Save size={16} />
+                  <Save size={14} />
                   <span>Save Profile Details</span>
                 </>
               )}
             </button>
           </form>
-        </div>
+        </section>
 
-        {/* Previous Orders & Invoices Section */}
-        <div className='space-y-6'>
-          <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
+        {/* ================================================= */}
+        {/* السكشن الثاني: سجل الأوردرات والفواتير (مضغوط ومقاسات مدروسة) */}
+        {/* ================================================= */}
+        <section className='space-y-3.5'>
+          <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5'>
             <div>
-              <h2 className='text-xl font-black text-white tracking-tight flex items-center gap-2.5'>
-                <Package className='w-6 h-6 text-blue-400' />
+              <h2 className='text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-2'>
+                <Package className='w-4 h-4 sm:w-5 sm:h-5 text-blue-400 animate-pulse' />
                 <span>Order History & Invoices</span>
               </h2>
-              <p className='text-xs text-slate-400 mt-1'>
-                Track your past purchases and detailed order invoices
+              <p className='text-[10px] sm:text-xs text-slate-400 mt-0.5'>
+                Track your past purchases, status updates, and detailed invoices
               </p>
             </div>
 
-            {/* General WhatsApp Support Button */}
-            <a
-              href='https://wa.me/201016605189?text=Hello,%20I%20would%20like%20to%20inquire%20about%20my%20orders%20in%20the%20store'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-950/50'
-            >
-              <MessageCircle size={16} /> Contact via WhatsApp
-            </a>
+            <div className='flex flex-col sm:items-end gap-1'>
+              <a
+                href='https://wa.me/201016605189?text=Hello,%20I%20would%20like%20to%20inquire%20about%20my%20orders%20in%20the%20store'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-950/40 hover:scale-[1.02] active:scale-95 cursor-pointer'
+              >
+                <MessageCircle size={14} /> Contact via WhatsApp
+              </a>
+              <span className='text-[10px] text-emerald-400/90 font-semibold tracking-wide italic'>
+                ✨ Admin will reply to you soon
+              </span>
+            </div>
           </div>
 
+          {/* أزرار الفلتر الـ 5 */}
+          {(() => {
+            const totalCount = orders.length;
+            const pendingCount = orders.filter(
+              (o) => o.status === 'pending',
+            ).length;
+            const shippedCount = orders.filter(
+              (o) =>
+                o.status === 'shipped' ||
+                o.status === 'shipping' ||
+                o.status === 'processing',
+            ).length;
+            const completedCount = orders.filter(
+              (o) => o.status === 'delivered' || o.status === 'completed',
+            ).length;
+            const cancelledCount = orders.filter(
+              (o) => o.status === 'cancelled',
+            ).length;
+
+            return (
+              <div className='grid grid-cols-2 sm:grid-cols-5 gap-2'>
+                <button
+                  type='button'
+                  onClick={() => setOrderFilter('all')}
+                  className={`text-left p-2.5 rounded-xl flex items-center justify-between shadow transition-all cursor-pointer border ${
+                    orderFilter === 'all'
+                      ? 'bg-blue-950/40 border-blue-500/60 shadow-blue-950/30'
+                      : 'bg-[#131d31] border-slate-700/60 hover:border-slate-600'
+                  }`}
+                >
+                  <div>
+                    <span className='text-[9px] sm:text-[10px] text-slate-300 uppercase font-bold tracking-wider'>
+                      All
+                    </span>
+                    <p className='text-sm sm:text-base font-black text-white mt-0.5'>
+                      {totalCount}
+                    </p>
+                  </div>
+                  <div className='w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-xs'>
+                    📦
+                  </div>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => setOrderFilter('pending')}
+                  className={`text-left p-2.5 rounded-xl flex items-center justify-between shadow transition-all cursor-pointer border ${
+                    orderFilter === 'pending'
+                      ? 'bg-amber-950/40 border-amber-500/60 shadow-amber-950/30'
+                      : 'bg-[#131d31] border-slate-700/60 hover:border-slate-600'
+                  }`}
+                >
+                  <div>
+                    <span className='text-[9px] sm:text-[10px] text-amber-400 uppercase font-bold tracking-wider'>
+                      Pending
+                    </span>
+                    <p className='text-sm sm:text-base font-black text-white mt-0.5'>
+                      {pendingCount}
+                    </p>
+                  </div>
+                  <div className='w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-xs'>
+                    ⏳
+                  </div>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => setOrderFilter('shipped')}
+                  className={`text-left p-2.5 rounded-xl flex items-center justify-between shadow transition-all cursor-pointer border ${
+                    orderFilter === 'shipped'
+                      ? 'bg-indigo-950/40 border-indigo-500/60 shadow-indigo-950/30'
+                      : 'bg-[#131d31] border-slate-700/60 hover:border-slate-600'
+                  }`}
+                >
+                  <div>
+                    <span className='text-[9px] sm:text-[10px] text-indigo-400 uppercase font-bold tracking-wider'>
+                      Shipped
+                    </span>
+                    <p className='text-sm sm:text-base font-black text-white mt-0.5'>
+                      {shippedCount}
+                    </p>
+                  </div>
+                  <div className='w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs'>
+                    🚀
+                  </div>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => setOrderFilter('completed')}
+                  className={`text-left p-2.5 rounded-xl flex items-center justify-between shadow transition-all cursor-pointer border ${
+                    orderFilter === 'completed'
+                      ? 'bg-emerald-950/40 border-emerald-500/60 shadow-emerald-950/30'
+                      : 'bg-[#131d31] border-slate-700/60 hover:border-slate-600'
+                  }`}
+                >
+                  <div>
+                    <span className='text-[9px] sm:text-[10px] text-emerald-400 uppercase font-bold tracking-wider'>
+                      Completed
+                    </span>
+                    <p className='text-sm sm:text-base font-black text-white mt-0.5'>
+                      {completedCount}
+                    </p>
+                  </div>
+                  <div className='w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs'>
+                    ✅
+                  </div>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => setOrderFilter('cancelled')}
+                  className={`text-left p-2.5 rounded-xl flex items-center justify-between shadow transition-all cursor-pointer border col-span-2 sm:col-span-1 ${
+                    orderFilter === 'cancelled'
+                      ? 'bg-rose-950/40 border-rose-500/60 shadow-rose-950/30'
+                      : 'bg-[#131d31] border-slate-700/60 hover:border-slate-600'
+                  }`}
+                >
+                  <div>
+                    <span className='text-[9px] sm:text-[10px] text-rose-400 uppercase font-bold tracking-wider'>
+                      Cancelled
+                    </span>
+                    <p className='text-sm sm:text-base font-black text-white mt-0.5'>
+                      {cancelledCount}
+                    </p>
+                  </div>
+                  <div className='w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 text-xs'>
+                    ❌
+                  </div>
+                </button>
+              </div>
+            );
+          })()}
+
           {orders.length === 0 ? (
-            <div className='bg-[#0e1626]/90 backdrop-blur-xl p-12 rounded-3xl border border-slate-800 text-center space-y-3 shadow-2xl'>
-              <Package size={48} className='mx-auto text-slate-600' />
+            <div className='bg-[#131d31]/90 backdrop-blur-xl p-8 rounded-2xl border border-slate-700/60 text-center space-y-2.5 shadow-xl'>
+              <Package size={36} className='mx-auto text-slate-500' />
               <p className='text-slate-300 text-xs font-medium'>
-                You haven't placed any orders yet.
+                You haven&apos;t placed any orders yet.
               </p>
             </div>
           ) : (
-            <div className='space-y-6'>
-              {orders.map((order) => {
-                let itemsList = [];
-                try {
-                  itemsList =
-                    typeof order.items === 'string'
-                      ? JSON.parse(order.items)
-                      : order.items || [];
-                } catch (e) {
-                  itemsList = [];
-                }
+            <div className='max-h-[420px] overflow-y-auto pr-1.5 space-y-3 custom-scrollbar'>
+              {orders
+                .filter((order) => {
+                  if (orderFilter === 'all') return true;
+                  if (orderFilter === 'pending')
+                    return order.status === 'pending';
+                  if (orderFilter === 'shipped')
+                    return (
+                      order.status === 'shipped' ||
+                      order.status === 'shipping' ||
+                      order.status === 'processing'
+                    );
+                  if (orderFilter === 'completed')
+                    return (
+                      order.status === 'delivered' ||
+                      order.status === 'completed'
+                    );
+                  if (orderFilter === 'cancelled')
+                    return order.status === 'cancelled';
+                  return true;
+                })
+                .map((order) => {
+                  let itemsList = [];
+                  try {
+                    itemsList =
+                      typeof order.items === 'string'
+                        ? JSON.parse(order.items)
+                        : order.items || [];
+                  } catch (e) {
+                    itemsList = [];
+                  }
 
-                return (
-                  <div
-                    key={order.id}
-                    className='bg-[#0e1626]/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-6 transition hover:border-slate-700'
-                  >
-                    {/* Order Header */}
-                    <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-5'>
-                      <div className='space-y-2'>
-                        <div className='flex flex-wrap items-center gap-3'>
-                          <span className='font-black text-xs text-slate-200 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700'>
+                  return (
+                    <div
+                      key={order.id}
+                      className='bg-gradient-to-br from-[#162238] to-[#11192b] backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl border border-slate-700/60 shadow-lg space-y-3 transition-all duration-300 hover:border-slate-600'
+                    >
+                      <div className='flex flex-col gap-2 border-b border-slate-700/60 pb-2.5'>
+                        <div className='flex justify-between items-center'>
+                          <span className='font-black text-[11px] text-blue-300 bg-blue-950/60 px-2 py-0.5 rounded-lg border border-blue-500/30'>
                             ORDER #{order.id.slice(0, 8).toUpperCase()}
                           </span>
                           {getStatusBadge(order.status)}
                         </div>
 
-                        <p className='text-xs text-slate-400 flex items-center gap-1.5 pt-1'>
-                          <MapPin
-                            size={14}
-                            className='text-red-400 flex-shrink-0'
-                          />
-                          <span>
-                            Address: {order.city ? `${order.city} - ` : ''}
-                            {order.customer_address || 'N/A'}
-                          </span>
-                        </p>
+                        <div className='bg-[#0f172a] p-2.5 rounded-xl border border-slate-700/50 space-y-1 text-xs'>
+                          <div className='flex items-center justify-between text-slate-200'>
+                            <span className='text-slate-400'>Customer:</span>
+                            <span className='font-bold text-white'>
+                              {order.customer_name ||
+                                order.name ||
+                                'Valued Customer'}
+                            </span>
+                          </div>
+                          <div className='flex items-center justify-between text-slate-200'>
+                            <span className='text-slate-400'>Phone:</span>
+                            <span className='font-semibold text-emerald-400 dir-ltr'>
+                              {order.customer_phone || order.phone || 'N/A'}
+                            </span>
+                          </div>
+                          <div className='flex items-start justify-between text-slate-200 gap-2'>
+                            <span className='text-slate-400 shrink-0 flex items-center gap-1'>
+                              <MapPin size={11} className='text-rose-400' />{' '}
+                              Address:
+                            </span>
+                            <span className='text-right text-slate-200 line-clamp-1'>
+                              {order.city ? `${order.city}, ` : ''}
+                              {order.customer_address || 'Not Specified'}
+                            </span>
+                          </div>
+                        </div>
 
-                        <p className='text-[11px] text-slate-500'>
-                          Ordered on:{' '}
-                          {new Date(order.created_at).toLocaleString('en-US')}
-                        </p>
+                        <div className='flex justify-between items-center text-[10px] text-slate-400 px-0.5'>
+                          <span>Ordered on:</span>
+                          <span className='font-medium text-slate-300'>
+                            {new Date(order.created_at).toLocaleString('en-US')}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className='flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end'>
-                        <div className='text-left bg-[#141d2f] p-4 rounded-2xl border border-slate-800 min-w-[160px]'>
-                          <span className='text-[11px] text-slate-400 block uppercase font-semibold'>
+                      <div className='flex items-center justify-between bg-[#19253d] p-2.5 rounded-xl border border-slate-700/50'>
+                        <div>
+                          <span className='text-[9px] text-slate-400 block uppercase font-bold tracking-wider'>
                             Total Amount
                           </span>
-                          <span className='font-black text-lg text-white'>
+                          <span className='font-black text-xs sm:text-sm text-emerald-400'>
                             {order.total_amount}{' '}
-                            <span className='text-xs text-slate-400 font-normal'>
+                            <span className='text-[10px] text-slate-400 font-normal'>
                               EGP
                             </span>
                           </span>
@@ -462,83 +631,86 @@ export default function ProfilePage() {
                         {order.status === 'pending' && (
                           <button
                             onClick={() => handleCancelOrder(order.id)}
-                            className='bg-red-950/40 hover:bg-red-900/40 text-red-400 p-3 rounded-2xl text-xs font-bold border border-red-500/30 transition cursor-pointer'
+                            className='bg-red-950/50 hover:bg-red-900/70 text-red-400 px-2.5 py-1 rounded-lg text-xs font-bold border border-red-500/30 transition cursor-pointer flex items-center gap-1 active:scale-95'
                             title='Cancel Order'
                           >
-                            <XCircle size={18} />
+                            <XCircle size={13} /> Cancel
                           </button>
                         )}
                       </div>
-                    </div>
 
-                    {/* Ordered Items List */}
-                    <div className='space-y-3'>
-                      <h4 className='text-xs font-bold text-slate-300 uppercase tracking-wider'>
-                        Ordered Products ({itemsList.length}):
-                      </h4>
-                      <div className='bg-[#141d2f]/70 rounded-2xl p-4 divide-y divide-slate-800/80 border border-slate-800'>
-                        {itemsList.length === 0 ? (
-                          <p className='text-xs text-slate-500 py-2 text-center'>
-                            No product details recorded for this order.
-                          </p>
-                        ) : (
-                          itemsList.map((item: any, idx: number) => {
-                            const itemImg =
-                              item.image ||
-                              item.images?.[0] ||
-                              'https://via.placeholder.com/80';
-                            return (
-                              <div
-                                key={idx}
-                                className='py-3 first:pt-0 last:pb-0 flex items-center justify-between text-xs'
-                              >
-                                <div className='flex items-center gap-3.5'>
-                                  <img
-                                    src={itemImg}
-                                    alt={item.name}
-                                    className='w-12 h-12 object-cover rounded-xl border border-slate-700 shrink-0 bg-slate-900'
-                                  />
-                                  <div>
-                                    <span className='font-bold text-slate-200 block mb-0.5'>
-                                      {item.name}
-                                    </span>
-                                    <span className='text-slate-400'>
-                                      Qty:{' '}
-                                      <strong className='text-white'>
-                                        {item.quantity}
-                                      </strong>{' '}
-                                      × {item.price} EGP
-                                    </span>
+                      <div className='space-y-1.5'>
+                        <h4 className='text-[10px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between'>
+                          <span>Ordered Products</span>
+                          <span className='text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-500/20 text-[9px]'>
+                            {itemsList.length} items
+                          </span>
+                        </h4>
+
+                        <div className='bg-[#0f172a]/90 rounded-xl p-2 max-h-32 overflow-y-auto divide-y divide-slate-800/80 border border-slate-700/50 custom-scrollbar'>
+                          {itemsList.length === 0 ? (
+                            <p className='text-xs text-slate-500 py-1 text-center'>
+                              No product details recorded.
+                            </p>
+                          ) : (
+                            itemsList.map((item: any, idx: number) => {
+                              const itemImg =
+                                item.image ||
+                                item.images?.[0] ||
+                                'https://via.placeholder.com/80';
+                              return (
+                                <div
+                                  key={idx}
+                                  className='py-1.5 first:pt-0 last:pb-0 flex items-center justify-between text-xs gap-2'
+                                >
+                                  <div className='flex items-center gap-2 min-w-0 flex-1'>
+                                    <Image
+                                      src={itemImg}
+                                      alt={item.name || 'Store Item'}
+                                      width={50}
+                                      height={50}
+                                      className='w-8 h-8 object-cover rounded-lg border border-slate-700 shrink-0 bg-slate-900'
+                                    />
+                                    <div className='min-w-0 flex-1'>
+                                      <span className='font-bold text-slate-200 block truncate text-[11px]'>
+                                        {item.name}
+                                      </span>
+                                      <span className='text-slate-400 text-[10px]'>
+                                        Qty:{' '}
+                                        <strong className='text-white'>
+                                          {item.quantity}
+                                        </strong>{' '}
+                                        × {item.price} EGP
+                                      </span>
+                                    </div>
                                   </div>
+                                  <span className='font-black text-white shrink-0 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-[10px]'>
+                                    {item.price * item.quantity} EGP
+                                  </span>
                                 </div>
-                                <span className='font-black text-white bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800'>
-                                  {item.price * item.quantity} EGP
-                                </span>
-                              </div>
-                            );
-                          })
-                        )}
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <a
+                          href={`https://wa.me/201016605189?text=${encodeURIComponent(`Hello, I would like to modify or inquire about Order #${order.id.slice(0, 8).toUpperCase()}`)}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='w-full bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer'
+                        >
+                          <MessageCircle size={13} /> Modify or Inquire via
+                          WhatsApp
+                        </a>
                       </div>
                     </div>
-
-                    {/* Order Specific WhatsApp Support */}
-                    <div className='flex justify-end pt-2'>
-                      <a
-                        href={`https://wa.me/201016605189?text=Hello,%20I%20would%20like%20to%20modify%20or%20inquire%20about%20Order%20%23${order.id.slice(0, 8).toUpperCase()}`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='text-xs text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1.5 transition'
-                      >
-                        <MessageCircle size={15} /> Modify or Inquire about this
-                        order via WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           )}
-        </div>
+        </section>
       </main>
     </div>
   );

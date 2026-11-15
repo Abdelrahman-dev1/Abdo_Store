@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-,     "src/components/ShareButton.tsx", "src/app/products/[id]/pppppage.txt"  ],
+,     "src/components/ShareButton.tsx", "src/app/products/[id]/pppppage.txt", "src/icon.txt", "src/app/off-opengraph-image.txt"  ],
   "exclude": ["node_modules"]
 }

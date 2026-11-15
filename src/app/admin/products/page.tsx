@@ -1,17 +1,20 @@
 'use client';
-
-import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   Plus,
   Trash2,
   Pencil,
+  Search,
   ArrowLeft,
   Image as ImageIcon,
   Package,
   Boxes,
   LogOut,
   Loader2,
+  ChevronRight,
+  ChevronLeft,
   Upload,
   X,
   CheckCircle2,
@@ -20,6 +23,15 @@ import {
   FolderPlus,
   Filter,
 } from 'lucide-react';
+
+
+
+
+
+
+
+
+
 import Link from 'next/link';
 import { router } from 'next/client';
 import { useRouter } from 'next/navigation';
@@ -64,6 +76,79 @@ export default function AdminProductsPage() {
   const [showInHero, setShowInHero] = useState(false);
   const [showInFlash, setShowInFlash] = useState(false);
   const [showInCatalog, setShowInCatalog] = useState(false);
+
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+const filterScrollRef = useRef<HTMLDivElement | null>(null);
+const [canScrollLeft, setCanScrollLeft] = useState(false);
+const [canScrollRight, setCanScrollRight] = useState(false);
+const [scrollThumb, setScrollThumb] = useState({ width: 100, left: 0 });
+
+const updateFilterScrollState = useCallback(() => {
+  const el = filterScrollRef.current;
+  if (!el) return;
+
+  const { scrollLeft, scrollWidth, clientWidth } = el;
+  const maxScroll = Math.max(0, scrollWidth - clientWidth);
+
+  setCanScrollLeft(scrollLeft > 2);
+  setCanScrollRight(scrollLeft < maxScroll - 2);
+
+  if (maxScroll <= 0 || scrollWidth <= 0) {
+    setScrollThumb({ width: 100, left: 0 });
+    return;
+  }
+
+  const thumbWidthPercent = Math.max(22, (clientWidth / scrollWidth) * 100);
+  const maxThumbTravel = 100 - thumbWidthPercent;
+  const currentLeftPercent = (scrollLeft / maxScroll) * maxThumbTravel;
+
+  setScrollThumb({
+    width: thumbWidthPercent,
+    left: Math.min(maxThumbTravel, Math.max(0, currentLeftPercent)),
+  });
+}, []);
+
+useEffect(() => {
+  updateFilterScrollState();
+
+  const el = filterScrollRef.current;
+  if (!el) return;
+
+  const resizeObserver = new ResizeObserver(() => {
+    updateFilterScrollState();
+  });
+  resizeObserver.observe(el);
+
+  window.addEventListener('resize', updateFilterScrollState);
+  return () => {
+    resizeObserver.disconnect();
+    window.removeEventListener('resize', updateFilterScrollState);
+  };
+}, [updateFilterScrollState, categories.length]);
+
+const handleScrollFilters = (direction: 'prev' | 'next') => {
+  const el = filterScrollRef.current;
+  if (!el) return;
+
+  const step = Math.max(180, Math.round(el.clientWidth * 0.65));
+  el.scrollBy({
+    left: direction === 'next' ? step : -step,
+    behavior: 'smooth',
+  });
+};
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
 
   useEffect(() => {
     fetchData();
@@ -339,6 +424,29 @@ export default function AdminProductsPage() {
     return p.category_id === adminFilter;
   });
 
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const displayedInventory = filteredInventory.filter((product) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+
+    const matchedCat = categories.find((c) => c.id === product.category_id);
+    const nameMatch = (product.name || '').toLowerCase().includes(q);
+    const catMatch = (matchedCat?.name || '').toLowerCase().includes(q);
+    return nameMatch || catMatch;
+  });
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
       <style jsx global>{`
@@ -373,15 +481,19 @@ export default function AdminProductsPage() {
               <span className='hidden sm:inline'>Back to Dashboard</span>
             </Link>
           </div>
-
-          <div className='text-center'>
-            <h1 className='text-sm sm:text-base font-black text-white tracking-tight'>
-              Product & Category Management ⚡
+          {/* ============================== */}
+          {/* ============================== */}
+          {/* ============================== */}
+          <div className='min-w-0 flex-1 text-center px-1 sm:px-0'>
+            <h1 className='text-[11px] sm:text-base lg:text-lg font-extrabold tracking-tight whitespace-normal break-words leading-snug bg-gradient-to-r from-rose-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent'>
+              Product &amp; Category Management ⚡
             </h1>
-            <p className='text-[10px] sm:text-[11px] text-slate-400 font-medium'>
-              Abdo Store Administrative Control Center
-            </p>
+            {/* <p className='text-[9px] sm:text-xs text-slate-300/80 font-medium whitespace-normal break-words leading-snug mt-0.5'>
+              Abdo Store
+            </p> */}
           </div>
+          {/* ============================== */}
+          {/* ============================== */}
 
           <div className='flex items-center justify-end gap-2'>
             <button
@@ -688,9 +800,11 @@ export default function AdminProductsPage() {
                           key={index}
                           className='relative group aspect-square rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-md'
                         >
-                          <img
+                          <Image
                             src={img}
                             alt={`upload-${index}`}
+                            width={500}
+                            height={500}
                             className='w-full h-full object-cover'
                           />
                           <button
@@ -756,9 +870,19 @@ export default function AdminProductsPage() {
               </form>
             </div>
           </div>
-
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
           {/* Products List Table Column (جدول المنتجات والفلترة المتقدمة) */}
-          <div className='lg:col-span-7 bg-[#0e1626]/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/95 shadow-2xl space-y-6 h-fit'>
+          <div className='lg:col-span-7 bg-[#0e1626]/90 backdrop-blur-xl p-5 sm:p-8 rounded-3xl border border-slate-800/95 shadow-2xl space-y-5 h-fit'>
             <div className='flex items-center justify-between border-b border-slate-800 pb-4'>
               <div className='flex items-center gap-3'>
                 <div className='w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-slate-700'>
@@ -766,7 +890,7 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <h2 className='text-base font-black text-white'>
-                    Product Inventory ({filteredInventory.length})
+                    Product Inventory ({displayedInventory.length})
                   </h2>
                   <p className='text-xs text-slate-400'>
                     Manage, filter and review store items
@@ -775,114 +899,218 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            {/* بوكسات الفلترة السريعة في جدول الأدمن مع الأعداد الحقيقية */}
-            <div className='flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none'>
-              <button
-                type='button'
-                onClick={() => setAdminFilter('all')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer ${
-                  adminFilter === 'all'
-                    ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent'
-                    : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
-                }`}
-              >
-                All ({products.length})
-              </button>
-              <button
-                type='button'
-                onClick={() => setAdminFilter('hero')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer ${
-                  adminFilter === 'hero'
-                    ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent'
-                    : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
-                }`}
-              >
-                Hero ({products.filter((p) => p.show_in_hero).length})
-              </button>
-              <button
-                type='button'
-                onClick={() => setAdminFilter('flash')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer ${
-                  adminFilter === 'flash'
-                    ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent'
-                    : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
-                }`}
-              >
-                Flash ({products.filter((p) => p.show_in_flash).length})
-              </button>
-              <button
-                type='button'
-                onClick={() => setAdminFilter('catalog')}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer ${
-                  adminFilter === 'catalog'
-                    ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent'
-                    : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
-                }`}
-              >
-                Catalog ({products.filter((p) => p.show_in_catalog).length})
-              </button>
+            {/* إنبوت البحث الفوري فوق بوكسات الفلترة */}
+            <div className='relative'>
+              <Search
+                size={16}
+                className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none'
+              />
+              <input
+                type='text'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder='Search by product name or category...'
+                className='w-full pl-10 pr-9 py-2.5 rounded-xl bg-[#090f19]/85 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 border border-slate-800 focus:border-blue-500/60 focus:outline-none transition'
+              />
+              {searchQuery && (
+                <button
+                  type='button'
+                  onClick={() => setSearchQuery('')}
+                  aria-label='Clear search'
+                  className='absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer'
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
 
-              {/* فلترة سريعة إضافية حسب التصنيفات الحقيقية */}
-              {categories.map((cat) => {
-                const count = products.filter(
-                  (p) => p.category_id === cat.id,
-                ).length;
-                return (
+            {/* ================================== */}
+            {/* ================================== */}
+            {/* ================================== */}
+            <div className='w-full space-y-2'>
+              {/* شريط تحكم علوي صغير: مؤشر اسكرول رفيع + زرارين حركة */}
+              <div className='flex items-center justify-between gap-2.5 px-0.5'>
+                {/* شريط اسكرول صغير يوضح مكانك وهل في عناصر مستخبية */}
+                <div
+                  aria-hidden='true'
+                  className='relative h-1.5 flex-1 max-w-[160px] sm:max-w-[220px] rounded-full bg-[#090f19] border border-slate-800/90 overflow-hidden'
+                >
+                  <span
+                    className='block h-full rounded-full bg-gradient-to-r from-red-500 via-rose-500 to-blue-500 transition-all duration-150'
+                    style={{
+                      width: `${scrollThumb.width}%`,
+                      transform: `translateX(${(scrollThumb.left / Math.max(scrollThumb.width, 1)) * 100}%)`,
+                    }}
+                  />
+                </div>
+
+                {/* زرارين تحريك صغيرين فوق البوكسات */}
+                <div className='flex items-center gap-1.5 shrink-0'>
                   <button
-                    key={`admin-cat-filter-${cat.id}`}
                     type='button'
-                    onClick={() => setAdminFilter(cat.id)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition border shrink-0 cursor-pointer ${
-                      adminFilter === cat.id
+                    onClick={() => handleScrollFilters('prev')}
+                    disabled={!canScrollLeft}
+                    aria-label='Scroll filters left'
+                    title='السابق'
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl border flex items-center justify-center transition-all duration-200 select-none ${
+                      canScrollLeft
+                        ? 'bg-[#141d2f] hover:bg-[#1b2740] border-slate-700/80 hover:border-sky-400/60 text-slate-200 hover:text-white cursor-pointer active:scale-95 shadow-sm'
+                        : 'bg-[#0e1626]/60 border-slate-800/60 text-slate-600 opacity-45 cursor-not-allowed'
+                    }`}
+                  >
+                    <ChevronRight size={15} strokeWidth={2.2} />
+                  </button>
+
+                  <button
+                    type='button'
+                    onClick={() => handleScrollFilters('next')}
+                    disabled={!canScrollRight}
+                    aria-label='Scroll filters right'
+                    title='التالي'
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl border flex items-center justify-center transition-all duration-200 select-none ${
+                      canScrollRight
+                        ? 'bg-[#141d2f] hover:bg-[#1b2740] border-slate-700/80 hover:border-sky-400/60 text-slate-200 hover:text-white cursor-pointer active:scale-95 shadow-sm'
+                        : 'bg-[#0e1626]/60 border-slate-800/60 text-slate-600 opacity-45 cursor-not-allowed'
+                    }`}
+                  >
+                    <ChevronLeft size={15} strokeWidth={2.2} />
+                  </button>
+                </div>
+              </div>
+
+              {/* حاوية البوكسات مع اسكرول أفقي ناعم وشريط اسكرول رفيع */}
+              <div className='relative'>
+                <div
+                  ref={filterScrollRef}
+                  onScroll={updateFilterScrollState}
+                  className='flex items-center gap-1.5 sm:gap-2 overflow-x-auto touch-pan-x scroll-smooth pb-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#090f19]/90 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-700/80 hover:[&::-webkit-scrollbar-thumb]:bg-gradient-to-r hover:[&::-webkit-scrollbar-thumb]:from-red-500/80 hover:[&::-webkit-scrollbar-thumb]:to-blue-500/80'
+                >
+                  <button
+                    type='button'
+                    onClick={() => setAdminFilter('all')}
+                    className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border shrink-0 cursor-pointer whitespace-nowrap ${
+                      adminFilter === 'all'
                         ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-md'
                         : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
                     }`}
                   >
-                    {cat.name} ({count})
+                    All ({products.length})
                   </button>
-                );
-              })}
+
+                  <button
+                    type='button'
+                    onClick={() => setAdminFilter('hero')}
+                    className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border shrink-0 cursor-pointer whitespace-nowrap ${
+                      adminFilter === 'hero'
+                        ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-md'
+                        : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    Hero ({products.filter((p) => p.show_in_hero).length})
+                  </button>
+
+                  <button
+                    type='button'
+                    onClick={() => setAdminFilter('flash')}
+                    className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border shrink-0 cursor-pointer whitespace-nowrap ${
+                      adminFilter === 'flash'
+                        ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-md'
+                        : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    Flash ({products.filter((p) => p.show_in_flash).length})
+                  </button>
+
+                  <button
+                    type='button'
+                    onClick={() => setAdminFilter('catalog')}
+                    className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border shrink-0 cursor-pointer whitespace-nowrap ${
+                      adminFilter === 'catalog'
+                        ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-md'
+                        : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    Catalog ({products.filter((p) => p.show_in_catalog).length})
+                  </button>
+
+                  {/* فلترة سريعة إضافية حسب التصنيفات الحقيقية */}
+                  {categories.map((cat) => {
+                    const count = products.filter(
+                      (p) => p.category_id === cat.id,
+                    ).length;
+                    return (
+                      <button
+                        key={`admin-cat-filter-${cat.id}`}
+                        type='button'
+                        onClick={() => setAdminFilter(cat.id)}
+                        className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border shrink-0 cursor-pointer whitespace-nowrap ${
+                          adminFilter === cat.id
+                            ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-md'
+                            : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        {cat.name} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+            {/* ================================== */}
+            {/* ================================== */}
+            {/* ================================== */}
+            {/* ================================== */}
 
             {loading ? (
               <div className='flex flex-col items-center justify-center py-20 text-slate-400 space-y-3'>
                 <Loader2 className='w-8 h-8 animate-spin text-blue-500' />
                 <p className='text-xs font-medium'>Loading products...</p>
               </div>
-            ) : filteredInventory.length === 0 ? (
-              <div className='text-center py-20 text-slate-400 space-y-2'>
+            ) : displayedInventory.length === 0 ? (
+              <div className='text-center py-16 text-slate-400 space-y-2 rounded-2xl border border-slate-800/70 bg-[#090f19]/40'>
                 <Boxes className='w-12 h-12 mx-auto text-slate-600 mb-2' />
                 <p className='text-sm font-bold text-slate-300'>
-                  No products found in this filter
+                  No matching products found
                 </p>
+                {searchQuery && (
+                  <button
+                    type='button'
+                    onClick={() => setSearchQuery('')}
+                    className='text-xs text-blue-400 hover:text-blue-300 underline cursor-pointer'
+                  >
+                    Reset search query
+                  </button>
+                )}
               </div>
             ) : (
-              <div className='overflow-x-auto'>
+              <div className='max-h-[420px] sm:max-h-[540px] overflow-y-auto overflow-x-auto rounded-2xl border border-slate-800/80 bg-[#090f19]/45'>
                 <table className='w-full text-left border-collapse'>
-                  <thead>
+                  <thead className='sticky top-0 z-10 bg-[#0e1626]/95 backdrop-blur-md'>
                     <tr className='border-b border-slate-800 text-xs text-slate-400 uppercase tracking-wider'>
-                      <th className='pb-3 pr-4'>Product & Category</th>
-                      <th className='pb-3 px-3'>Price / Compare</th>
-                      <th className='pb-3 px-3'>Assigned Sections</th>
-                      <th className='pb-3 pl-4 text-right'>Actions</th>
+                      <th className='py-3.5 px-4'>Product & Category</th>
+                      <th className='py-3.5 px-3'>Price / Compare</th>
+                      <th className='py-3.5 px-3'>Assigned Sections</th>
+                      <th className='py-3.5 px-4 text-right'>Actions</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-slate-800/80 text-xs'>
-                    {filteredInventory.map((product) => {
+                    {displayedInventory.map((product) => {
                       const matchedCat = categories.find(
                         (c) => c.id === product.category_id,
                       );
                       return (
                         <tr
                           key={product.id}
-                          className='hover:bg-[#141d2f]/50 transition'
+                          className='hover:bg-[#141d2f]/60 transition'
                         >
-                          <td className='py-4 pr-4 flex items-center gap-3.5'>
+                          <td className='py-4 px-4 flex items-center gap-3.5'>
                             <div className='relative w-12 h-12 bg-slate-900 rounded-xl overflow-hidden flex-shrink-0 border border-slate-700 shadow-md'>
                               {product.images?.[0] ? (
-                                <img
+                                <Image
                                   src={product.images[0]}
-                                  alt={product.name}
+                                  alt={product.name || 'Product Image'}
+                                  width={800}
+                                  height={800}
                                   className='w-full h-full object-cover'
                                 />
                               ) : (
@@ -932,7 +1160,7 @@ export default function AdminProductsPage() {
                             </div>
                           </td>
 
-                          <td className='py-4 pl-4 text-right'>
+                          <td className='py-4 px-4 text-right'>
                             <div className='flex items-center justify-end gap-2'>
                               <button
                                 onClick={() => handleEditClick(product)}
@@ -958,6 +1186,17 @@ export default function AdminProductsPage() {
               </div>
             )}
           </div>
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
+          {/* ======================================= */}
         </div>
       </main>
 

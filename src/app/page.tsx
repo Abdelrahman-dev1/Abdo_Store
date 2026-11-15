@@ -33,6 +33,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import ShareButton from '@/components/ShareButton';
 import { router } from 'next/client';
+import SiteShareButton from '@/components/SiteShareButton';
 export default function HomePage() {
   const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
   const [products, setProducts] = useState<any[]>([]);
@@ -1103,28 +1104,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
   }, [loading, catalogProducts.length, isCatalogPaused, catalogProducts]);
 
   // =======================
-  // =======================
-  // زر المشاركة الشامل (Universal Share) اللي بيخلي أي حد يشير المنتج
 
-  // const handleUniversalShare = (productItem) => {
-  //   const productUrl = `${window.location.origin}/?product=${productItem.id}`;
-  //   const shareText = `🔥 متفوتش العرض ده من Abdo Store!\n\n📦 المنتج: ${productItem.name}\n💰 السعر: ${productItem.price} EGP\n\nاطلبه دلوقتي من هنا:`;
-
-  //   if (navigator.share) {
-  //     navigator
-  //       .share({
-  //         title: productItem.name,
-  //         text: shareText,
-  //         url: productUrl,
-  //       })
-  //       .catch((error) => console.log('Error sharing:', error));
-  //   } else {
-  //     navigator.clipboard.writeText(`${shareText} ${productUrl}`);
-  //     alert('✅ تم نسخ تفاصيل ورابط المنتج للحافظة!');
-  //   }
-  // };
-  // =======================
-  // =======================
   // =======================
   // =======================
   // =======================
@@ -1258,9 +1238,11 @@ const [announcementBar, setAnnouncementBar] = useState<{
                       >
                         {/* Product Image + Hot Deal Sticker */}
                         <div className='relative w-16 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-sm'>
-                          <img
+                          <Image
                             src={itemImg}
-                            alt={item.name}
+                            alt={item.name || 'Store Item'}
+                            width={600}
+                            height={600}
                             className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
                           />
                           <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
@@ -1387,10 +1369,12 @@ const [announcementBar, setAnnouncementBar] = useState<{
           >
             {/* تصغير حجم الصورة على الموبايل w-9 h-9 وعلى الشاشات الأكبر ترجع w-12 h-12 */}
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
-              <img
-                src='/we11.jpg'
+              <Image
+                src='/fav-me-2.webp'
                 alt='Abdo'
-                className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
+                width={400}
+                height={400}
+                className='w-full h-full object-cover object-top rounded-[10px] sm:rounded-[14px] transform group-hover:scale-105 transition-transform duration-500'
               />
             </div>
 
@@ -1440,17 +1424,31 @@ const [announcementBar, setAnnouncementBar] = useState<{
             {/* =============================== */}
             {/* =============================== */}
             {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+
+            {/* <SiteShareButton /> */}
+
+            {/* <div className='inline-flex items-center scale-70 sm:scale-90 origin-center [&_button]:p-1.5 [&_button]:sm:px-2.5 [&_button]:sm:py-2 [&_button]:rounded-lg [&_button]:text-[10px] [&_button]:sm:text-xs [&_svg]:w-3.5 [&_svg]:h-3.5 [&_svg]:sm:w-4 [&_svg]:sm:h-4'> */}
+              {/* <SiteShareButton /> */}
+            {/* </div> */}
+
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
 
             {/* Wishlist Button in Navbar linked with Wishlist count logic */}
 
             <button
               onClick={() => setIsWishlistModalOpen(!isWishlistModalOpen)}
-              className='relative p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 transition cursor-pointer shadow-sm'
               title='Wishlist'
+              className='relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gradient-to-b from-slate-800/75 to-[#090f19]/90 hover:from-slate-800 hover:to-[#0e1626] border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 tabular-nums transition cursor-pointer shadow-sm active:scale-95'
             >
-              <Heart size={18} className='text-rose-500 fill-rose-500' />
+              <Heart className='w-3 h-3 sm:w-[17px] sm:h-[17px] text-rose-500 fill-rose-500 transition-transform' />
               {wishlist.length > 0 && (
-                <span className='absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md ring-2 ring-[#07090e]'>
+                <span className='absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 bg-rose-600 text-white text-[7px] sm:text-[8px] font-black min-w-[12px] h-[12px] sm:min-w-[14px] sm:h-[14px] px-0.5 rounded-full flex items-center justify-center shadow-sm ring-1 sm:ring-2 ring-[#07090e] leading-none'>
                   {wishlist.length}
                 </span>
               )}
@@ -1528,15 +1526,15 @@ const [announcementBar, setAnnouncementBar] = useState<{
         <div className='max-w-7xl mx-auto px-2 sm:px-6 space-y-2 sm:space-y-4 relative z-10 '>
           {/* Header & Controls */}
           <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2 sm:pb-3 gap-2 sm:gap-4 mt-5'>
-            <div className='flex items-center gap-2 pt-1 sm:pt-2  '>
-              <div className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shrink-0'>
-                <Zap size={16} className='sm:w-5 sm:h-5 text-blue-400' />
+            <div className='flex items-start sm:items-center gap-2.5 sm:gap-3.5 pt-1 sm:pt-2 min-w-0'>
+              <div className='p-2 sm:p-2.5 rounded-xl bg-gradient-to-br from-red-600 to-blue-600 text-white shadow-lg shrink-0 mt-0.5 sm:mt-0'>
+                <Zap className='w-3.5 h-3.5 sm:w-5 sm:h-5 text-white' />
               </div>
-              <div>
-                <h1 className='text-lg sm:text-2xl font-black text-white tracking-tight '>
+              <div className='min-w-0 flex-1'>
+                <h1 className='text-base sm:text-xl md:text-2xl font-black text-white tracking-tight leading-snug break-words'>
                   Featured Hero Showcase
                 </h1>
-                <p className='text-[10px] sm:text-xs text-slate-300 mt-0.5'>
+                <p className='text-[10px] sm:text-xs text-slate-300/85 mt-0.5 leading-relaxed break-words'>
                   Explore our top-tier hero catalog selections with continuous
                   smooth preview
                 </p>
@@ -1775,9 +1773,11 @@ const [announcementBar, setAnnouncementBar] = useState<{
                               {/* Image Container */}
                               <div className='w-full h-44 sm:h-56 bg-slate-950 relative overflow-hidden border-b border-slate-800/80'>
                                 {displayImage ? (
-                                  <img
+                                  <Image
                                     src={displayImage}
-                                    alt={product.name}
+                                    alt={product.name || 'Product Image'}
+                                    width={800}
+                                    height={800}
                                     className='w-full h-full object-cover group-hover:scale-105 transition duration-700'
                                   />
                                 ) : (
@@ -2253,12 +2253,14 @@ const [announcementBar, setAnnouncementBar] = useState<{
                         >
                           <div>
                             <div className='relative w-full h-38 sm:h-48 bg-slate-900 border-b border-slate-800 overflow-hidden'>
-                              <img
+                              <Image
                                 src={
                                   displayImage ||
                                   'https://via.placeholder.com/300'
                                 }
-                                alt={item.name}
+                                alt={item.name || 'Store Item'}
+                                width={600}
+                                height={600}
                                 className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
                               />
 
@@ -2911,9 +2913,11 @@ const [announcementBar, setAnnouncementBar] = useState<{
                             <div>
                               <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800'>
                                 {displayImage ? (
-                                  <img
+                                  <Image
                                     src={displayImage}
-                                    alt={product.name}
+                                    alt={product.name || 'Product Image'}
+                                    width={800}
+                                    height={800}
                                     className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
                                   />
                                 ) : (
@@ -3088,10 +3092,12 @@ const [announcementBar, setAnnouncementBar] = useState<{
               {/* كونتينر الصورة بحجم أكبر وبوردر مكس بين الأحمر والأزرق */}
               <div className='w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center shrink-0'>
                 <div className='w-full h-full bg-[#0e1626] rounded-[14px] overflow-hidden relative'>
-                  <img
-                    src='/we3.jpg'
+                  <Image
+                    src='/fav-me-2.webp'
                     alt='Abdo'
-                    className='w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500'
+                    width={400}
+                    height={400}
+                    className='w-full h-full object-cover object-[50%_2%] transform group-hover:scale-110 transition-transform duration-500'
                   />
                 </div>
               </div>
@@ -3145,6 +3151,11 @@ const [announcementBar, setAnnouncementBar] = useState<{
               </li>
             </ul>
           </div>
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
 
           {/* العمود الثالث: التواصل والدعم الفني عبر الواتساب */}
           <div>
@@ -3173,7 +3184,47 @@ const [announcementBar, setAnnouncementBar] = useState<{
               </div>
               <span className='tracking-wide'>+20 101 660 5189</span>
             </a>
+            {/* ============================ */}
+            {/* ============================ */}
+            {/* ============================ */}
+            {/* ============================ */}
+
+            {/* مكون المشاركة مع جملة معبرة وسهم أطول يشاور عليه */}
+            <div className='mt-4 pt-4 border-t border-slate-800/70 flex flex-wrap items-center justify-start gap-2.5 sm:gap-3 min-w-0'>
+              <span className='text-[11px] sm:text-xs font-semibold leading-snug bg-gradient-to-r from-rose-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent break-words'>
+                Share it with friends ❤️⚡
+              </span>
+
+              <svg
+                className='w-6 h-5 sm:w-8 sm:h-5 text-sky-400 shrink-0 animate-pulse [animation-duration:2s]'
+                viewBox='0 0 36 20'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2.2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                aria-hidden='true'
+              >
+                <path d='M2 10h31' />
+                <path d='m27 4 6 6-6 6' />
+              </svg>
+
+              <div className='ms-8 sm:ms-8 inline-flex items-center shrink-0 [&_button]:inline-flex [&_button]:items-center [&_button]:justify-center [&_button]:w-10 [&_button]:h-10 [&_button]:sm:w-11 [&_button]:sm:h-11 [&_button]:rounded-xl [&_button]:text-xs [&_button]:sm:text-sm [&_button]:font-bold [&_button]:shadow-lg [&_button]:transition-all [&_button]:duration-500 [&_button]:hover:scale-105 [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:sm:w-5 [&_svg]:sm:h-5 [&_svg]:shrink-0 [&_svg]:rotate-180'>
+                <SiteShareButton />
+              </div>
+            </div>
+            {/* ============================ */}
+            {/* ============================ */}
+            {/* ============================ */}
+            {/* ============================ */}
           </div>
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
+          {/* ================================== */}
         </div>
 
         {/* ------------------------------------------------------------------ */}
@@ -3199,7 +3250,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                 Back to top
               </span>
               {/* السهم الملون والمتحرك */}
-              <span className='text-red-400 font-extrabold text-base transform transition-transform duration-300 group-hover:-translate-y-1 animate-bounce'>
+              <span className='text-red-400 font-extrabold text-base transform transition-transform duration-300 group-hover:-translate-y-1 animate-bounce [animation-duration:3s]'>
                 ↑
               </span>
             </button>
@@ -3410,9 +3461,11 @@ const [announcementBar, setAnnouncementBar] = useState<{
                         >
                           {/* Product Image + Hot Deal Sticker */}
                           <div className='relative w-16 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-sm'>
-                            <img
+                            <Image
                               src={itemImg}
-                              alt={item.name}
+                              alt={item.name || 'Store Item'}
+                              width={600}
+                              height={600}
                               className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
                             />
                             <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>

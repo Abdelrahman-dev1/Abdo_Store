@@ -1,5 +1,6 @@
 'use client';
-
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -38,6 +39,16 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+
+
+const pathname = usePathname();
+
+useEffect(() => {
+  setSuccess(false);
+  setErrorMessage(null);
+}, [pathname]);
+
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -92,6 +103,11 @@ export default function CheckoutPage() {
   const shippingFee = 50;
   const totalAmount = subtotal + (cart.length > 0 ? shippingFee : 0);
 
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
   // دالة تأكيد الطلب المضمونة والآمنة 100%
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,9 +190,9 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 2. إرسال التيليجرام في الخلفية
+      // 2. إرسال إشعار التيليجرام والتحقق من النتيجة
       try {
-        await fetch('/api/telegram', {
+        const telegramRes = await fetch('/api/telegram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -185,8 +201,20 @@ export default function CheckoutPage() {
             ...orderData,
           }),
         });
+
+        const telegramData = await telegramRes.json().catch(() => ({}));
+
+        if (!telegramRes.ok || telegramData?.success === false) {
+          console.error(
+            'Telegram route failed:',
+            telegramRes.status,
+            telegramData?.error || telegramData,
+          );
+        } else if (telegramData?.telegram_sent === false) {
+          console.warn('Telegram notification is disabled in settings.');
+        }
       } catch (telegramErr) {
-        console.error('Telegram notification error:', telegramErr);
+        console.error('Telegram notification network error:', telegramErr);
       }
 
       // 3. نجاح العملية وتفريغ السلة وإظهار صفحة النجاح
@@ -200,12 +228,23 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
 
   if (success) {
     return (
       <div className='min-h-screen bg-[#07090e] text-slate-100 flex items-center justify-center p-4 font-sans relative selection:bg-red-500 selection:text-white'>
         <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />
         <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
+
+        {/* ================================== */}
+        {/* ================================== */}
+        {/* ================================== */}
+        {/* ================================== */}
+        {/* ================================== */}
 
         <div className='relative z-10 bg-[#0e1626]/90 backdrop-blur-xl p-8 sm:p-12 rounded-3xl border border-slate-800 shadow-2xl max-w-md w-full text-center space-y-6'>
           <div className='w-20 h-20 bg-emerald-950/60 border border-emerald-500/40 rounded-3xl flex items-center justify-center mx-auto text-emerald-400 shadow-xl shadow-emerald-950/40 animate-bounce'>
@@ -222,34 +261,27 @@ export default function CheckoutPage() {
           </div>
           <Link
             href='/'
+            onClick={() => {
+              setSuccess(false);
+              setErrorMessage(null);
+            }}
             className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl block shadow-lg shadow-red-950/50 transition cursor-pointer'
           >
             Return to Store
           </Link>
         </div>
+
+        {/* ================================== */}
+        {/* ================================== */}
+        {/* ================================== */}
+        {/* ================================== */}
+        {/* ================================== */}
       </div>
     );
   }
 
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
-      <style jsx global>{`
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #07090e;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, #ef4444, #3b82f6);
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, #dc2626, #2563eb);
-        }
-      `}</style>
-
       <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
 
@@ -266,10 +298,12 @@ export default function CheckoutPage() {
             className='text-sm sm:text-lg font-black flex items-center gap-2 sm:gap-3 text-white shrink-0 cursor-pointer group'
           >
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
-              <img
-                src='/we11.jpg'
+              <Image
+                src='/fav-me-2.webp'
                 alt='Abdo'
-                className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
+                width={400}
+                height={400}
+                className='w-full h-full object-cover object-[50%_5%] rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
               />
             </div>
             <span className='text-sm sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
@@ -279,10 +313,12 @@ export default function CheckoutPage() {
 
           <Link
             href='/cart'
-            className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm'
+            title='Return to Cart'
+            aria-label='Return to Cart'
+            className='inline-flex items-center justify-center gap-0 sm:gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 p-2 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm shrink-0'
           >
-            <ArrowLeft size={14} />
-            <span className='text-[8px] sm:text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent tracking-wide'>
+            <ArrowLeft size={14} className='shrink-0' />
+            <span className='hidden sm:inline text-[9px] md:text-[10px] font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent tracking-wide'>
               Return to Cart
             </span>
           </Link>
@@ -572,106 +608,136 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {cart.length > 0 ? (
-              <div className='space-y-3.5 max-h-72 overflow-y-auto pr-1 custom-scrollbar relative z-10'>
-                {cart.map((item, idx) => {
-                  const qty = item.quantity || 1;
-                  const itemImage =
-                    item.image || item.image_url || '/placeholder.png';
-                  const currentPrice = item.price || 0;
-                  const oldPrice =
-                    item.oldPrice || item.original_price || currentPrice + 200;
-                  const itemDesc =
-                    item.description ||
-                    item.details ||
-                    item.short_description ||
-                    'High quality premium product';
+{cart.length > 0 ? (
+  <div className='space-y-3.5 max-h-72 overflow-y-auto pr-1 custom-scrollbar relative z-10'>
+    {cart.map((item, idx) => {
+      const qty = item.quantity || 1;
+      const itemImage =
+        item.image || item.image_url || '/placeholder.png';
+      const currentPrice = item.price || 0;
+      const oldPrice =
+        item.oldPrice || item.original_price || currentPrice + 200;
+      const itemDesc =
+        item.description ||
+        item.details ||
+        item.short_description ||
+        'High quality premium product';
 
-                  return (
-                    <div
-                      key={item.id || idx}
-                      className='group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 border border-slate-800/90 hover:border-slate-700/80 transition-all duration-300 shadow-md'
-                    >
-                      <div className='flex items-start sm:items-center gap-3.5 min-w-0 w-full sm:w-auto flex-1'>
-                        <div className='relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-md'>
-                          <img
-                            src={itemImage}
-                            alt={item.name}
-                            className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
-                          />
-                          <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
-                            Hot Deal
-                          </span>
-                        </div>
+      return (
+        <div
+          key={item.id || idx}
+          className='group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 border border-slate-800/90 hover:border-slate-700/80 transition-all duration-300 shadow-md'
+        >
+          <div className='flex items-start sm:items-center gap-3.5 min-w-0 w-full sm:w-auto flex-1'>
+            <div className='relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-md'>
+              <Image
+                src={itemImage}
+                alt={item.name || 'Store Item'}
+                width={600}
+                height={600}
+                className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
+              />
+              <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
+                Hot Deal
+              </span>
+            </div>
 
-                        <div className='min-w-0 flex-1'>
-                          <p className='text-xs font-black text-white tracking-tight truncate'>
-                            {item.name}
-                          </p>
-                          {itemDesc && (
-                            <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
-                              {itemDesc}
-                            </p>
-                          )}
-                          <div className='flex items-center gap-2 mt-1.5'>
-                            <span className='text-xs font-black text-emerald-400'>
-                              {currentPrice} EGP
-                            </span>
-                            {oldPrice > currentPrice && (
-                              <span className='text-[10px] text-slate-500 line-through font-semibold'>
-                                {oldPrice} EGP
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className='flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60'>
-                        <div className='flex items-center bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden p-0.5 shadow-inner'>
-                          <button
-                            type='button'
-                            onClick={() => {
-                              if (qty > 1) {
-                                setCart(
-                                  cart.map((i) =>
-                                    i.id === item.id
-                                      ? { ...i, quantity: qty - 1 }
-                                      : i,
-                                  ),
-                                );
-                              } else {
-                                setCart(cart.filter((i) => i.id !== item.id));
-                              }
-                            }}
-                            className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
-                          >
-                            -
-                          </button>
-                          <span className='w-7 text-center text-xs font-black text-white'>
-                            {qty}
-                          </span>
-                          <button
-                            type='button'
-                            onClick={() => {
-                              setCart(
-                                cart.map((i) =>
-                                  i.id === item.id
-                                    ? { ...i, quantity: qty + 1 }
-                                    : i,
-                                ),
-                              );
-                            }}
-                            className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className='min-w-0 flex-1'>
+              <p className='text-xs font-black text-white tracking-tight truncate'>
+                {item.name}
+              </p>
+              {itemDesc && (
+                <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
+                  {itemDesc}
+                </p>
+              )}
+              <div className='flex items-center gap-2 mt-1.5'>
+                <span className='text-xs font-black text-emerald-400'>
+                  {currentPrice} EGP
+                </span>
+                {oldPrice > currentPrice && (
+                  <span className='text-[10px] text-slate-500 line-through font-semibold'>
+                    {oldPrice} EGP
+                  </span>
+                )}
               </div>
-            ) : (
+            </div>
+          </div>
+
+          <div className='flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60'>
+            {/* أزرار التحكم بالكمية + زر حذف العنصر */}
+            <div className='flex items-center gap-2'>
+              <div className='flex items-center bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden p-0.5 shadow-inner'>
+                <button
+                  type='button'
+                  onClick={() => {
+                    if (qty > 1) {
+                      setCart(
+                        cart.map((i) =>
+                          i.id === item.id
+                            ? { ...i, quantity: qty - 1 }
+                            : i,
+                        ),
+                      );
+                    } else {
+                      setCart(cart.filter((i) => i.id !== item.id));
+                    }
+                  }}
+                  className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
+                >
+                  -
+                </button>
+                <span className='w-7 text-center text-xs font-black text-white'>
+                  {qty}
+                </span>
+                <button
+                  type='button'
+                  onClick={() => {
+                    setCart(
+                      cart.map((i) =>
+                        i.id === item.id
+                          ? { ...i, quantity: qty + 1 }
+                          : i,
+                      ),
+                    );
+                  }}
+                  className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
+                >
+                  +
+                </button>
+              </div>
+
+              {/* زر علامة السلة (حذف المنتج نهائياً) */}
+              <button
+                type='button'
+                onClick={() => {
+                  setCart(cart.filter((i) => i.id !== item.id));
+                }}
+                title="إزالة المنتج"
+                className='w-7 h-7 flex items-center justify-center bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all duration-200 cursor-pointer shadow-sm'
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)  : (
               <div className='text-center py-8 text-slate-400 text-xs'>
                 Your cart is empty.{' '}
                 <Link href='/' className='text-blue-400 underline'>
@@ -685,10 +751,16 @@ export default function CheckoutPage() {
                 <span>Subtotal</span>
                 <span className='font-bold text-white'>{subtotal} EGP</span>
               </div>
-              <div className='flex justify-between'>
-                <span>Shipping Fee</span>
-                <span className='font-bold text-white'>{shippingFee} EGP</span>
+
+              <div className='flex items-center justify-between gap-1.5 sm:gap-2 min-w-0'>
+                <span className='text-[10px] sm:text-xs text-slate-400 font-medium shrink-0'>
+                  Shipping Fee:
+                </span>
+                <span className='text-[8px] sm:text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1 py-[1px] sm:px-2 sm:py-0.5 rounded-[4px] sm:rounded-lg leading-none whitespace-nowrap'>
+                  Calculated on Delivery
+                </span>
               </div>
+
               <div className='flex justify-between text-sm font-black text-white pt-2 border-t border-slate-800'>
                 <span>Total Amount</span>
                 <span className='text-emerald-400'>{totalAmount} EGP</span>

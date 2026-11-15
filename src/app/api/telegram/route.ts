@@ -32,44 +32,33 @@ type ChannelConfig = {
 
 type AnyRecord = Record<string, unknown>;
 
-
-
-
-
-
 const DEFAULT_TELEGRAM_CONFIG: Required<ChannelConfig> = {
-  // 1. عنوان الرسالة (تقدر تغيره لأي إيموجي أو نص يعجبك)
   heading: '🚨 طلب جديد تم تأكيده!',
-
-  // 2. التوقيع السفلي (النص اللي بيظهر في آخر الرسالة)
   footer: '⚠️ برجاء سرعة التواصل مع العميل لتأكيد الشحن.',
-
-  // 3. التحكم في إظهار (true) أو إخفاء (false) أي حقل براحتك
   fields: {
-    order_number: true,      // رقم الأوردر
-    order_date: true,        // التاريخ والوقت
-    customer_name: true,     // اسم العميل
-    customer_phone: true,    // رقم الموبايل
-    customer_email: false,   // البريد الإلكتروني (مخفي)
-    customer_address: true,  // العنوان
-    city: false,              // المدينة
-    governorate: false,      // المحافظة (مخفي)
-    postal_code: false,      // الرمز البريدي (مخفي)
-    customer_notes: false,   // ملاحظات العميل
-    items: true,             // المنتجات والصور
-    subtotal: true,          // قيمة المنتجات
-    discount_code: false,    // كود الخصم
-    discount_amount: false,  // مبلغ الخصم
-    shipping_cost: true,     // مصاريف الشحن
-    tax_amount: false,       // الضرائب
-    payment_method: true,    // طريقة الدفع
-    payment_status: false,   // حالة الدفع
-    delivery_method: true,   // طريقة التوصيل
-    total_amount: true,      // الإجمالي النهائي
-    whatsapp_contact_link: true, // زرار تواصل الواتساب
+    order_number: true,
+    order_date: true,
+    customer_name: true,
+    customer_phone: true,
+    customer_email: false,
+    customer_address: true,
+    city: false,
+    governorate: false,
+    postal_code: false,
+    customer_notes: false,
+    items: true,
+    subtotal: true,
+    discount_code: false,
+    discount_amount: false,
+    shipping_cost: true,
+    tax_amount: false,
+    payment_method: true,
+    payment_status: false,
+    delivery_method: true,
+    total_amount: true,
+    whatsapp_contact_link: true,
   },
 };
-
 
 const FIELD_LABELS: Record<OrderFieldKey, string> = {
   order_number: '🧾 Order number',
@@ -95,8 +84,6 @@ const FIELD_LABELS: Record<OrderFieldKey, string> = {
   whatsapp_contact_link: '💬 Quick WhatsApp contact',
 };
 
-
-
 function asRecord(value: unknown): AnyRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as AnyRecord)
@@ -118,6 +105,16 @@ function asText(value: unknown, maxLength = 500): string {
   return String(value).trim().slice(0, maxLength);
 }
 
+function escapeLegacyMarkdown(text: string): string {
+  return text.replace(/([_*`\[])/g, '\\$1');
+}
+
+function stripLegacyMarkdown(text: string): string {
+  return text
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1: $2')
+    .replace(/[*_`\\]/g, '');
+}
+
 function formatMoney(value: unknown, currency: string): string {
   const text = asText(value, 50);
   return text ? `${text} ${currency}` : '';
@@ -131,7 +128,11 @@ function normalizePhone(phone: string): string {
   return digits;
 }
 
-function makeItemsText(itemsValue: unknown, currency: string): string {
+function makeItemsText(
+  itemsValue: unknown,
+  currency: string,
+  escapeMd: boolean,
+): string {
   if (!Array.isArray(itemsValue)) return '';
 
   return itemsValue
@@ -140,7 +141,7 @@ function makeItemsText(itemsValue: unknown, currency: string): string {
       const item = asRecord(rawItem);
       const product = asRecord(item.product);
 
-      const name =
+      const rawName =
         asText(
           firstValue(
             item.name,
@@ -152,6 +153,8 @@ function makeItemsText(itemsValue: unknown, currency: string): string {
           ),
           180,
         ) || `المنتج ${index + 1}`;
+
+      const name = escapeMd ? escapeLegacyMarkdown(rawName) : rawName;
 
       const quantity =
         asText(firstValue(item.quantity, item.qty, item.count), 20) || '1';
@@ -178,11 +181,16 @@ function makeItemsText(itemsValue: unknown, currency: string): string {
       const details = [
         `الكمية: ${quantity}`,
         unitPrice !== undefined ? `السعر: ${formatMoney(unitPrice, currency)}` : '',
-      ].filter(Boolean).join(' | ');
+      ]
+        .filter(Boolean)
+        .join(' | ');
 
       let itemString = `▪️ ${name}\n   └ ${details}`;
       if (imageUrl) {
-        itemString += `\n   └ 🖼️ [صورة المنتج](${imageUrl})`;
+        const cleanUrl = imageUrl.replace(/[()]/g, '');
+        itemString += escapeMd
+          ? `\n   └ 🖼️ [صورة المنتج](${cleanUrl})`
+          : `\n   └ 🖼️ صورة المنتج: ${imageUrl}`;
       }
 
       return itemString;
@@ -237,15 +245,60 @@ function buildMessage(
     .filter((key) => values[key])
     .map((key) => {
       if (key === 'whatsapp_contact_link') {
-        return `💬 [تواصل مباشر مع العميل عبر واتساب](${values[key]})`;
+        const cleanLink = values[key].replace(/[()]/g, '');
+        return `💬 [تواصل مباشر مع العميل عبر واتساب](${cleanLink})`;
       }
-      return `${FIELD_LABELS[key]}: ${values[key]}`;
+      const safeVal = isTelegram ? escapeLegacyMarkdown(values[key]) : values[key];
+      return `${FIELD_LABELS[key]}: ${safeVal}`;
     });
 
   return [heading, ...rows, footer]
     .filter((part) => part && part.trim())
     .join('\n\n')
-    .slice(0, isTelegram ? 3900 : 6000);
+    .slice(0, isTelegram ? 3800 : 6000);
+}
+
+async function sendTelegramMessage(
+  botToken: string,
+  chatId: string,
+  text: string,
+) {
+  const sendRequest = async (withMarkdown: boolean) => {
+    const payload: Record<string, unknown> = {
+      chat_id: chatId,
+      text: withMarkdown ? text : stripLegacyMarkdown(text).slice(0, 4000),
+      disable_web_page_preview: false,
+    };
+    if (withMarkdown) {
+      payload.parse_mode = 'Markdown';
+    }
+
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    });
+
+    const data = (await res.json()) as {
+      ok?: boolean;
+      description?: string;
+    };
+
+    return { ok: Boolean(res.ok && data.ok), description: data.description };
+  };
+
+  const firstAttempt = await sendRequest(true);
+  if (firstAttempt.ok) {
+    return firstAttempt;
+  }
+
+  const desc = firstAttempt.description || '';
+  if (desc.toLowerCase().includes("can't parse entities")) {
+    return await sendRequest(false);
+  }
+
+  return firstAttempt;
 }
 
 export async function POST(req: Request) {
@@ -310,7 +363,6 @@ export async function POST(req: Request) {
       order.order_items,
     );
 
-    // الاتصال بقاعدة البيانات لإنشاء رقم أوردر تسلسلي (1, 2, 3...)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -324,7 +376,6 @@ export async function POST(req: Request) {
           auth: { persistSession: false, autoRefreshToken: false },
         });
 
-        // جلب عدد الأوردرات الكلي ليكون هو رقم الأوردر التسلسلي الجديد
         const { count } = await supabase
           .from('orders')
           .select('*', { count: 'exact', head: true });
@@ -393,7 +444,7 @@ export async function POST(req: Request) {
       governorate: '',
       postal_code: '',
       customer_notes: '',
-      items: makeItemsText(rawItems, currency),
+      items: makeItemsText(rawItems, currency, true),
       subtotal: formatMoney(subtotal, currency),
       discount_code: '',
       discount_amount: '',
@@ -406,33 +457,21 @@ export async function POST(req: Request) {
       whatsapp_contact_link: '',
     };
 
-    // ==========================================
-    // 💬 التحكم في رسالة الواتساب المباشرة للعميل
-    // ==========================================
     let whatsappUrl: string | null = null;
     if (normalizedPhone) {
-
-      // جمعنا تفاصيل الاوردر في  كونست عشان يدخل جوه رسالة الواتساب
-      const itemsSummary = makeItemsText(rawItems, currency);
-// ===========================
-// ===========================
-      // يمكنك تعديل النص العربي أدناه بالكامل كما تشاء:
-      // const whatsappMessage = `مرحباً بك يا ${customerName}، بخصوص طلبك رقم ${orderNumber} من متجر Abdo Store، نحن نتواصل معك لتأكيد تفاصيل التوصيل.`;
-
-      // =======================
-      // =======================
+      const itemsSummary = makeItemsText(rawItems, currency, false);
       const whatsappMessage =
-        `مرحباً بك يا *${customerName}* 👋\n` +
+        `مرحباً بك يا *${customerName}* 👋\n\n` +
         `شكراً لتسوقك من *Abdo Store* ❤️\n\n` +
         `🧾 *تفاصيل طلبك (${orderNumber}):*\n` +
         `${itemsSummary}\n\n` +
         `💰 *الإجمالي النهائي:* ${formatMoney(totalAmount, currency)}\n` +
         `📍 *عنوان التوصيل:* ${address}\n\n` +
         `نحن نتواصل معك الآن لتأكيد تفاصيل الشحن والتوصيل.`;
-      // =======================
-      // =======================
 
-      whatsappUrl = `https://wa.me/${normalizedPhone}?text=` + encodeURIComponent(whatsappMessage);
+      whatsappUrl =
+        `https://wa.me/${normalizedPhone}?text=` +
+        encodeURIComponent(whatsappMessage);
       values.whatsapp_contact_link = whatsappUrl;
     }
 
@@ -456,27 +495,13 @@ export async function POST(req: Request) {
         true,
       );
 
-      const telegramResponse = await fetch(
-        `https://api.telegram.org/bot${botToken}/sendMessage`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: telegramMessage,
-            parse_mode: 'Markdown',
-            disable_web_page_preview: false,
-          }),
-          cache: 'no-store',
-        },
+      const telegramResult = await sendTelegramMessage(
+        botToken,
+        chatId,
+        telegramMessage,
       );
 
-      const telegramResult = (await telegramResponse.json()) as {
-        ok?: boolean;
-        description?: string;
-      };
-
-      if (!telegramResponse.ok || !telegramResult.ok) {
+      if (!telegramResult.ok) {
         return NextResponse.json(
           { success: false, error: telegramResult.description || 'Telegram send failed.' },
           { status: 502 },
@@ -496,9 +521,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
-
-
-// ======================
-// whatsappMessage
-// DEFAULT_TELEGRAM_CONFIG
-// const FIELD_LABELS:

@@ -29,8 +29,14 @@ export default function ShareButton({
       onShare();
     }
 
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : 'https://abdo-store-kappa.vercel.app';
+
+    const cleanSlug = encodeURIComponent(String(productSlug ?? '').trim());
     // بناء رابط المنتج باستخدام الـ slug
-    const productUrl = `${window.location.origin}/products/${productSlug}`;
+    const productUrl = `${origin}/products/${cleanSlug}`;
 
     // حساب الخصم لو السعر القديم أكبر من الحالي
     const current = Number(productPrice) || 0;
@@ -48,10 +54,13 @@ export default function ShareButton({
 
     // 🎛️ [مكان التحكم الكامل في نص رسالة الشير]
     const shareTitle = `⚡ ${productName} | Abdo Store`;
-    const shareText = `🔥 شاهد هذا المنتج الرائع: ${productName}\n${discountText}🚀 اطلبه الآن من متجرنا:`;
+    const shareText = `🔥 شاهد هذا المنتج الرائع: ${productName}\n${discountText}🚀 متوفر الآن في Abdo Store`;
 
     // 1. استخدام واجهة المشاركة الأصلية (للهواتف)
-    if (navigator.share) {
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function'
+    ) {
       try {
         await navigator.share({
           title: shareTitle,
@@ -60,7 +69,7 @@ export default function ShareButton({
         });
         return;
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
+        if ((err as Error)?.name !== 'AbortError') {
           console.log('Error sharing:', err);
         }
       }
@@ -68,10 +77,12 @@ export default function ShareButton({
 
     // 2. النسخ الاحتياطي للحافظة (للكمبيوتر أو المتصفحات الأخرى)
     try {
-      const fullClipboardMessage = `${shareText}\n${productUrl}`;
-      await navigator.clipboard.writeText(fullClipboardMessage);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        const fullClipboardMessage = `${shareText}\n${productUrl}`;
+        await navigator.clipboard.writeText(fullClipboardMessage);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (err) {
       console.error('Failed to copy: ', err);
     }

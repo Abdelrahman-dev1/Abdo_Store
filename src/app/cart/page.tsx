@@ -1,5 +1,5 @@
 'use client';
-
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -129,10 +129,12 @@ export default function CartPage() {
             className='text-sm sm:text-lg font-black flex items-center gap-2 sm:gap-3 text-white shrink-0 cursor-pointer group'
           >
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
-              <img
-                src='/we11.jpg'
+              <Image
+                src='/fav-me-2.webp'
                 alt='Abdo'
-                className='w-full h-full object-cover rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
+                width={400}
+                height={400}
+                className='w-full h-full object-cover object-[50%_5%] rounded-[10px] sm:rounded-[14px] transform group-hover:scale-110 transition-transform duration-500'
               />
             </div>
             <span className='text-sm sm:text-xl font-black bg-gradient-to-r from-red-500 via-purple-400 to-blue-500 bg-clip-text text-transparent animate-pulse tracking-wide'>
@@ -142,10 +144,12 @@ export default function CartPage() {
 
           <Link
             href='/'
-            className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm cursor-pointer'
+            title='Continue Shopping'
+            aria-label='Continue Shopping'
+            className='inline-flex items-center justify-center gap-0 sm:gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 p-2 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm cursor-pointer shrink-0'
           >
-            <ArrowLeft size={14} className='text-slate-400' />
-            <span className='bg-gradient-to-r from-red-400 to-blue-400 bg-clip-text text-transparent tracking-wide'>
+            <ArrowLeft size={14} className='text-slate-400 shrink-0' />
+            <span className='hidden sm:inline bg-gradient-to-r from-red-400 to-blue-400 bg-clip-text text-transparent tracking-wide'>
               Continue Shopping
             </span>
           </Link>
@@ -204,9 +208,7 @@ export default function CartPage() {
           <div className='grid grid-cols-1 lg:grid-cols-12 gap-8'>
             {/* Left: Shopping Cart Items List (Cols 7) */}
 
-
-
-{/* Left: Shopping Cart Items List (Cols 7) */}
+            {/* Left: Shopping Cart Items List (Cols 7) */}
             <div className='lg:col-span-7 space-y-4'>
               <div className='flex items-center justify-between border-b border-slate-800/80 pb-4'>
                 <h2 className='text-base sm:text-lg font-black text-white flex items-center gap-2.5'>
@@ -227,10 +229,16 @@ export default function CartPage() {
               {/* 🟢 صندوق المنتجات مع سكرول داخلي وتصميم أنيق */}
               <div className='max-h-[390px] overflow-y-auto pr-2 space-y-4 custom-scrollbar'>
                 {cartItems.map((item) => {
-                  const itemImg = item.image || item.images?.[0] || item.image_url;
+                  const itemImg =
+                    item.image || item.images?.[0] || item.image_url;
                   const currentPrice = item.price || 0;
-                  const oldPrice = item.oldPrice || item.original_price || (currentPrice + 200);
-                  const itemDesc = item.description || item.details || item.short_description || 'High quality premium product';
+                  const oldPrice =
+                    item.oldPrice || item.original_price || currentPrice + 200;
+                  const itemDesc =
+                    item.description ||
+                    item.details ||
+                    item.short_description ||
+                    'High quality premium product';
                   const qty = item.quantity || 1;
 
                   return (
@@ -242,9 +250,11 @@ export default function CartPage() {
                         {/* صورة المنتج مع استيكر Hot Deal */}
                         <div className='relative w-20 h-20 bg-slate-900 rounded-2xl overflow-hidden flex-shrink-0 border border-slate-700/60 shadow-md'>
                           {itemImg ? (
-                            <img
+                            <Image
                               src={itemImg}
-                              alt={item.name}
+                              alt={item.name || 'Store Item'}
+                              width={600}
+                              height={600}
                               className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
                             />
                           ) : (
@@ -322,7 +332,6 @@ export default function CartPage() {
               </div>
             </div>
 
-
             {/* Right: Checkout & Order Summary (Cols 5) */}
             <div className='lg:col-span-5 bg-[#0e1626]/95 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl h-fit space-y-6 relative overflow-hidden'>
               <div className='absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none'></div>
@@ -367,9 +376,11 @@ export default function CartPage() {
                   </span>
                 </div>
 
-                <div className='flex justify-between items-center'>
-                  <span className='text-slate-400'>Shipping Fee:</span>
-                  <span className='text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-lg'>
+                <div className='flex items-center justify-between gap-1.5 sm:gap-2 min-w-0'>
+                  <span className='text-[10px] sm:text-xs text-slate-400 font-medium shrink-0'>
+                    Shipping Fee:
+                  </span>
+                  <span className='text-[8px] sm:text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1 py-[1px] sm:px-2 sm:py-0.5 rounded-[4px] sm:rounded-lg leading-none whitespace-nowrap'>
                     Calculated on Delivery
                   </span>
                 </div>

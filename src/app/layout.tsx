@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -8,7 +8,7 @@ import './globals.css';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
-  display: 'swap', // لتحسين سرعة ظهور النص (Font Display Swap)
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
@@ -20,36 +20,48 @@ const geistMono = Geist_Mono({
 /* ==========================================================
    2. إعدادات الـ SEO الشاملة وميتا داتا الموقع (Abdo Store)
    ========================================================== */
-// [تعديل هــــــــام]: استبدل 'https://abdo-store.vercel.app' برابط موقعك الحقيقي لاحقاً
-const siteUrl = 'https://abdo-store-kappa.vercel.app/';
+const siteUrl = 'https://abdo-store-kappa.vercel.app';
+const siteName = 'Abdo Store';
+const defaultTitle = 'Abdo Store | Store Number One ❤️';
+const defaultDescription =
+  'اكتشف أحدث الإلكترونيات، الإكسسوارات العصرية، والعروض الحصرية بأفضل الأسعار مع خدمة التوصيل السريع من Abdo Store.';
+// const ogImageUrl = `${siteUrl}/fav-me-2.webp`;
+const ogImageUrl = `${siteUrl}/fav-me-3.webp`;
+
+export const viewport: Viewport = {
+  themeColor: '#07090e',
+  colorScheme: 'dark',
+};
 
 export const metadata: Metadata = {
-  // عنوان المتجر الرئيسي (يظهر في تبويب المتصفح ومحركات البحث)
+  metadataBase: new URL(siteUrl),
+  applicationName: siteName,
+  category: 'shopping',
+
   title: {
-    default: 'Abdo Store | Store Number one  ❤️',
-    template: '%s | Abdo Store', // لتوليد عناوين الصفحات الفرعية أوتوماتيكياً
+    default: defaultTitle,
+    template: `%s | ${siteName}`,
   },
 
-  // الوصف التسويقي لمحركات البحث (SEO Description)
-  description:
-    'اكتشف أحدث الإلكترونيات، الإكسسوارات العصرية، والعروض الحصرية بأفضل الأسعار مع خدمة التوصيل السريع من Abdo Store.',
+  description: defaultDescription,
 
-  // الكلمات الافتتاحية لمحركات البحث
   keywords: [
     'Abdo Store',
     'تسوق إلكتروني',
     'إكسسوارات',
     'عروض',
-    'متجر أدو',
+    'متجر Abdo Store',
     'متجر إلكتروني مصر',
   ],
 
-  // معلومات الملكية والمؤلف
   authors: [{ name: 'Abdelrahman Ashraf', url: siteUrl }],
   creator: 'Abdelrahman Ashraf',
-  publisher: 'Abdo Store',
+  publisher: siteName,
 
-  // إعدادات الـ Robots لمحركات البحث (الأرشفة والتحليل)
+  alternates: {
+    canonical: '/',
+  },
+
   robots: {
     index: true,
     follow: true,
@@ -62,37 +74,37 @@ export const metadata: Metadata = {
     },
   },
 
-  // الـ Open Graph (خاص بـ فيسبوك، واتساب، وتليجرام)
   openGraph: {
     type: 'website',
     locale: 'ar_EG',
     url: siteUrl,
-    siteName: 'Abdo Store',
-    title: 'Abdo Store | Store Number one ❤️',
+    siteName,
+    title: defaultTitle,
     description: 'اكتشف أحدث العروض والمنتجات المميزة مع خدمة توصيل سريعة.',
+
     images: [
       {
-        url: `${siteUrl}/we11.jpg`, // صورة أيقونة أو غلاف المتجر الموجودة في مجلد public
+        // url: '/fav-me-2.webp',
+        url: ogImageUrl,
         width: 1200,
         height: 630,
-        alt: 'Abdo Store Logo & Brand',
+        alt: 'Abdo Store Brand Preview',
       },
     ],
   },
 
-  // إعدادات تويتر (Twitter Cards)
   twitter: {
     card: 'summary_large_image',
-    title: 'Abdo Store | store Number one  ❤️',
+    title: defaultTitle,
     description: 'اكتشف أحدث العروض والمنتجات المميزة مع Abdo Store.',
-    images: [`${siteUrl}/meq.jpg`],
+    images: [ogImageUrl],
+    // images: ['/fav-me-2.webp'],
   },
 
-  // أيقونة الموقع (Favicon) تظهر بوضوح في تبويب المتصفح
   icons: {
-    icon: '/we11.jpg',
-    shortcut: '/we11.jpg',
-    apple: '/we11.jpg',
+    icon: '/fav-me-3.webp',
+    shortcut: '/fav-me-3.webp',
+    apple: '/fav-me-3.webp',
   },
 };
 
@@ -105,19 +117,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    // [تعديل الذوق]: تم ضبط الاتجاه ليكون باللغة العربية (dir="rtl" و lang="ar")
-    // يمكنك تغييرها لـ lang="en" لو موقعك إنجليزي بالكامل
     <html
       lang=''
-      dir='ltr'
+      dir=''
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className='min-h-full flex flex-col bg-[#07090e] text-slate-100 selection:bg-red-500 selection:text-white font-sans antialiased'>
         {/* ==========================================================
-           4. ستايل السكرول بار المخصص (Neon Custom Scrollbar) - تم نقله الي ملف globals.css
+            4. ستايل السكرول بار المخصص موجود في globals.css
            ========================================================== */}
+
         {/* ==========================================================
-           5. حاوية محتوى الموقع الأساسية
+            5. حاوية محتوى الموقع الأساسية
            ========================================================== */}
         <div className='flex-1 flex flex-col min-h-screen'>{children}</div>
       </body>

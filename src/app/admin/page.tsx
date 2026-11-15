@@ -218,7 +218,7 @@ export default function AdminDashboardPage() {
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
 
       {/* Admin Navbar */}
-      <nav className='bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-50'>
+      <nav className='fixed top-0 inset-x-0 z-50 bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 h-20 grid grid-cols-3 items-center'>
           <div className='flex items-center justify-start'>
             <Link
@@ -232,12 +232,12 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <div className='text-center'>
-            <h1 className='text-sm sm:text-base font-black text-white tracking-tight'>
+          <div className='min-w-0 flex-1 text-center px-1 sm:px-0'>
+            <h1 className='text-[11px] sm:text-base lg:text-lg font-extrabold tracking-tight whitespace-normal break-words leading-snug bg-gradient-to-r from-rose-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent'>
               Command Center
             </h1>
-            <p className='text-[10px] sm:text-[11px] text-slate-400 font-medium'>
-              Store Management & Analytics
+            <p className='text-[9px] sm:text-xs text-slate-300/80 font-medium whitespace-normal break-words leading-snug mt-0.5'>
+              Store Management &amp; Analytics
             </p>
           </div>
 
@@ -254,7 +254,7 @@ export default function AdminDashboardPage() {
       </nav>
 
       {/* Main Content */}
-      <main className='max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8 relative z-10'>
+      <main className='max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8 relative z-10 pt-20 sm:pt-25'>
         {/* Welcome Banner */}
         <div className='bg-gradient-to-r from-[#0e1626] via-[#141d2f] to-[#0e1626] p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6'>
           <div className='space-y-2'>
