@@ -76,6 +76,7 @@ export default function AdminProductsPage() {
   const [showInHero, setShowInHero] = useState(false);
   const [showInFlash, setShowInFlash] = useState(false);
   const [showInCatalog, setShowInCatalog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // ======================================
   // ======================================
@@ -83,64 +84,131 @@ export default function AdminProductsPage() {
   // ======================================
   // ======================================
   // ======================================
-const filterScrollRef = useRef<HTMLDivElement | null>(null);
-const [canScrollLeft, setCanScrollLeft] = useState(false);
-const [canScrollRight, setCanScrollRight] = useState(false);
-const [scrollThumb, setScrollThumb] = useState({ width: 100, left: 0 });
-
-const updateFilterScrollState = useCallback(() => {
-  const el = filterScrollRef.current;
-  if (!el) return;
-
-  const { scrollLeft, scrollWidth, clientWidth } = el;
-  const maxScroll = Math.max(0, scrollWidth - clientWidth);
-
-  setCanScrollLeft(scrollLeft > 2);
-  setCanScrollRight(scrollLeft < maxScroll - 2);
-
-  if (maxScroll <= 0 || scrollWidth <= 0) {
-    setScrollThumb({ width: 100, left: 0 });
-    return;
-  }
-
-  const thumbWidthPercent = Math.max(22, (clientWidth / scrollWidth) * 100);
-  const maxThumbTravel = 100 - thumbWidthPercent;
-  const currentLeftPercent = (scrollLeft / maxScroll) * maxThumbTravel;
-
-  setScrollThumb({
-    width: thumbWidthPercent,
-    left: Math.min(maxThumbTravel, Math.max(0, currentLeftPercent)),
+  const filterScrollRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [scrollThumb, setScrollThumb] = useState({ width: 100, left: 0 });
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // State خاصة بالـ Modal المنبثق
+  const [modalInfo, setModalInfo] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'success',
   });
-}, []);
 
-useEffect(() => {
-  updateFilterScrollState();
-
-  const el = filterScrollRef.current;
-  if (!el) return;
-
-  const resizeObserver = new ResizeObserver(() => {
-    updateFilterScrollState();
-  });
-  resizeObserver.observe(el);
-
-  window.addEventListener('resize', updateFilterScrollState);
-  return () => {
-    resizeObserver.disconnect();
-    window.removeEventListener('resize', updateFilterScrollState);
+  // دالة مساعدة لفتح المودال بأي رسالة وعنوان
+  const showModal = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'info' = 'success',
+  ) => {
+    setModalInfo({ isOpen: true, title, message, type });
   };
-}, [updateFilterScrollState, categories.length]);
 
-const handleScrollFilters = (direction: 'prev' | 'next') => {
-  const el = filterScrollRef.current;
-  if (!el) return;
+  // دالة قفل المودال
+  const closeModal = () => {
+    setModalInfo((prev) => ({ ...prev, isOpen: false }));
+  };
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
 
-  const step = Math.max(180, Math.round(el.clientWidth * 0.65));
-  el.scrollBy({
-    left: direction === 'next' ? step : -step,
-    behavior: 'smooth',
-  });
-};
+  // 1. تعريف الـ State الخاصة بالتنبيهات
+  const [toast, setToast] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
+
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' = 'success',
+  ) => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  };
+  // ======================================
+  // ======================================
+  // ======================================
+  // ======================================
+
+  const updateFilterScrollState = useCallback(() => {
+    const el = filterScrollRef.current;
+    if (!el) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const maxScroll = Math.max(0, scrollWidth - clientWidth);
+
+    setCanScrollLeft(scrollLeft > 2);
+    setCanScrollRight(scrollLeft < maxScroll - 2);
+
+    if (maxScroll <= 0 || scrollWidth <= 0) {
+      setScrollThumb({ width: 100, left: 0 });
+      return;
+    }
+
+    const thumbWidthPercent = Math.max(22, (clientWidth / scrollWidth) * 100);
+    const maxThumbTravel = 100 - thumbWidthPercent;
+    const currentLeftPercent = (scrollLeft / maxScroll) * maxThumbTravel;
+
+    setScrollThumb({
+      width: thumbWidthPercent,
+      left: Math.min(maxThumbTravel, Math.max(0, currentLeftPercent)),
+    });
+  }, []);
+
+  useEffect(() => {
+    updateFilterScrollState();
+
+    const el = filterScrollRef.current;
+    if (!el) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateFilterScrollState();
+    });
+    resizeObserver.observe(el);
+
+    window.addEventListener('resize', updateFilterScrollState);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateFilterScrollState);
+    };
+  }, [updateFilterScrollState, categories.length]);
+
+  const handleScrollFilters = (direction: 'prev' | 'next') => {
+    const el = filterScrollRef.current;
+    if (!el) return;
+
+    const step = Math.max(180, Math.round(el.clientWidth * 0.65));
+    el.scrollBy({
+      left: direction === 'next' ? step : -step,
+      behavior: 'smooth',
+    });
+  };
   // ======================================
   // ======================================
   // ======================================
@@ -198,8 +266,13 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
           .update({ name: newCategoryName, slug })
           .eq('id', editingCategory.id);
 
-        if (error) alert('Error updating category: ' + error.message);
-        else {
+        if (error) {
+          showModal(
+            'خطأ في التحديث ⚠️',
+            'Error updating category: ' + error.message,
+            'error',
+          );
+        } else {
           setCategories(
             categories.map((c) =>
               c.id === editingCategory.id ? { ...c, name: newCategoryName } : c,
@@ -207,7 +280,7 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
           );
           setEditingCategory(null);
           setNewCategoryName('');
-          alert('Category updated successfully!');
+          showModal('Success 🎉', 'Category updated successfully!', 'success');
         }
       } else {
         const { data, error } = await supabase
@@ -215,12 +288,17 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
           .insert([{ name: newCategoryName, slug }])
           .select();
 
-        if (error) alert('Error adding category: ' + error.message);
+        if (error)
+          showModal(
+            'Add Error ⚠️',
+            'Error adding category: ' + error.message,
+            'error',
+          );
         else if (data) {
           setCategories((prev) => [...prev, data[0]]);
           setCategoryId(data[0].id);
           setNewCategoryName('');
-          alert('Category added successfully!');
+          showModal('Success 🎉', 'Category added successfully!', 'success');
         }
       }
     } catch (err) {
@@ -241,7 +319,11 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
       setCategories(categories.filter((c) => c.id !== catToDelete.id));
       if (categoryId === catToDelete.id) setCategoryId('');
     } else {
-      alert('Failed to delete category: ' + error.message);
+      showModal(
+        'Deletion Error ⚠️',
+        'Failed to delete category: ' + error.message,
+        'error',
+      );
     }
 
     setCatDeleteModalOpen(false);
@@ -279,7 +361,7 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
       setImages((prev) => [...prev, ...uploadedUrls]);
     } catch (err) {
       console.error('Error uploading images:', err);
-      alert('Failed to upload some images.');
+      showModal('Upload Error ⚠️', 'Failed to upload some images.', 'error');
     } finally {
       setUploading(false);
     }
@@ -290,7 +372,11 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
     e.preventDefault();
 
     if (!name.trim() || !price) {
-      alert('Please enter product name and price at least.');
+      showModal(
+        'Validation Error ⚠️',
+        'Please enter product name and price at least.',
+        'error',
+      );
       return;
     }
 
@@ -320,9 +406,13 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
       setSubmitting(false);
 
       if (error) {
-        alert('Error updating product: ' + error.message);
+        showModal(
+          'Update Error ⚠️',
+          'Error updating product: ' + error.message,
+          'error',
+        );
       } else {
-        alert('Product updated successfully!');
+        showModal('Success 🎉', 'Product updated successfully!', 'success');
         resetForm();
         fetchData();
       }
@@ -342,9 +432,13 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
       setSubmitting(false);
 
       if (error) {
-        alert('Error adding product: ' + error.message);
+        showModal(
+          'Add Error ⚠️',
+          'Error adding product: ' + error.message,
+          'error',
+        );
       } else {
-        alert('Product added successfully!');
+        showModal('Success 🎉', 'Product added successfully!', 'success');
         resetForm();
         fetchData();
       }
@@ -391,24 +485,59 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
     setProductToDelete(id);
     setDeleteModalOpen(true);
   };
-
+  // ==============================================
+  // ==============================================
+  // ==============================================
+  // ==============================================
   const executeDelete = async () => {
     if (!productToDelete) return;
 
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productToDelete);
+    try {
+      // 1. جلب بيانات المنتج أولاً لمعرفة رابط الصورة قبل حذفه من قاعدة البيانات
+      const { data: productData } = await supabase
+        .from('products')
+        .select('image, images')
+        .eq('id', productToDelete)
+        .single();
 
-    if (!error) {
+      const imageUrl =
+        productData?.image ||
+        (Array.isArray(productData?.images) ? productData.images[0] : null);
+
+      // 2. إرسال طلب إلى السيرفر لحذف الصورة من Cloudinary إذا كانت موجودة
+      if (imageUrl) {
+        await fetch('/api/delete-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl }),
+        });
+      }
+
+      // 3. حذف المنتج من جدول products في سوبابيز
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productToDelete);
+
+      if (error) throw error;
+
+      // 4. تحديث الواجهة وحذف المنتج من الـ state المحلي
       setProducts(products.filter((p) => p.id !== productToDelete));
-    } else {
-      alert('Failed to delete product: ' + error.message);
+    } catch (err: any) {
+      showModal(
+        'Deletion Error ⚠️',
+        'Failed to delete product: ' + (err.message || 'Unknown error'),
+        'error',
+      );
+    } finally {
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
     }
-
-    setDeleteModalOpen(false);
-    setProductToDelete(null);
   };
+
+  // ==============================================
+  // ==============================================
+  // ==============================================
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -416,12 +545,31 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
   };
 
   // فلترة المنتجات المعروضة في جدول الأدمن بناءً على اختيار البوكسات
-  const filteredInventory = products.filter((p) => {
+  // فلترة المنتجات المعروضة في جدول الأدمن بناءً على اختيار البوكسات
+  // 1. فلترة البوكسات والأزرار باسم جديد وآمن
+  const safeFilteredInventory = products.filter((p) => {
     if (adminFilter === 'all') return true;
+
+    // فلتر الصور المتعددة الجديد
+    if (adminFilter === 'multi-images') {
+      return Array.isArray(p.images) && p.images.length > 1;
+    }
+
     if (adminFilter === 'hero') return p.show_in_hero;
     if (adminFilter === 'flash') return p.show_in_flash;
     if (adminFilter === 'catalog') return p.show_in_catalog;
     return p.category_id === adminFilter;
+  });
+
+  // 2. فلترة البحث باسم جديد وآمن تماماً لمنع أي تكرار
+  const finalInventoryList = safeFilteredInventory.filter((product) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+
+    const matchedCat = categories.find((c) => c.id === product.category_id);
+    const nameMatch = (product.name || '').toLowerCase().includes(q);
+    const catMatch = (matchedCat?.name || '').toLowerCase().includes(q);
+    return nameMatch || catMatch;
   });
 
   // ======================================
@@ -430,9 +578,9 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
   // ======================================
   // ======================================
   // ======================================
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const displayedInventory = filteredInventory.filter((product) => {
+  // استخدمنا safeFilteredInventory بدل filteredInventory القديم
+  const displayedInventory = safeFilteredInventory.filter((product) => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
 
@@ -449,22 +597,25 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
 
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
-      <style jsx global>{`
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #07090e;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, #ef4444, #3b82f6);
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, #dc2626, #2563eb);
-        }
-      `}</style>
+      {/* 2. كود الشكل العائم للتنبيه */}
+      {toast && (
+        <div className='fixed top-6 right-6 z-50 animate-bounce duration-300'>
+          <div
+            className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border text-xs font-bold backdrop-blur-md ${
+              toast.type === 'success'
+                ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/40 shadow-emerald-950'
+                : 'bg-rose-950/90 text-rose-300 border-rose-500/40 shadow-rose-950'
+            }`}
+          >
+            <span
+              className={`w-2.5 h-2.5 rounded-full animate-pulse ${
+                toast.type === 'success' ? 'bg-emerald-400' : 'bg-rose-400'
+              }`}
+            />
+            <span>{toast.message}</span>
+          </div>
+        </div>
+      )}
 
       <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
@@ -718,7 +869,7 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
                 {/* Section Assignment Checkboxes */}
                 <div className='bg-[#141d2f]/80 p-4 rounded-2xl border border-slate-800 space-y-3'>
                   <label className='block text-xs font-bold text-slate-300 uppercase tracking-wider'>
-                    Display Sections Assignment (تحكم دقيق)
+                    Display Sections Assignment
                   </label>
                   <div className='grid grid-cols-1 sm:grid-cols-3 gap-2.5'>
                     <label
@@ -850,23 +1001,48 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
                     placeholder='Enter product description...'
                   />
                 </div>
+                {/* ======================================= */}
+                {/* ======================================= */}
+                {/* ======================================= */}
 
-                <button
-                  type='submit'
-                  disabled={submitting || uploading}
-                  className='w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-red-950/50 transition duration-300 disabled:opacity-50 text-xs flex items-center justify-center gap-2 cursor-pointer'
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className='w-4 h-4 animate-spin' />
-                      <span>Saving Product...</span>
-                    </>
-                  ) : (
-                    <span>
-                      {editingId ? 'Update Product' : 'Save & Add Product'}
-                    </span>
-                  )}
-                </button>
+                <div className='flex items-center gap-3 pt-2'>
+                  {/* زر الإلغاء والتفريغ */}
+                  <button
+                    type='button'
+                    onClick={() => {
+                      // لو عندك دالة اسمها resetForm أو عاوز تصفر البيانات، حطها هنا
+                      if (typeof resetForm === 'function') resetForm();
+                      // لو عاوز تقفل وضع التعديل لو موجود:
+                      // if (typeof setEditingId === 'function') setEditingId(null);
+                    }}
+                    disabled={submitting || uploading}
+                    className='w-1/3 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold rounded-xl border border-slate-700 transition duration-300 disabled:opacity-50 text-xs flex items-center justify-center cursor-pointer shadow-md'
+                  >
+                    Cancel
+                  </button>
+
+                  {/* زر الحفظ الأساسي */}
+                  <button
+                    type='submit'
+                    disabled={submitting || uploading}
+                    className='w-2/3 py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-red-950/50 transition duration-300 disabled:opacity-50 text-xs flex items-center justify-center gap-2 cursor-pointer'
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className='w-4 h-4 animate-spin' />
+                        <span>Saving Product...</span>
+                      </>
+                    ) : (
+                      <span>
+                        {editingId ? 'Update Product' : 'Save & Add Product'}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                {/* ======================================= */}
+                {/* ======================================= */}
+                {/* ======================================= */}
+                {/* ======================================= */}
               </form>
             </div>
           </div>
@@ -979,6 +1155,9 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
               </div>
 
               {/* حاوية البوكسات مع اسكرول أفقي ناعم وشريط اسكرول رفيع */}
+              {/* حاوية البوكسات مع اسكرول أفقي ناعم وشريط اسكرول رفيع */}
+              {/* حاوية البوكسات مع اسكرول أفقي ناعم وشريط اسكرول رفيع */}
+              {/* حاوية البوكسات مع اسكرول أفقي ناعم وشريط اسكرول رفيع */}
               <div className='relative'>
                 <div
                   ref={filterScrollRef}
@@ -995,6 +1174,25 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
                     }`}
                   >
                     All ({products.length})
+                  </button>
+
+                  {/* زرار فلترة الصور المتعددة (Multi Images) */}
+                  <button
+                    type='button'
+                    onClick={() => setAdminFilter('multi-images')}
+                    className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition border shrink-0 cursor-pointer whitespace-nowrap ${
+                      adminFilter === 'multi-images'
+                        ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-transparent shadow-md'
+                        : 'bg-[#141d2f] text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    Multi Images (
+                    {
+                      products.filter(
+                        (p) => Array.isArray(p.images) && p.images.length > 1,
+                      ).length
+                    }
+                    )
                   </button>
 
                   <button
@@ -1055,7 +1253,14 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
                   })}
                 </div>
               </div>
+              {/* ================================== */}
+              {/* ================================== */}
+              {/* ================================== */}
+              {/* ================================== */}
+              {/* ================================== */}
             </div>
+            {/* ================================== */}
+            {/* ================================== */}
             {/* ================================== */}
             {/* ================================== */}
             {/* ================================== */}
@@ -1104,6 +1309,9 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
                           className='hover:bg-[#141d2f]/60 transition'
                         >
                           <td className='py-4 px-4 flex items-center gap-3.5'>
+                            {/* ======================== */}
+                            {/* ======================== */}
+                            {/* ======================== */}
                             <div className='relative w-12 h-12 bg-slate-900 rounded-xl overflow-hidden flex-shrink-0 border border-slate-700 shadow-md'>
                               {product.images?.[0] ? (
                                 <Image
@@ -1118,7 +1326,19 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
                                   <ImageIcon size={18} />
                                 </div>
                               )}
+
+                              {/* استيكر يظهر فقط إذا كان المنتج يحتوي على صور متعددة (Multi Images) */}
+                              {Array.isArray(product.images) &&
+                                product.images.length > 1 && (
+                                  <span className='absolute bottom-0 right-0 bg-blue-600/90 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded-tl-lg shadow-md border-t border-l border-blue-400/40 z-10'>
+                                    +{product.images.length}
+                                  </span>
+                                )}
                             </div>
+                            {/* ======================== */}
+                            {/* ======================== */}
+                            {/* ======================== */}
+
                             <div>
                               <p className='font-bold text-slate-100 text-sm mb-0.5'>
                                 {product.name}
@@ -1200,6 +1420,83 @@ const handleScrollFilters = (direction: 'prev' | 'next') => {
         </div>
       </main>
 
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* نافذة المودال المنبثقة الاحترافية */}
+      {/* ========================================= */}
+      {/* Vibrant Multi-Color Professional Modal */}
+      {modalInfo.isOpen && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-all duration-300 animate-in fade-in'>
+          {/* Colorful Gradient Border Wrapper */}
+          <div className='p-[2px] rounded-3xl bg-gradient-to-br from-rose-500 via-amber-400 via-emerald-400 to-blue-500 max-w-sm w-full shadow-[0_25px_60px_-15px_rgba(99,102,241,0.45)] transform transition-all animate-in zoom-in-95 duration-300'>
+            {/* Deep Colorful Glass Card (No Black/White/Gray inside) */}
+            <div className='bg-gradient-to-br from-indigo-950 via-purple-950 to-blue-950 rounded-[22px] p-7 w-full text-center relative overflow-hidden ring-1 ring-inset ring-amber-200/15'>
+              {/* Multi-Color Ambient Glows Inside Card */}
+              <div className='absolute -top-14 -left-14 w-36 h-36 bg-rose-500/25 rounded-full blur-2xl pointer-events-none'></div>
+              <div className='absolute -top-14 -right-14 w-36 h-36 bg-amber-400/20 rounded-full blur-2xl pointer-events-none'></div>
+              <div className='absolute -bottom-14 -left-14 w-36 h-36 bg-blue-500/25 rounded-full blur-2xl pointer-events-none'></div>
+              <div className='absolute -bottom-14 -right-14 w-36 h-36 bg-emerald-500/25 rounded-full blur-2xl pointer-events-none'></div>
+
+              {/* Dynamic Icon Container with Layered Glow */}
+              <div
+                className={`relative w-16 h-16 mx-auto mb-5 rounded-2xl flex items-center justify-center text-2xl font-black shadow-xl transition-transform hover:scale-105 duration-200 ${
+                  modalInfo.type === 'success'
+                    ? 'bg-gradient-to-tr from-emerald-500/30 via-teal-400/20 to-amber-300/20 text-emerald-300 border border-emerald-400/60 shadow-emerald-500/30'
+                    : modalInfo.type === 'error'
+                      ? 'bg-gradient-to-tr from-rose-500/30 via-pink-500/20 to-amber-400/20 text-rose-300 border border-rose-400/60 shadow-rose-500/30'
+                      : 'bg-gradient-to-tr from-blue-500/30 via-indigo-400/20 to-emerald-400/20 text-sky-300 border border-sky-400/60 shadow-blue-500/30'
+                }`}
+              >
+                {modalInfo.type === 'success'
+                  ? '✓'
+                  : modalInfo.type === 'error'
+                    ? '✕'
+                    : 'i'}
+              </div>
+
+              {/* Title (Rich Warm-to-Cool Gradient Text) */}
+              <h3 className='relative bg-gradient-to-r from-amber-200 via-rose-200 to-sky-200 bg-clip-text text-transparent font-extrabold text-xl mb-2.5 tracking-wide drop-shadow-sm'>
+                {modalInfo.title}
+              </h3>
+
+              {/* Message (Soft Luminous Sky-Indigo) */}
+              <p className='relative text-indigo-200/95 text-xs mb-7 leading-relaxed font-medium px-1'>
+                {modalInfo.message}
+              </p>
+
+              {/* Action Button with Multi-tone Gradient & Shimmer */}
+              <button
+                type='button'
+                onClick={closeModal}
+                className={`relative w-full py-3.5 rounded-2xl font-extrabold text-xs tracking-widest uppercase transition-all duration-200 cursor-pointer shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95 ${
+                  modalInfo.type === 'success'
+                    ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-emerald-950 shadow-emerald-500/35'
+                    : modalInfo.type === 'error'
+                      ? 'bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 hover:from-rose-400 hover:to-amber-300 text-rose-950 shadow-rose-500/35'
+                      : 'bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 hover:from-sky-300 hover:to-indigo-400 text-indigo-950 shadow-blue-500/35'
+                }`}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================= */}
+      {/* ========================================= */}
+
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
+      {/* ========================================= */}
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200'>

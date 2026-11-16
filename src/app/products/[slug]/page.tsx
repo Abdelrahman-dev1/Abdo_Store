@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 import ProductClient from './ProductClient';
 
 const SITE_URL = 'https://abdo-store-kappa.vercel.app';
-const FALLBACK_IMAGE = `${SITE_URL}/fav-me-2.webp`;
+const FALLBACK_IMAGE = `${SITE_URL}/fav-me-3.webp`;
 const DEFAULT_TITLE = '⚡ Special Offer | Abdo Store';
 const DEFAULT_DESCRIPTION = 'Highest quality, lowest price | Abdo Store';
 

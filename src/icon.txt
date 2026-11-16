@@ -12,7 +12,7 @@ export const contentType = 'image/png';
 
 export default async function Icon() {
   const imageBuffer = await readFile(
-    join(process.cwd(), 'public', 'fav-me-2.webp'),
+    join(process.cwd(), 'public', 'fav-me-3.webp'),
   );
   const base64 = imageBuffer.toString('base64');
   const dataUrl = `data:image/webp;base64,${base64}`;

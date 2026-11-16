@@ -218,7 +218,7 @@ export default function ProfilePage() {
           >
             <div className='w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-lg shadow-red-600/20 overflow-hidden flex items-center justify-center'>
               <Image
-                src='/fav-me-2.webp'
+                src='/fav-me-3.webp'
                 alt='Abdo'
                 width={300}
                 height={300}

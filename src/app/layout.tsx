@@ -25,8 +25,7 @@ const siteName = 'Abdo Store';
 const defaultTitle = 'Abdo Store | Store Number One ❤️';
 const defaultDescription =
   'اكتشف أحدث الإلكترونيات، الإكسسوارات العصرية، والعروض الحصرية بأفضل الأسعار مع خدمة التوصيل السريع من Abdo Store.';
-// const ogImageUrl = `${siteUrl}/fav-me-2.webp`;
-const ogImageUrl = `${siteUrl}/fav-me-3.webp`;
+const ogImageUrl = 'https://abdo-store-kappa.vercel.app/fav-me-3.webp';
 
 export const viewport: Viewport = {
   themeColor: '#07090e',
@@ -80,15 +79,15 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName,
     title: defaultTitle,
-    description: 'اكتشف أحدث العروض والمنتجات المميزة مع خدمة توصيل سريعة.',
-
+    description: defaultDescription,
     images: [
       {
-        // url: '/fav-me-2.webp',
         url: ogImageUrl,
+        secureUrl: ogImageUrl,
         width: 1200,
         height: 630,
         alt: 'Abdo Store Brand Preview',
+        type: 'image/webp',
       },
     ],
   },
@@ -96,9 +95,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: defaultTitle,
-    description: 'اكتشف أحدث العروض والمنتجات المميزة مع Abdo Store.',
+    description: defaultDescription,
     images: [ogImageUrl],
-    // images: ['/fav-me-2.webp'],
   },
 
   icons: {
@@ -116,10 +114,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // rtl - ltr - auto - en - ar - وممكن تعمل تخصيص ع الديف تحددلها الاتجاه واللغه
   return (
     <html
-      lang=''
-      dir=''
+      lang='en'
+      dir='ltr'
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className='min-h-full flex flex-col bg-[#07090e] text-slate-100 selection:bg-red-500 selection:text-white font-sans antialiased'>

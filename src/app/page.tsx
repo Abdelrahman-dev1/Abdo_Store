@@ -67,12 +67,12 @@ export default function HomePage() {
 
   // ==========================================
   // ==========================================
-const [announcementBar, setAnnouncementBar] = useState<{
-  enabled: boolean;
-  text: string;
-  startEmoji: string;
-  endEmoji: string;
-} | null>(null);
+  const [announcementBar, setAnnouncementBar] = useState<{
+    enabled: boolean;
+    text: string;
+    startEmoji: string;
+    endEmoji: string;
+  } | null>(null);
   // ==========================================
   // ==========================================
   // ==========================================
@@ -571,72 +571,71 @@ const [announcementBar, setAnnouncementBar] = useState<{
   // ==========================================
   // ==========================================
   useEffect(() => {
-  let active = true;
-  let requestInProgress = false;
+    let active = true;
+    let requestInProgress = false;
 
-  const loadAnnouncementBar = async () => {
-    if (requestInProgress) return;
+    const loadAnnouncementBar = async () => {
+      if (requestInProgress) return;
 
-    requestInProgress = true;
+      requestInProgress = true;
 
-    try {
-      const { data, error } = await supabase
-        .from('settings')
-        .select(
-          'announcement_enabled, announcement_text, announcement_emoji_start, announcement_emoji_end'
-        )
-        .eq('id', 1)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select(
+            'announcement_enabled, announcement_text, announcement_emoji_start, announcement_emoji_end',
+          )
+          .eq('id', 1)
+          .maybeSingle();
 
-      if (!active) return;
+        if (!active) return;
 
-      if (error) {
-        console.error('Announcement loading error:', error);
-        return;
+        if (error) {
+          console.error('Announcement loading error:', error);
+          return;
+        }
+
+        if (!data) {
+          setAnnouncementBar(null);
+          return;
+        }
+
+        setAnnouncementBar({
+          enabled: data.announcement_enabled ?? true,
+          text:
+            data.announcement_text ??
+            'FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items! Limited Time Only.',
+          startEmoji: data.announcement_emoji_start || '💸',
+          endEmoji: data.announcement_emoji_end || '🔥',
+        });
+      } catch (error) {
+        console.error('Announcement error:', error);
+      } finally {
+        requestInProgress = false;
       }
+    };
 
-      if (!data) {
-        setAnnouncementBar(null);
-        return;
-      }
-
-      setAnnouncementBar({
-        enabled: data.announcement_enabled ?? true,
-        text:
-          data.announcement_text ??
-          'FLASH SALE: Enjoy Up To 40% OFF On Selected Cyber Tech Items! Limited Time Only.',
-        startEmoji: data.announcement_emoji_start || '💸',
-        endEmoji: data.announcement_emoji_end || '🔥',
-      });
-
-    } catch (error) {
-      console.error('Announcement error:', error);
-    } finally {
-      requestInProgress = false;
-    }
-  };
-
-  void loadAnnouncementBar();
-
-  // تحديث تلقائي كل 20 ثانية
-  const refreshTimer = window.setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      void loadAnnouncementBar();
-    }
-  }, 20000);
-
-  const handleFocus = () => {
     void loadAnnouncementBar();
-  };
 
-  window.addEventListener('focus', handleFocus);
+    // تحديث تلقائي كل 20 ثانية
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadAnnouncementBar();
+      }
+    }, 20000);
 
-  return () => {
-    active = false;
-    window.clearInterval(refreshTimer);
-    window.removeEventListener('focus', handleFocus);
-  };
-}, []);
+    const handleFocus = () => {
+      void loadAnnouncementBar();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
   // ==========================================
   // ==========================================
   // ==========================================
@@ -1311,37 +1310,59 @@ const [announcementBar, setAnnouncementBar] = useState<{
                 )}
               </div>
 
+              {/* ================================= */}
+              {/* ================================= */}
+              {/* ================================= */}
+              {/* ================================= */}
               {/* Footer Summary & Checkout */}
+
+              {/* ================================= */}
+              {/* ================================= */}
+              {/* ================================= */}
+              {/* Compact & Mobile-Optimized Cart Footer */}
               {cart.length > 0 && (
-                <div className='p-5 border-t border-slate-800/80 bg-[#07090e]/95 backdrop-blur-xl space-y-3.5 relative z-10'>
-                  <div className='flex justify-between items-center text-xs text-slate-300'>
+                <div className='p-3 sm:p-4 border-t border-slate-800/80 bg-[#0c1017] backdrop-blur-xl space-y-2.5 relative z-10 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2'>
+                  {/* Subtotal Row */}
+                  <div className='flex justify-between items-center text-[11px] sm:text-xs text-slate-300'>
                     <span className='text-slate-400'>Subtotal:</span>
-                    <span className='text-sm font-bold text-white'>
-                      {subtotal} EGP
-                    </span>
-                  </div>
-                  <div className='flex justify-between items-center text-xs text-slate-300'>
-                    <span className='text-slate-400'>Shipping:</span>
-                    <span className='text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg text-[10px]'>
-                      Calculated on Delivery
-                    </span>
-                  </div>
-                  <div className='border-t border-slate-800/80 pt-3 flex justify-between items-center font-black text-base text-white'>
-                    <span>Total Amount:</span>
-                    <span className='text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-blue-400 text-lg'>
+                    <span className='text-xs sm:text-sm font-bold text-white'>
                       {subtotal} EGP
                     </span>
                   </div>
 
+                  {/* Shipping Fee Row */}
+                  <div className='flex justify-between items-center text-[11px] sm:text-xs text-slate-300'>
+                    <span className='text-slate-400'>Shipping Fee:</span>
+                    <span className='text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] tracking-wide'>
+                      Calculated on Delivery
+                    </span>
+                  </div>
+
+                  {/* Total Amount Row */}
+                  <div className='border-t border-slate-800/80 pt-2 flex justify-between items-center font-black text-sm sm:text-base text-white'>
+                    <span className='text-xs sm:text-sm font-bold'>
+                      Total Amount:
+                    </span>
+                    <span className='text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-400 to-blue-400 text-sm sm:text-base'>
+                      {subtotal} EGP
+                    </span>
+                  </div>
+
+                  {/* Checkout Button */}
                   <Link
                     href='/checkout'
                     onClick={() => setIsCartOpen(false)}
-                    className='w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-center rounded-xl font-bold block shadow-xl shadow-red-950/50 transition text-xs cursor-pointer'
+                    className='w-full py-2.5 sm:py-3 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-center rounded-xl font-bold flex items-center justify-center gap-2 shadow-md shadow-red-950/30 transition-all duration-200 hover:scale-[1.01] active:scale-95 text-[11px] sm:text-xs cursor-pointer'
                   >
-                    Proceed to Checkout ({subtotal} EGP)
+                    <span>Proceed to Checkout ({subtotal} EGP)</span>
+                    <span className='text-xs font-light'>→</span>
                   </Link>
                 </div>
               )}
+              {/* ================================= */}
+              {/* ================================= */}
+              {/* ================================= */}
+              {/* ================================= */}
             </div>
           </div>
         </div>
@@ -1370,7 +1391,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
             {/* تصغير حجم الصورة على الموبايل w-9 h-9 وعلى الشاشات الأكبر ترجع w-12 h-12 */}
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
               <Image
-                src='/fav-me-2.webp'
+                src='/fav-me-3.webp'
                 alt='Abdo'
                 width={400}
                 height={400}
@@ -1431,7 +1452,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
             {/* <SiteShareButton /> */}
 
             {/* <div className='inline-flex items-center scale-70 sm:scale-90 origin-center [&_button]:p-1.5 [&_button]:sm:px-2.5 [&_button]:sm:py-2 [&_button]:rounded-lg [&_button]:text-[10px] [&_button]:sm:text-xs [&_svg]:w-3.5 [&_svg]:h-3.5 [&_svg]:sm:w-4 [&_svg]:sm:h-4'> */}
-              {/* <SiteShareButton /> */}
+            {/* <SiteShareButton /> */}
             {/* </div> */}
 
             {/* =============================== */}
@@ -1524,6 +1545,8 @@ const [announcementBar, setAnnouncementBar] = useState<{
         <div className=' absolute bottom-1/4 right-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-red-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
 
         <div className='max-w-7xl mx-auto px-2 sm:px-6 space-y-2 sm:space-y-4 relative z-10 '>
+          {/* Header & Controls */}
+          {/* Header & Controls */}
           {/* Header & Controls */}
           <div className='flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800/80 pb-2 sm:pb-3 gap-2 sm:gap-4 mt-5'>
             <div className='flex items-start sm:items-center gap-2.5 sm:gap-3.5 pt-1 sm:pt-2 min-w-0'>
@@ -1763,6 +1786,22 @@ const [announcementBar, setAnnouncementBar] = useState<{
                         const ratingVal = product.rating || 5;
 
                         return (
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+
                           <Link
                             key={`hero-${copy}-${product.slug}`}
                             href={`/products/${product.slug}`}
@@ -1770,27 +1809,55 @@ const [announcementBar, setAnnouncementBar] = useState<{
                             className='w-[240px] sm:w-[320px] shrink-0 bg-[#0e172a]/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl border border-slate-800/90 shadow-xl overflow-hidden hover:border-blue-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                           >
                             <div>
-                              {/* Image Container */}
-                              <div className='w-full h-44 sm:h-56 bg-slate-950 relative overflow-hidden border-b border-slate-800/80'>
+                              {/* Image_Hero -1 */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              {/* ============================= */}
+                              <div className='w-full h-56 sm:h-68 bg-slate-950 relative overflow-hidden border-b border-slate-800/80 group'>
                                 {displayImage ? (
-                                  <Image
-                                    src={displayImage}
-                                    alt={product.name || 'Product Image'}
-                                    width={800}
-                                    height={800}
-                                    className='w-full h-full object-cover group-hover:scale-105 transition duration-700'
-                                  />
+                                  <div className='relative w-full h-full flex items-center justify-center'>
+                                    {/* 1. خلفية مموهة ناعمة من نفس لون الصورة لملء أي تباين جانبي بدون فراغات مزعجة */}
+                                    <div className='absolute inset-0 overflow-hidden pointer-events-none'>
+                                      <Image
+                                        src={displayImage}
+                                        alt=''
+                                        fill
+                                        sizes='(max-width: 768px) 240px, 320px'
+                                        className='w-full h-full object-cover filter blur-2xl opacity-40 scale-125'
+                                      />
+                                      <div className='absolute inset-0 bg-slate-950/40' />
+                                    </div>
+
+                                    {/* 2. الصورة الرئيسية: تظهر كاملة 100% بدون أي قص مع إيحاء بالضخامة والامتلاء */}
+                                    <Image
+                                      src={displayImage}
+                                      alt={product.name || 'Product Image'}
+                                      width={900}
+                                      height={900}
+                                      className='relative z-10 w-full h-full object-contain p-1.5 sm:p-2 group-hover:scale-105 transition-transform duration-700 drop-shadow-2xl'
+                                    />
+
+                                    {/* طبقة تدرج خفيفة جداً من الأسفل */}
+                                    <div className='absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none z-20' />
+                                  </div>
                                 ) : (
                                   <div className='flex items-center justify-center h-full text-slate-600 text-[11px] font-medium'>
                                     No Image Available
                                   </div>
                                 )}
 
-                                <div className='absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md'>
+                                {/* شارة مميزة (Hero Featured) */}
+                                <div className='absolute top-2.5 left-2.5 z-30 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow-md'>
                                   <Flame size={10} className='fill-white' />{' '}
                                   Hero Featured
                                 </div>
 
+                                {/* زر المفضلة (Wishlist) */}
                                 <button
                                   type='button'
                                   onClick={(e) => {
@@ -1798,7 +1865,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                     e.stopPropagation();
                                     toggleWishlist(product);
                                   }}
-                                  className={`absolute top-2.5 right-2.5 p-2 rounded-xl backdrop-blur-md border transition ${
+                                  className={`absolute top-2.5 right-2.5 z-30 p-2 rounded-xl backdrop-blur-md border transition ${
                                     isWish
                                       ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
                                       : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
@@ -1811,6 +1878,17 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                 </button>
                               </div>
 
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
+                              {/* Details */}
                               {/* Details */}
                               <div className='p-3 sm:p-4 space-y-2'>
                                 <div className='flex items-center justify-between'>
@@ -1905,7 +1983,22 @@ const [announcementBar, setAnnouncementBar] = useState<{
                               </button>
                             </div>
                           </Link>
+
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
+                          // ==================================
                         );
+                        // ==================================
                       })}
                     </div>
                   ))}
@@ -2243,7 +2336,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
 
                       const stockQty = item.stock_quantity ?? item.stock ?? 10;
                       const ratingVal = item.rating || 5;
-
+                      // Image_Flash - 2;
                       return (
                         <Link
                           key={`flash-${copy}-${item.slug}`}
@@ -2252,7 +2345,14 @@ const [announcementBar, setAnnouncementBar] = useState<{
                           className='w-[220px] sm:w-[260px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-red-500/50 transition duration-300 group flex flex-col justify-between cursor-pointer'
                         >
                           <div>
-                            <div className='relative w-full h-38 sm:h-48 bg-slate-900 border-b border-slate-800 overflow-hidden'>
+                            {/* ================================== */}
+                            {/* ================================== */}
+                            {/* ================================== */}
+                            {/* ================================== */}
+                            {/* ================================== */}
+                            {/* ================================== */}
+                            {/* ================================== */}
+                            <div className='relative w-full h-38 sm:h-48 bg-slate-900 border-b border-slate-800 overflow-hidden group'>
                               <Image
                                 src={
                                   displayImage ||
@@ -2261,8 +2361,16 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                 alt={item.name || 'Store Item'}
                                 width={600}
                                 height={600}
-                                className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                                className='w-full h-full object-scale-down object-center group-hover:scale-110 transition duration-500'
                               />
+                              {/* ================================== */}
+                              {/* ================================== */}
+                              {/* ================================== */}
+                              {/* ================================== */}
+                              {/* ================================== */}
+                              {/* ================================== */}
+                              {/* ================================== */}
+                              {/* ================================== */}
 
                               <button
                                 type='button'
@@ -2899,6 +3007,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
                           product.category ||
                           'General';
 
+                        // Image_Catalog - 3;
                         return (
                           <Link
                             key={`catalog-${copy}-${product.slug}`}
@@ -2911,14 +3020,25 @@ const [announcementBar, setAnnouncementBar] = useState<{
                             className='w-[210px] sm:w-[240px] shrink-0 bg-[#0e1626]/95 backdrop-blur-xl rounded-xl border border-slate-800 shadow-md overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
                           >
                             <div>
-                              <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800'>
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              <div className='w-full h-36 sm:h-44 bg-slate-900 relative overflow-hidden border-b border-slate-800 group'>
                                 {displayImage ? (
                                   <Image
                                     src={displayImage}
                                     alt={product.name || 'Product Image'}
                                     width={800}
                                     height={800}
-                                    className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                                    className='w-full h-full object-scale-down group-hover:scale-105 transition duration-500'
                                   />
                                 ) : (
                                   <div className='flex items-center justify-center h-full text-slate-600 text-[10px]'>
@@ -2945,6 +3065,15 @@ const [announcementBar, setAnnouncementBar] = useState<{
                                   />
                                 </button>
                               </div>
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
+                              {/* =========================================== */}
 
                               <div className='p-2 sm:p-2.5 space-y-1.5'>
                                 <div className='flex items-center justify-between'>
@@ -3093,7 +3222,7 @@ const [announcementBar, setAnnouncementBar] = useState<{
               <div className='w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center shrink-0'>
                 <div className='w-full h-full bg-[#0e1626] rounded-[14px] overflow-hidden relative'>
                   <Image
-                    src='/fav-me-2.webp'
+                    src='/fav-me-3.webp'
                     alt='Abdo'
                     width={400}
                     height={400}
@@ -3171,7 +3300,9 @@ const [announcementBar, setAnnouncementBar] = useState<{
 
             {/* زر واتساب تفاعلي وأيقونة مميزة */}
             <a
-              href='https://wa.me/201016605189'
+              // href='https://wa.me/201016605189'
+
+              href='https://wa.me/201016605189?text=Hello,%20I%27m%20contacting%20you%20from%20your%20store%20regarding%20an%20order/inquiry.'
               target='_blank'
               rel='noopener noreferrer'
               className='inline-flex items-center gap-3 bg-gradient-to-r from-emerald-600/25 to-teal-600/25 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 px-4 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 shadow-lg shadow-emerald-950/40 group transform hover:scale-105'
@@ -3190,26 +3321,30 @@ const [announcementBar, setAnnouncementBar] = useState<{
             {/* ============================ */}
 
             {/* مكون المشاركة مع جملة معبرة وسهم أطول يشاور عليه */}
-            <div className='mt-4 pt-4 border-t border-slate-800/70 flex flex-wrap items-center justify-start gap-2.5 sm:gap-3 min-w-0'>
-              <span className='text-[11px] sm:text-xs font-semibold leading-snug bg-gradient-to-r from-rose-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent break-words'>
-                Share it with friends ❤️⚡
-              </span>
+            <div className='mt-5 pt-5 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 w-full min-w-0'>
+              {/* الجزء الخاص بالتكست والسهم */}
+              <div className='flex items-center justify-center sm:justify-start flex-wrap gap-2.5 sm:gap-3.5 w-full sm:w-auto'>
+                <span className='text-sm sm:text-base font-bold leading-snug bg-gradient-to-r from-rose-400 via-sky-400 to-emerald-400 bg-clip-text text-transparent break-words text-center sm:text-start'>
+                  Share it with friends ❤️⚡
+                </span>
 
-              <svg
-                className='w-6 h-5 sm:w-8 sm:h-5 text-sky-400 shrink-0 animate-pulse [animation-duration:2s]'
-                viewBox='0 0 36 20'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2.2'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                aria-hidden='true'
-              >
-                <path d='M2 10h31' />
-                <path d='m27 4 6 6-6 6' />
-              </svg>
+                <svg
+                  className='w-6 h-5 sm:w-8 sm:h-5 text-sky-400 shrink-0 animate-pulse [animation-duration:2s]'
+                  viewBox='0 0 36 20'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2.2'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  aria-hidden='true'
+                >
+                  <path d='M2 10h31' />
+                  <path d='m27 4 6 6-6 6' />
+                </svg>
+              </div>
 
-              <div className='ms-8 sm:ms-8 inline-flex items-center shrink-0 [&_button]:inline-flex [&_button]:items-center [&_button]:justify-center [&_button]:w-10 [&_button]:h-10 [&_button]:sm:w-11 [&_button]:sm:h-11 [&_button]:rounded-xl [&_button]:text-xs [&_button]:sm:text-sm [&_button]:font-bold [&_button]:shadow-lg [&_button]:transition-all [&_button]:duration-500 [&_button]:hover:scale-105 [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:sm:w-5 [&_svg]:sm:h-5 [&_svg]:shrink-0 [&_svg]:rotate-180'>
+              {/* زرار الشير */}
+              <div className='inline-flex items-center justify-center shrink-0 w-full sm:w-auto [&_button]:inline-flex [&_button]:items-center [&_button]:justify-center [&_button]:w-full sm:[&_button]:w-12 [&_button]:h-12 [&_button]:rounded-2xl [&_button]:text-sm [&_button]:sm:text-base [&_button]:font-bold [&_button]:shadow-xl [&_button]:transition-all [&_button]:duration-500 [&_button]:hover:scale-105 [&_svg]:w-5 [&_svg]:h-5 [&_svg]:sm:w-6 [&_svg]:sm:h-6 [&_svg]:shrink-0 [&_svg]:rotate-180'>
                 <SiteShareButton />
               </div>
             </div>

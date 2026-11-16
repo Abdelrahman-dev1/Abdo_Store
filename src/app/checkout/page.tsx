@@ -40,15 +40,12 @@ export default function CheckoutPage() {
   const [password, setPassword] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  const pathname = usePathname();
 
-
-const pathname = usePathname();
-
-useEffect(() => {
-  setSuccess(false);
-  setErrorMessage(null);
-}, [pathname]);
-
+  useEffect(() => {
+    setSuccess(false);
+    setErrorMessage(null);
+  }, [pathname]);
 
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -247,9 +244,12 @@ useEffect(() => {
         {/* ================================== */}
 
         <div className='relative z-10 bg-[#0e1626]/90 backdrop-blur-xl p-8 sm:p-12 rounded-3xl border border-slate-800 shadow-2xl max-w-md w-full text-center space-y-6'>
+          {/* Success Icon */}
           <div className='w-20 h-20 bg-emerald-950/60 border border-emerald-500/40 rounded-3xl flex items-center justify-center mx-auto text-emerald-400 shadow-xl shadow-emerald-950/40 animate-bounce'>
             <CheckCircle2 size={40} />
           </div>
+
+          {/* Title & Description */}
           <div className='space-y-2'>
             <h1 className='text-2xl font-black text-white'>
               Order Placed Successfully! 🎉
@@ -259,16 +259,43 @@ useEffect(() => {
               confirm your delivery.
             </p>
           </div>
-          <Link
-            href='/'
-            onClick={() => {
-              setSuccess(false);
-              setErrorMessage(null);
-            }}
-            className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl block shadow-lg shadow-red-950/50 transition cursor-pointer'
-          >
-            Return to Store
-          </Link>
+
+          {/* Action Buttons Section */}
+          <div className='space-y-3 w-full'>
+            {/* Return to Store Button */}
+            <Link
+              href='/'
+              onClick={() => {
+                setSuccess(false);
+                setErrorMessage(null);
+              }}
+              className='w-full py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white text-xs font-bold rounded-xl block shadow-lg shadow-red-950/50 transition cursor-pointer'
+            >
+              Return to Store
+            </Link>
+
+            {/* WhatsApp Support / Follow-up Banner */}
+            <div className='flex flex-col sm:flex-row items-center justify-between gap-2.5 p-3 rounded-xl bg-[#0c1017] border border-slate-800/80 text-xs'>
+              <span className='text-slate-300 text-[11px] sm:text-xs text-center sm:text-left leading-relaxed font-medium'>
+                Just placed your order? Chat with us:
+              </span>
+
+              <a
+                href='https://wa.me/201016605189?text=Hello,%20I%20have%20just%20placed%20my%20order%20and%20would%20like%20to%20follow%20up%20on%20its%20status!'
+                target='_blank'
+                rel='noopener noreferrer'
+                className='inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600/25 to-teal-600/25 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-300 shadow-md shadow-emerald-950/40 group transform hover:scale-[1.02] shrink-0 w-full sm:w-auto'
+              >
+                <div className='w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow group-hover:rotate-12 transition-transform duration-300'>
+                  {/* WhatsApp SVG Icon */}
+                  <svg className='w-3 h-3 fill-current' viewBox='0 0 24 24'>
+                    <path d='M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z' />
+                  </svg>
+                </div>
+                <span className='tracking-wide'>+20 101 660 5189</span>
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* ================================== */}
@@ -299,7 +326,7 @@ useEffect(() => {
           >
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
               <Image
-                src='/fav-me-2.webp'
+                src='/fav-me-3.webp'
                 alt='Abdo'
                 width={400}
                 height={400}
@@ -608,136 +635,136 @@ useEffect(() => {
               </div>
             </div>
 
-{cart.length > 0 ? (
-  <div className='space-y-3.5 max-h-72 overflow-y-auto pr-1 custom-scrollbar relative z-10'>
-    {cart.map((item, idx) => {
-      const qty = item.quantity || 1;
-      const itemImage =
-        item.image || item.image_url || '/placeholder.png';
-      const currentPrice = item.price || 0;
-      const oldPrice =
-        item.oldPrice || item.original_price || currentPrice + 200;
-      const itemDesc =
-        item.description ||
-        item.details ||
-        item.short_description ||
-        'High quality premium product';
+            {cart.length > 0 ? (
+              <div className='space-y-3.5 max-h-72 overflow-y-auto pr-1 custom-scrollbar relative z-10'>
+                {cart.map((item, idx) => {
+                  const qty = item.quantity || 1;
+                  const itemImage =
+                    item.image || item.image_url || '/placeholder.png';
+                  const currentPrice = item.price || 0;
+                  const oldPrice =
+                    item.oldPrice || item.original_price || currentPrice + 200;
+                  const itemDesc =
+                    item.description ||
+                    item.details ||
+                    item.short_description ||
+                    'High quality premium product';
 
-      return (
-        <div
-          key={item.id || idx}
-          className='group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 border border-slate-800/90 hover:border-slate-700/80 transition-all duration-300 shadow-md'
-        >
-          <div className='flex items-start sm:items-center gap-3.5 min-w-0 w-full sm:w-auto flex-1'>
-            <div className='relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-md'>
-              <Image
-                src={itemImage}
-                alt={item.name || 'Store Item'}
-                width={600}
-                height={600}
-                className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
-              />
-              <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
-                Hot Deal
-              </span>
-            </div>
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className='group relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 border border-slate-800/90 hover:border-slate-700/80 transition-all duration-300 shadow-md'
+                    >
+                      <div className='flex items-start sm:items-center gap-3.5 min-w-0 w-full sm:w-auto flex-1'>
+                        <div className='relative w-16 h-16 rounded-2xl overflow-hidden bg-slate-900 border border-slate-700/60 shrink-0 shadow-md'>
+                          <Image
+                            src={itemImage}
+                            alt={item.name || 'Store Item'}
+                            width={600}
+                            height={600}
+                            className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
+                          />
+                          <span className='absolute top-1 left-1 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shadow-md'>
+                            Hot Deal
+                          </span>
+                        </div>
 
-            <div className='min-w-0 flex-1'>
-              <p className='text-xs font-black text-white tracking-tight truncate'>
-                {item.name}
-              </p>
-              {itemDesc && (
-                <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
-                  {itemDesc}
-                </p>
-              )}
-              <div className='flex items-center gap-2 mt-1.5'>
-                <span className='text-xs font-black text-emerald-400'>
-                  {currentPrice} EGP
-                </span>
-                {oldPrice > currentPrice && (
-                  <span className='text-[10px] text-slate-500 line-through font-semibold'>
-                    {oldPrice} EGP
-                  </span>
-                )}
+                        <div className='min-w-0 flex-1'>
+                          <p className='text-xs font-black text-white tracking-tight truncate'>
+                            {item.name}
+                          </p>
+                          {itemDesc && (
+                            <p className='text-[10px] text-slate-400 line-clamp-1 mt-0.5'>
+                              {itemDesc}
+                            </p>
+                          )}
+                          <div className='flex items-center gap-2 mt-1.5'>
+                            <span className='text-xs font-black text-emerald-400'>
+                              {currentPrice} EGP
+                            </span>
+                            {oldPrice > currentPrice && (
+                              <span className='text-[10px] text-slate-500 line-through font-semibold'>
+                                {oldPrice} EGP
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className='flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60'>
+                        {/* أزرار التحكم بالكمية + زر حذف العنصر */}
+                        <div className='flex items-center gap-2'>
+                          <div className='flex items-center bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden p-0.5 shadow-inner'>
+                            <button
+                              type='button'
+                              onClick={() => {
+                                if (qty > 1) {
+                                  setCart(
+                                    cart.map((i) =>
+                                      i.id === item.id
+                                        ? { ...i, quantity: qty - 1 }
+                                        : i,
+                                    ),
+                                  );
+                                } else {
+                                  setCart(cart.filter((i) => i.id !== item.id));
+                                }
+                              }}
+                              className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
+                            >
+                              -
+                            </button>
+                            <span className='w-7 text-center text-xs font-black text-white'>
+                              {qty}
+                            </span>
+                            <button
+                              type='button'
+                              onClick={() => {
+                                setCart(
+                                  cart.map((i) =>
+                                    i.id === item.id
+                                      ? { ...i, quantity: qty + 1 }
+                                      : i,
+                                  ),
+                                );
+                              }}
+                              className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          {/* زر علامة السلة (حذف المنتج نهائياً) */}
+                          <button
+                            type='button'
+                            onClick={() => {
+                              setCart(cart.filter((i) => i.id !== item.id));
+                            }}
+                            title='إزالة المنتج'
+                            className='w-7 h-7 flex items-center justify-center bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all duration-200 cursor-pointer shadow-sm'
+                          >
+                            <svg
+                              xmlns='http://www.w3.org/2000/svg'
+                              className='w-3.5 h-3.5'
+                              fill='none'
+                              viewBox='0 0 24 24'
+                              stroke='currentColor'
+                              strokeWidth='2'
+                            >
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                d='M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          </div>
-
-          <div className='flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60'>
-            {/* أزرار التحكم بالكمية + زر حذف العنصر */}
-            <div className='flex items-center gap-2'>
-              <div className='flex items-center bg-slate-900/90 border border-slate-800 rounded-xl overflow-hidden p-0.5 shadow-inner'>
-                <button
-                  type='button'
-                  onClick={() => {
-                    if (qty > 1) {
-                      setCart(
-                        cart.map((i) =>
-                          i.id === item.id
-                            ? { ...i, quantity: qty - 1 }
-                            : i,
-                        ),
-                      );
-                    } else {
-                      setCart(cart.filter((i) => i.id !== item.id));
-                    }
-                  }}
-                  className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
-                >
-                  -
-                </button>
-                <span className='w-7 text-center text-xs font-black text-white'>
-                  {qty}
-                </span>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setCart(
-                      cart.map((i) =>
-                        i.id === item.id
-                          ? { ...i, quantity: qty + 1 }
-                          : i,
-                      ),
-                    );
-                  }}
-                  className='w-6 h-6 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition text-xs font-bold cursor-pointer'
-                >
-                  +
-                </button>
-              </div>
-
-              {/* زر علامة السلة (حذف المنتج نهائياً) */}
-              <button
-                type='button'
-                onClick={() => {
-                  setCart(cart.filter((i) => i.id !== item.id));
-                }}
-                title="إزالة المنتج"
-                className='w-7 h-7 flex items-center justify-center bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-xl transition-all duration-200 cursor-pointer shadow-sm'
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-)  : (
+            ) : (
               <div className='text-center py-8 text-slate-400 text-xs'>
                 Your cart is empty.{' '}
                 <Link href='/' className='text-blue-400 underline'>
@@ -767,26 +794,61 @@ useEffect(() => {
               </div>
             </div>
 
-            <button
-              type='submit'
-              disabled={loading || cart.length === 0}
-              className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-2xl text-xs font-bold shadow-xl shadow-red-950/50 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2.5 cursor-pointer relative z-10 group'
-            >
-              {loading ? (
-                <>
-                  <Loader2 className='w-4 h-4 animate-spin text-white' />
-                  <span>Processing Order...</span>
-                </>
-              ) : (
-                <>
-                  <CreditCard
-                    size={18}
-                    className='group-hover:scale-110 transition-transform'
-                  />
-                  <span>Confirm Order ({totalAmount} EGP)</span>
-                </>
-              )}
-            </button>
+            {/* ========================== */}
+            {/* ========================== */}
+            {/* ========================== */}
+            <div className='space-y-3 w-full relative z-10'>
+              {/* Main Confirm Order Button */}
+              <button
+                type='submit'
+                disabled={loading || cart.length === 0}
+                className='w-full py-4 bg-gradient-to-r from-red-600 via-rose-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white rounded-2xl text-xs font-bold shadow-xl shadow-red-950/50 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2.5 cursor-pointer relative z-10 group'
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className='w-4 h-4 animate-spin text-white' />
+                    <span>Processing Order...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard
+                      size={18}
+                      className='group-hover:scale-110 transition-transform'
+                    />
+                    <span>Confirm Order ({totalAmount} EGP)</span>
+                  </>
+                )}
+              </button>
+
+              {/* WhatsApp Direct Support / Order Follow-up Section */}
+              {/* <div className='flex flex-col sm:flex-row items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#0c1017] border border-slate-800/80 text-xs'>
+                <span className='text-slate-300 text-[11px] sm:text-xs text-center sm:text-left leading-relaxed font-medium'>
+                  Just placed your order? Reach us on WhatsApp for fast support:
+                </span>
+
+                <a
+                  href='https://wa.me/201016605189?text=Hello,%20I%20have%20just%20placed%20my%20order%20and%20would%20like%20to%20follow%20up%20on%20its%20status!'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-600/25 to-teal-600/25 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-md shadow-emerald-950/40 group transform hover:scale-[1.02] shrink-0 w-full sm:w-auto'
+                >
+                  <div className='w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow group-hover:rotate-12 transition-transform duration-300'>
+                    <svg
+                      className='w-3.5 h-3.5 fill-current'
+                      viewBox='0 0 24 24'
+                    >
+                      <path d='M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z' />
+                    </svg>
+                  </div>
+                  <span className='tracking-wide'>+20 101 660 5189</span>
+                </a>
+              </div> */}
+              {/* WhatsApp Direct Support / Order Follow-up Section */}
+            </div>
+
+            {/* ========================== */}
+            {/* ========================== */}
+            {/* ========================== */}
           </div>
         </form>
       </main>

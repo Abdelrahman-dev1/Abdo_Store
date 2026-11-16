@@ -1,4 +1,5 @@
 'use client';
+import { notFound } from 'next/navigation'; // 1. تأكد من استيرادها فوق في الملف
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import {
@@ -36,21 +37,30 @@ export default function ProductClient({ slug }: { slug: string }) {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
+  // 1. الـ State الجديد بالاسم النظيف
+  const [selectedImage, setSelectedImage] = useState('');
 
+  // 2. الـ useEffect الآمن (بيشتغل مرة واحدة لما الproduct يحصله تحميل)
+  useEffect(() => {
+    if (product) {
+      setSelectedImage(
+        product.image ||
+          product.images?.[0] ||
+          'https://via.placeholder.com/400',
+      );
+    }
+  }, [product]); // 👈 الـ [product] دي هي حزام الأمان اللي بيمنع أي لفة لا نهائية
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
 
-
-
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-
-// ==========================================
+  // ==========================================
   // Control slider for Related Products
   // ==========================================
 
@@ -109,25 +119,16 @@ export default function ProductClient({ slug }: { slug: string }) {
       }, delay),
     );
   };
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-// ==============================
-
-
-
-
-
-
-
-
-
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
+  // ==============================
 
   useEffect(() => {
     if (productIdentifier) {
@@ -181,18 +182,33 @@ export default function ProductClient({ slug }: { slug: string }) {
     }
   };
 
+  // ==============
+  // ==============
+  // ==============
+  // ==============
+
+  // ==============
   const fetchProductData = async (identifier: string) => {
     setLoading(true);
+
+    // 2. فك تشفير الـ Slug للتعامل السليم مع الحروف العربية والمسافات في الرابط
+    const cleanSlug = decodeURIComponent(identifier).trim();
 
     const { data: productData, error } = await supabase
       .from('products')
       .select('*')
-      .eq('slug', identifier)
-      .single();
+      .eq('slug', cleanSlug)
+      .maybeSingle(); // استخدام آمن وناعم لا يسبب إيرورات مزعجة في الكونسول
 
-    if (error || !productData) {
+    // لو حصل خطأ حقيقي في الاتصال بقاعدة البيانات
+    if (error) {
+      console.error('Supabase Error:', error.message);
+    }
+
+    // 3. لو المنتج غير موجود في الداتا بيز، يتم تحويله لصفحة 404 المخصصة فوراً
+    if (!productData) {
       setLoading(false);
-      return;
+      return notFound();
     }
 
     setProduct(productData);
@@ -217,6 +233,14 @@ export default function ProductClient({ slug }: { slug: string }) {
     fetchReviews(productData.id);
     setLoading(false);
   };
+  // ==============
+  // ==============
+  // ==============
+  // ==============
+  // ==============
+  // ==============
+  // ==============
+  // ==============
 
   const fetchReviews = async (productId: string) => {
     const { data } = await supabase
@@ -287,24 +311,37 @@ export default function ProductClient({ slug }: { slug: string }) {
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
 
       {/* Image Zoom Modal */}
+      {/* Image Zoom Modal */}
+      {/* Image Zoom Modal */}
+      {/* Image Zoom Modal */}
       {isZoomOpen && (
         <div className='fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4'>
+          {/* زر الإغلاق */}
           <button
+            type='button'
             onClick={() => setIsZoomOpen(false)}
-            className='absolute top-5 left-5 text-white bg-slate-800/80 hover:bg-slate-700 p-3 rounded-2xl transition cursor-pointer border border-slate-700'
+            className='absolute top-5 left-5 text-white bg-slate-800/80 hover:bg-slate-700 p-3 rounded-2xl transition cursor-pointer border border-slate-700 z-20'
           >
             <X size={20} />
           </button>
-          <Image
-            src={mainImage}
-            alt={product.name || 'Product Image'}
-            width={1000}
-            height={1000}
-            className='max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl border border-slate-800'
-          />
+
+          {/* حاوية الصورة المكبرة */}
+          <div className='relative w-full h-full flex items-center justify-center p-2 sm:p-6'>
+            <Image
+              src={mainImage}
+              alt={product.name || 'Product Image'}
+              width={1200}
+              height={1200}
+              className='max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-2xl shadow-2xl border border-slate-800'
+              priority
+            />
+          </div>
         </div>
       )}
-
+      {/* ======================================= */}
+      {/* ======================================= */}
+      {/* ======================================= */}
+      {/* ======================================= */}
       {/* Navbar */}
       <nav className='fixed top-0 left-0 right-0 w-full z-50 bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between'>
@@ -320,7 +357,7 @@ export default function ProductClient({ slug }: { slug: string }) {
           >
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
               <Image
-                src='/fav-me-2.webp'
+                src='/fav-me-3.webp'
                 alt='Abdo'
                 width={400}
                 height={400}
@@ -380,22 +417,57 @@ export default function ProductClient({ slug }: { slug: string }) {
 
         <div className='bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800/90 shadow-xl p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 items-center'>
           {/* العمود الأول: صورة المنتج + المفضلة + مصغرات الصور */}
+          {/* العمود الأول: صورة المنتج + المفضلة + مصغرات الصور */}
           <div className='space-y-2.5'>
-            <div className='relative aspect-square max-h-[360px] w-full mx-auto rounded-2xl overflow-hidden border border-slate-800 bg-[#141d2f]/60 group'>
-              <Image
-                src={mainImage}
-                alt={product.name || 'Product Image'}
-                width={800}
-                height={800}
-                className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
-              />
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details  */}
+            {/* Image_details */}
+            <div className='relative aspect-square max-h-[360px] w-full mx-auto rounded-2xl overflow-hidden border border-slate-800 bg-[#141d2f]/60 group flex items-center justify-center'>
+              {mainImage ? (
+                <div className='relative w-full h-full flex items-center justify-center'>
+                  {/* 1. خلفية مموهة ناعمة لملء الفراغات الجانبية بدون تشويش */}
+                  <div className='absolute inset-0 overflow-hidden pointer-events-none'>
+                    <Image
+                      src={mainImage}
+                      alt=''
+                      fill
+                      sizes='(max-width: 768px) 100vw, 360px'
+                      className='w-full h-full object-cover filter blur-2xl opacity-40 scale-125'
+                    />
+                    <div className='absolute inset-0 bg-slate-950/40' />
+                  </div>
+
+                  {/* 2. الصورة الرئيسية: أصبحت ضخمة وبأقصى مساحة ممكنة بدون أي هوامش أو مساحات فارغة */}
+                  <Image
+                    // src={mainImage}
+                    src={selectedImage} // 👈 دي لازم تكون selectedImage عشان تتغير لما تدوس تحت
+                    alt={product.name || 'Product Image'}
+                    width={900}
+                    height={900}
+                    className='relative z-10 w-full h-full object-contain p-0 group-hover:scale-105 transition-transform duration-700 drop-shadow-2xl'
+                  />
+
+                  {/* طبقة تدرج خفيفة من الأسفل للجمال */}
+                  <div className='absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none z-20' />
+                </div>
+              ) : (
+                <div className='flex items-center justify-center h-full text-slate-600 text-xs font-medium'>
+                  No Image Available
+                </div>
+              )}
 
               {/* شارة الخصم إن وُجدت */}
               {(Number(product.discount) > 0 ||
                 (Number(product.compare_at_price ?? product.old_price) >
                   Number(product.price) &&
                   Number(product.price) > 0)) && (
-                <span className='absolute top-2.5 left-2.5 px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-rose-600/90 text-white shadow-md backdrop-blur-sm pointer-events-none'>
+                <span className='absolute top-2.5 left-2.5 px-2.5 py-1 rounded-xl text-[11px] font-extrabold bg-rose-600/90 text-white shadow-md backdrop-blur-sm pointer-events-none z-30'>
                   {Number(product.discount) > 0
                     ? `-${Math.round(Number(product.discount))}%`
                     : `-${Math.round(
@@ -411,10 +483,11 @@ export default function ProductClient({ slug }: { slug: string }) {
                 </span>
               )}
 
+              {/* زر المفضلة */}
               <button
                 type='button'
                 onClick={toggleWishlist}
-                className={`absolute top-2.5 right-2.5 p-2.5 rounded-xl backdrop-blur-md transition shadow-md cursor-pointer border z-10 ${
+                className={`absolute top-2.5 right-2.5 p-2.5 rounded-xl backdrop-blur-md transition shadow-md cursor-pointer border z-30 ${
                   isWishlisted
                     ? 'bg-rose-950/80 text-rose-500 border-rose-500/40'
                     : 'bg-black/60 text-slate-300 border-slate-700 hover:text-white'
@@ -427,10 +500,12 @@ export default function ProductClient({ slug }: { slug: string }) {
                 />
               </button>
             </div>
-
             {/* شريط مصغرات الصور الإضافية */}
-            {Array.isArray(product.images) && product.images.length > 1 && (
-              <div className='flex items-center justify-center gap-2 overflow-x-auto pb-0.5'>
+            {/* شريط مصغرات الصور الإضافية */}
+            {/* شريط مصغرات الصور الإضافية */}
+            {/* شريط مصغرات الصور الإضافية */}
+            {Array.isArray(product?.images) && product.images.length > 1 && (
+              <div className='flex items-center justify-center gap-3 overflow-x-auto pb-2 mt-4'>
                 {product.images
                   .filter(
                     (img): img is string =>
@@ -438,21 +513,22 @@ export default function ProductClient({ slug }: { slug: string }) {
                   )
                   .slice(0, 5)
                   .map((imgUrl, idx) => {
-                    const isSelected = mainImage === imgUrl;
+                    const isSelected = selectedImage === imgUrl;
                     return (
                       <div
                         key={`${imgUrl}-${idx}`}
-                        className={`w-11 h-11 rounded-xl overflow-hidden border transition shrink-0 ${
+                        onClick={() => setSelectedImage(imgUrl)}
+                        className={`w-16 h-16 rounded-2xl overflow-hidden transition-all duration-300 shrink-0 cursor-pointer shadow-md ${
                           isSelected
-                            ? 'border-blue-400 ring-1 ring-blue-400/50'
-                            : 'border-slate-800 opacity-75 hover:opacity-100'
+                            ? 'border-2 border-blue-500 ring-4 ring-blue-500/20 scale-105 opacity-100'
+                            : 'border border-slate-700/80 opacity-70 hover:opacity-100 hover:border-slate-500 hover:scale-105'
                         }`}
                       >
                         <Image
                           src={imgUrl}
-                          alt={`${product.name || 'Product'} ${idx + 1}`}
-                          width={88}
-                          height={88}
+                          alt={`${product?.name || 'Product'} ${idx + 1}`}
+                          width={128}
+                          height={128}
                           className='w-full h-full object-cover'
                         />
                       </div>
@@ -460,6 +536,10 @@ export default function ProductClient({ slug }: { slug: string }) {
                   })}
               </div>
             )}
+            {/* ============== */}
+            {/* ============== */}
+            {/* ============== */}
+            {/* ============== */}
           </div>
 
           {/* العمود الثاني: بيانات الكارد + السعر + المشاركة + الإضافة للسلة */}
@@ -746,7 +826,7 @@ export default function ProductClient({ slug }: { slug: string }) {
 
                   requestAnimationFrame(animate);
                 }}
-                className='overflow-x-auto scrollbar-none py-2 px-0.5 touch-pan-x overscroll-x-contain flex gap-3 select-none'
+                className='overflow-x-auto scrollbar-none py-2 px-0.5 touch-pan-x touch-pan-y overscroll-x-contain flex gap-3 select-none'
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {relatedProducts.map((item) => {
@@ -761,13 +841,13 @@ export default function ProductClient({ slug }: { slug: string }) {
                       className='w-[140px] sm:w-[190px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-xl border border-slate-800 shadow-sm overflow-hidden hover:border-slate-700 transition duration-300 group flex flex-col justify-between cursor-pointer'
                     >
                       <div>
-                        <div className='w-full h-28 sm:h-38 bg-slate-900 overflow-hidden relative border-b border-slate-800'>
+                        <div className='w-full h-28 sm:h-38 bg-slate-900 overflow-hidden relative border-b border-slate-800 group'>
                           <Image
                             src={itemImg}
                             alt={item.name || 'Store Item'}
                             width={600}
                             height={600}
-                            className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
+                            className='w-full h-full object-contain object-center group-hover:scale-105 transition duration-500'
                           />
                         </div>
                         <div className='p-2.5 space-y-1'>

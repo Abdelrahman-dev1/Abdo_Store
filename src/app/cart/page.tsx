@@ -130,7 +130,7 @@ export default function CartPage() {
           >
             <div className='w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-red-600 to-blue-600 p-[2px] shadow-xl shadow-red-600/30 overflow-hidden flex items-center justify-center'>
               <Image
-                src='/fav-me-2.webp'
+                src='/fav-me-3.webp'
                 alt='Abdo'
                 width={400}
                 height={400}
