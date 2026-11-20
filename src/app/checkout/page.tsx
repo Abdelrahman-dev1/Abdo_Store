@@ -1,9 +1,10 @@
 'use client';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { evaluatePromoRules, PromoRule } from '@/lib/promoEngine';
 import {
   ShoppingBag,
   ArrowLeft,
@@ -41,7 +42,129 @@ export default function CheckoutPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const pathname = usePathname();
+  const [showUpcomingHints, setShowUpcomingHints] = useState(false);
+  {
+    /* ========================== */
+  }
+  {
+    /* ========================== */
+  }
+  {
+    /* ========================== */
+  }
+  {
+    /* ========================== */
+  }
+  {
+    /* ========================== */
+  }
 
+  const [branches, setBranches] = useState<
+    { id: string; name: string; address: string | null }[]
+  >([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [orderNote, setOrderNote] = useState('');
+
+  const [promoRules, setPromoRules] = useState<PromoRule[]>([]);
+
+  const [clientNow, setClientNow] = useState<Date | undefined>(undefined);
+  // ====================================
+  // ====================================
+  const [completedOrdersCount, setCompletedOrdersCount] = useState<number>(0);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || !active) {
+        if (active) setCompletedOrdersCount(0);
+        return;
+      }
+
+      const { data: userOrders } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('user_id', user.id);
+
+      if (!active || !userOrders) return;
+
+      const count = userOrders.filter(
+        (o) =>
+          o.status === 'delivered' ||
+          o.status === 'completed' ||
+          o.status === 'تم التسليم',
+      ).length;
+
+      setCompletedOrdersCount(count);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+  // ====================================
+
+  // ====================================
+
+  useEffect(() => {
+    setClientNow(new Date());
+  }, []);
+  // ====================================
+  // ====================================
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setBranchesLoading(true);
+      const { data } = await supabase
+        .from('store_branches')
+        .select('id, name, address')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (!active) return;
+      const list = data ?? [];
+      setBranches(list);
+
+      if (list.length === 0) {
+        setSelectedBranch('أونلاين فقط');
+      } else if (list.length === 1) {
+        setSelectedBranch(list[0].name);
+      } else {
+        setSelectedBranch('');
+      }
+      setBranchesLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // ===========================
+  // ===========================
+  // ===========================
+  // ===========================
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from('promo_rules')
+        .select('*')
+        .eq('is_active', true)
+        .order('priority', { ascending: true });
+      if (active) setPromoRules((data ?? []) as PromoRule[]);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+  // ===========================
+  // ===========================
   useEffect(() => {
     setSuccess(false);
     setErrorMessage(null);
@@ -103,6 +226,36 @@ export default function CheckoutPage() {
   // =================================
   // =================================
   // =================================
+  const totalItemsCount = useMemo(
+    () => cart.reduce((sum, item) => sum + (item.quantity || 1), 0),
+    [cart],
+  );
+
+  const promoEvaluation = useMemo(
+    () =>
+      evaluatePromoRules(promoRules, {
+        subtotal,
+        itemsCount: totalItemsCount,
+        city: city,
+        orderDate: clientNow,
+        completedOrdersCount,
+      }),
+    [
+      promoRules,
+      subtotal,
+      totalItemsCount,
+      city,
+      clientNow,
+      completedOrdersCount,
+    ],
+  );
+
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
   // =================================
   // =================================
   // دالة تأكيد الطلب المضمونة والآمنة 100%
@@ -161,9 +314,11 @@ export default function CheckoutPage() {
         user_id: userId,
         customer_name: fullName,
         customer_phone: phone,
+        branch_name: selectedBranch || null,
         customer_email: currentUser?.email || email || '',
         city: city || 'Not specified',
         customer_address: address,
+        customer_notes: orderNote.trim() || null,
         items: cart,
         subtotal,
         shipping_cost: shippingFee,
@@ -185,6 +340,33 @@ export default function CheckoutPage() {
         setErrorMessage('Error placing order: ' + orderError.message);
         setLoading(false);
         return;
+      }
+
+      // 1.5. تنقيص كمية الستوك لكل منتج في السلة بأمان
+      try {
+        for (const item of cart) {
+          const productId = item.id || item.product_id;
+          const qtyBought = Number(item.quantity ?? item.qty ?? 1);
+
+          if (productId && qtyBought > 0) {
+            const { error: stockError } = await supabase.rpc(
+              'adjust_product_stock',
+              {
+                p_product_id: productId,
+                p_delta: -Math.abs(qtyBought),
+              },
+            );
+
+            if (stockError) {
+              console.error(
+                `Failed to decrease stock for product ${productId}:`,
+                stockError,
+              );
+            }
+          }
+        }
+      } catch (stockErr) {
+        console.error('Stock adjustment error:', stockErr);
       }
 
       // 2. إرسال إشعار التيليجرام والتحقق من النتيجة
@@ -225,6 +407,16 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
   // =================================
   // =================================
   // =================================
@@ -606,6 +798,11 @@ export default function CheckoutPage() {
             </div>
           </div>
 
+          {/* ======================== */}
+          {/* ======================== */}
+          {/* ======================== */}
+          {/* ======================== */}
+          {/* ======================== */}
           <div className='bg-[#0e1626]/95 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-slate-800/90 shadow-2xl space-y-6 relative overflow-hidden'>
             <div className='flex items-center justify-between border-b border-slate-800/80 pb-4 relative z-10'>
               <h2 className='text-sm sm:text-base font-black text-white flex items-center gap-2.5 tracking-tight'>
@@ -772,8 +969,279 @@ export default function CheckoutPage() {
                 </Link>
               </div>
             )}
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* اختيار الفرع (مربوط بـ store_branches في السيتينج + خيار أونلاين دايماً) */}
+            <div className='space-y-2 relative z-10'>
+              <div className='flex items-center justify-between gap-2'>
+                <label className='block text-xs font-bold text-slate-200'>
+                  اختر الفرع <span className='text-rose-400'>*</span>
+                </label>
+                {selectedBranch && (
+                  <span className='px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 transition-all duration-300'>
+                    {selectedBranch === 'أونلاين فقط'
+                      ? '🌐 أونلاين'
+                      : '🏢 فرع محدد'}
+                  </span>
+                )}
+              </div>
 
-            <div className='space-y-2 pt-4 border-t border-slate-800/80 text-xs text-slate-300'>
+              {branchesLoading ? (
+                <div className='rounded-xl border border-slate-700/80 bg-[#090f19]/80 px-3.5 py-2.5 text-xs text-slate-400 animate-pulse'>
+                  جاري تحميل بيانات الفروع...
+                </div>
+              ) : branches.length === 0 ? (
+                <div className='flex items-center justify-between rounded-xl border border-blue-500/35 bg-gradient-to-r from-blue-500/10 via-[#090f19] to-cyan-500/10 px-3.5 py-2.5 text-xs font-bold text-blue-200 transition-all duration-300'>
+                  <span>أونلاين فقط</span>
+                  <span className='rounded-lg bg-blue-500/20 px-2 py-0.5 text-[10px] text-cyan-200'>
+                    مثبّت تلقائيًا
+                  </span>
+                </div>
+              ) : (
+                (() => {
+                  const hasOnlineOption = branches.some(
+                    (b) => b.name?.trim() === 'أونلاين فقط',
+                  );
+
+                  return (
+                    <div className='relative group'>
+                      <select
+                        required
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        className='w-full rounded-xl border border-slate-700/90 bg-[#090f19]/95 px-3.5 py-2.5 text-xs sm:text-sm text-white outline-none transition-all duration-300 hover:border-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 cursor-pointer'
+                      >
+                        <option value=''>
+                          -- اختر الفرع لتسهل علينا طريقه التوصيل --
+                        </option>
+                        {branches.map((branch) => (
+                          <option key={branch.id} value={branch.name}>
+                            {branch.name}
+                            {branch.address ? ` (${branch.address})` : ''}
+                          </option>
+                        ))}
+                        {!hasOnlineOption && (
+                          <option value='أونلاين فقط'>
+                            أونلاين فقط (توصيل أونلاين / للمناطق البعيدة)
+                          </option>
+                        )}
+                      </select>
+                    </div>
+                  );
+                })()
+              )}
+
+              <div className='rounded-xl bg-[#090f19]/75 border border-slate-800/90 hover:border-cyan-500/25 px-3 py-2 transition-all duration-300 flex items-start gap-2'>
+                <span className='text-sm leading-none mt-0.5 shrink-0 animate-bounce [animation-duration:2.6s]'>
+                  💡
+                </span>
+                <p className='text-[11px] sm:text-xs text-slate-300 leading-relaxed'>
+                  اختر الفرع الأقرب ليك، ولو مكانك بعيد عن فروعنا مثل محافظات
+                  مختلفه اختر{' '}
+                  <strong className='text-cyan-300 font-bold underline decoration-cyan-500/40 underline-offset-2'>
+                    أونلاين فقط
+                  </strong>
+                  .
+                </p>
+              </div>
+            </div>
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ==================================== */}
+
+            {/* خانة تعليق / ملاحظات مع الأوردر (اختياري) */}
+            <div className='space-y-1.5 relative z-10'>
+              <label className='flex items-center justify-between text-xs font-bold text-slate-200'>
+                <span>ملاحظات مع الأوردر</span>
+                <span className='text-[10px] font-semibold text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded-md border border-slate-800'>
+                  اختياري
+                </span>
+              </label>
+              <textarea
+                rows={2}
+                maxLength={300}
+                value={orderNote}
+                onChange={(e) => setOrderNote(e.target.value)}
+                placeholder='مثال: يرجى الاتصال عند الوصول، أو إضافة أي تعليمات خاصة بالطلب...'
+                className='w-full resize-none rounded-xl border border-slate-700/80 bg-slate-900/90 px-3.5 py-2.5 text-xs sm:text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-400'
+              />
+            </div>
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ==================================== */}
+
+            {/* بوكس العروض والمكافآت الفوري */}
+
+            {/* بوكس العروض والمكافآت الفوري - هادي، عاقل، وعالي الجاذبية */}
+            {/* بوكس العروض والمكافآت الفوري - هادي، عاقل، ومرتب جداً */}
+            {(promoEvaluation.matchedRules.length > 0 ||
+              promoEvaluation.upcomingHints.length > 0) && (
+              <div className='relative overflow-hidden space-y-3 rounded-2xl border border-slate-700/80 bg-gradient-to-br from-[#161f33] via-[#1c263c] to-[#161f33] p-3.5 sm:p-4 text-xs sm:text-sm z-10 shadow-xl shadow-black/20 transition-all duration-300'>
+                {/* خط علوي أنيق ومتناسق */}
+                <div className='absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-cyan-400 via-indigo-500 to-emerald-400 opacity-90' />
+
+                {/* العروض المتحققة */}
+                {promoEvaluation.matchedRules.length > 0 && (
+                  <div className='space-y-2.5'>
+                    <div className='flex items-center gap-2'>
+                      <span className='flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 text-xs animate-bounce'>
+                        💝
+                      </span>
+                      <p className='font-bold text-slate-100 text-xs sm:text-[13px] tracking-wide'>
+                        تم تطبيق العروض والمكافآت التالية على طلبك:
+                      </p>
+                    </div>
+
+                    <div className='space-y-2'>
+                      {promoEvaluation.matchedRules.map((item, idx) => {
+                        const cardThemes = [
+                          {
+                            border: 'border-emerald-500/30 bg-[#1b2738]',
+                            dot: 'bg-emerald-400',
+                            badge:
+                              'text-emerald-200 bg-emerald-500/15 border-emerald-400/30',
+                          },
+                          {
+                            border: 'border-cyan-500/30 bg-[#1b2738]',
+                            dot: 'bg-cyan-400',
+                            badge:
+                              'text-cyan-200 bg-cyan-500/15 border-cyan-400/30',
+                          },
+                          {
+                            border: 'border-indigo-500/30 bg-[#1b2738]',
+                            dot: 'bg-indigo-400',
+                            badge:
+                              'text-indigo-200 bg-indigo-500/15 border-indigo-400/30',
+                          },
+                        ][idx % 3];
+
+                        return (
+                          <div
+                            key={item.rule.id}
+                            className={`flex items-center justify-between gap-2.5 rounded-xl px-3.5 py-2.5 border ${cardThemes.border} shadow-sm transition-transform duration-200 hover:scale-[1.01]`}
+                          >
+                            <div className='flex items-center gap-2.5 min-w-0'>
+                              <span
+                                className={`h-2 w-2 rounded-full ${cardThemes.dot} animate-pulse shrink-0`}
+                              />
+                              <span className='font-semibold text-slate-100 truncate text-xs sm:text-[13px]'>
+                                {item.rule.title}
+                              </span>
+                            </div>
+                            <span
+                              className={`shrink-0 font-bold border px-2.5 py-1 rounded-lg text-xs ${cardThemes.badge}`}
+                            >
+                              {item.rewardLabel}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* تنبيه عاقل لتذكير الأدمن */}
+                    <div className='flex items-center gap-2 rounded-xl bg-slate-900/60 border border-slate-700/70 px-3 py-2 text-xs font-medium text-slate-300'>
+                      <span className='text-amber-400 shrink-0'>ℹ️</span>
+                      <span className='leading-relaxed'>
+                        نرجو تذكير الأدمن بهذه المكافأة عند مراجعة وتأكيد الطلب.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* زر العروض الإضافية وشريط التقدم */}
+                {promoEvaluation.upcomingHints.length > 0 && (
+                  <div
+                    className={
+                      promoEvaluation.matchedRules.length > 0
+                        ? 'border-t border-slate-700/60 pt-3'
+                        : ''
+                    }
+                  >
+                    <button
+                      type='button'
+                      onClick={() => setShowUpcomingHints((prev) => !prev)}
+                      className='group flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-cyan-500/10 via-indigo-500/10 to-emerald-500/10 hover:from-cyan-500/20 hover:to-emerald-500/20 border border-cyan-400/35 px-4 py-3 text-xs sm:text-[13px] font-bold text-cyan-200 transition-all duration-200 cursor-pointer shadow-sm'
+                    >
+                      <div className='flex items-center gap-2.5 min-w-0'>
+                        {/* أيقونة الهدية المتحركة */}
+                        <span className='flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 group-hover:scale-110 transition-transform'>
+                          <span className='animate-bounce duration-1000'>
+                            🎁
+                          </span>
+                        </span>
+                        <span className='truncate text-slate-200 group-hover:text-white transition-colors'>
+                          عروض ومكافآت إضافية متاحة (
+                          {promoEvaluation.upcomingHints.length})
+                        </span>
+                      </div>
+
+                      {/* كلمة اكتشفها مع أنيميشن هادي */}
+                      <div className='flex items-center gap-2 shrink-0 text-cyan-300 font-extrabold'>
+                        <span className='flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 group-hover:bg-cyan-500/30 transition-colors'>
+                          <span className='animate-pulse'>
+                            {showUpcomingHints ? 'إخفاء' : 'اكتشفها'}
+                          </span>
+                          <span
+                            className={`transition-transform duration-300 text-xs ${showUpcomingHints ? 'rotate-180' : 'animate-bounce'}`}
+                          >
+                            ▼
+                          </span>
+                        </span>
+                      </div>
+                    </button>
+
+                    {showUpcomingHints && (
+                      <div className='mt-2.5 space-y-2.5 animate-fadeIn'>
+                        {promoEvaluation.upcomingHints.map((hint, idx) => {
+                          const barGradients = [
+                            'from-cyan-400 to-indigo-500',
+                            'from-indigo-500 to-emerald-400',
+                            'from-emerald-400 to-cyan-400',
+                          ][idx % 3];
+
+                          return (
+                            <div
+                              key={hint.rule.id}
+                              className='space-y-2 rounded-xl bg-[#141b2b] p-3 border border-slate-700/70 shadow-inner'
+                            >
+                              <div className='flex items-center justify-between gap-2 text-xs sm:text-[13px]'>
+                                <span className='font-medium text-slate-200 leading-snug'>
+                                  {hint.remainingHint}
+                                </span>
+                                {typeof hint.progressPercent === 'number' && (
+                                  <span className='font-bold text-cyan-300 shrink-0 bg-cyan-500/15 border border-cyan-400/30 px-2 py-0.5 rounded-md text-xs'>
+                                    {hint.progressPercent}%
+                                  </span>
+                                )}
+                              </div>
+
+                              {typeof hint.progressPercent === 'number' && (
+                                <div className='h-2 w-full overflow-hidden rounded-full bg-slate-800/90 border border-slate-700/50 p-[1px]'>
+                                  <div
+                                    className={`h-full rounded-full bg-gradient-to-r ${barGradients} transition-all duration-500 shadow-sm`}
+                                    style={{
+                                      width: `${hint.progressPercent}%`,
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ==================================== */}
+            {/* ملخص الفاتورة */}
+            <div className='space-y-2 pt-4 border-t border-slate-800/80 text-xs text-slate-300 relative z-10'>
               <div className='flex justify-between'>
                 <span>Subtotal</span>
                 <span className='font-bold text-white'>{subtotal} EGP</span>
@@ -794,11 +1262,8 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* ========================== */}
-            {/* ========================== */}
-            {/* ========================== */}
+            {/* زر تأكيد الطلب */}
             <div className='space-y-3 w-full relative z-10'>
-              {/* Main Confirm Order Button */}
               <button
                 type='submit'
                 disabled={loading || cart.length === 0}
@@ -819,37 +1284,12 @@ export default function CheckoutPage() {
                   </>
                 )}
               </button>
-
-              {/* WhatsApp Direct Support / Order Follow-up Section */}
-              {/* <div className='flex flex-col sm:flex-row items-center justify-between gap-2.5 p-3 rounded-2xl bg-[#0c1017] border border-slate-800/80 text-xs'>
-                <span className='text-slate-300 text-[11px] sm:text-xs text-center sm:text-left leading-relaxed font-medium'>
-                  Just placed your order? Reach us on WhatsApp for fast support:
-                </span>
-
-                <a
-                  href='https://wa.me/201016605189?text=Hello,%20I%20have%20just%20placed%20my%20order%20and%20would%20like%20to%20follow%20up%20on%20its%20status!'
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-600/25 to-teal-600/25 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-md shadow-emerald-950/40 group transform hover:scale-[1.02] shrink-0 w-full sm:w-auto'
-                >
-                  <div className='w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow group-hover:rotate-12 transition-transform duration-300'>
-                    <svg
-                      className='w-3.5 h-3.5 fill-current'
-                      viewBox='0 0 24 24'
-                    >
-                      <path d='M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z' />
-                    </svg>
-                  </div>
-                  <span className='tracking-wide'>+20 101 660 5189</span>
-                </a>
-              </div> */}
-              {/* WhatsApp Direct Support / Order Follow-up Section */}
             </div>
-
-            {/* ========================== */}
-            {/* ========================== */}
-            {/* ========================== */}
           </div>
+          {/* ============================ */}
+          {/* ============================ */}
+          {/* ============================ */}
+          {/* ============================ */}
         </form>
       </main>
     </div>

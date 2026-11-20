@@ -56,6 +56,88 @@ export default function ProductClient({ slug }: { slug: string }) {
   // ==============================
   // ==============================
   // ==============================
+
+const [detailWishlist, setDetailWishlist] = useState<any[]>([]);
+
+const targetProductId = String(product?.id ?? product?.slug ?? '');
+
+useEffect(() => {
+  const syncWishlistFromStorage = () => {
+    try {
+      // جرّب المفاتيح الشائعة للمفضلة في المشروع لو موجودة، أو المفتاح الأساسي
+      const raw =
+        localStorage.getItem('abdo_store_wishlist_v1') ||
+        localStorage.getItem('wishlist') ||
+        '[]';
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setDetailWishlist(parsed);
+      }
+    } catch {
+      // تجاهل أخطاء التخزين المحلي
+    }
+  };
+
+  syncWishlistFromStorage();
+  window.addEventListener('storage', syncWishlistFromStorage);
+  window.addEventListener('wishlistUpdated', syncWishlistFromStorage);
+  return () => {
+    window.removeEventListener('storage', syncWishlistFromStorage);
+    window.removeEventListener('wishlistUpdated', syncWishlistFromStorage);
+  };
+}, []);
+
+const isDetailLiked = detailWishlist.some((item: any) => {
+  const itemId = String(
+    typeof item === 'string' ? item : (item?.id ?? item?.slug ?? ''),
+  );
+  return targetProductId && itemId === targetProductId;
+});
+
+const handleDetailToggleWishlist = () => {
+  if (!product || !targetProductId) return;
+
+  setDetailWishlist((prev) => {
+    const exists = prev.some((item: any) => {
+      const itemId = String(
+        typeof item === 'string' ? item : (item?.id ?? item?.slug ?? ''),
+      );
+      return itemId === targetProductId;
+    });
+
+    const next = exists
+      ? prev.filter((item: any) => {
+          const itemId = String(
+            typeof item === 'string' ? item : (item?.id ?? item?.slug ?? ''),
+          );
+          return itemId !== targetProductId;
+        })
+      : [
+          ...prev,
+          {
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            price: product.price,
+            image:
+              product.image ||
+              (Array.isArray(product.images) ? product.images[0] : ''),
+          },
+        ];
+
+    try {
+      localStorage.setItem('abdo_store_wishlist_v1', JSON.stringify(next));
+      localStorage.setItem('wishlist', JSON.stringify(next));
+      window.dispatchEvent(new Event('wishlistUpdated'));
+    } catch {
+      // تجاهل أخطاء التخزين المحلي
+    }
+
+    return next;
+  });
+};
+
+
   // ==============================
   // ==============================
   // ==============================
@@ -371,6 +453,28 @@ export default function ProductClient({ slug }: { slug: string }) {
           </Link>
 
           <div className='flex items-center gap-3'>
+            {/* زر اللاف / المفضلة للمنتج الحالي */}
+            <button
+              type='button'
+              onClick={handleDetailToggleWishlist}
+              title={isDetailLiked ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              aria-label='Toggle Wishlist'
+              className='relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gradient-to-b from-slate-800/75 to-[#090f19]/90 hover:from-slate-800 hover:to-[#0e1626] border border-slate-800 text-slate-300 hover:text-white hover:border-slate-700 tabular-nums transition cursor-pointer shadow-sm active:scale-95'
+            >
+              <Heart
+                className={`w-3.5 h-3.5 sm:w-[17px] sm:h-[17px] transition-transform duration-200 ${
+                  isDetailLiked
+                    ? 'text-rose-500 fill-rose-500 scale-110'
+                    : 'text-rose-500 hover:scale-110'
+                }`}
+              />
+              {detailWishlist.length > 0 && (
+                <span className='absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 bg-rose-600 text-white text-[7px] sm:text-[8px] font-black min-w-[12px] h-[12px] sm:min-w-[14px] sm:h-[14px] px-0.5 rounded-full flex items-center justify-center shadow-sm ring-1 sm:ring-2 ring-[#07090e] leading-none'>
+                  {detailWishlist.length}
+                </span>
+              )}
+            </button>
+
             <Link
               href='/cart'
               className='flex items-center gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm relative'

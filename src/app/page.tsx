@@ -34,6 +34,7 @@ import Image from 'next/image';
 import ShareButton from '@/components/ShareButton';
 import { router } from 'next/client';
 import SiteShareButton from '@/components/SiteShareButton';
+import StorePromoBanner from '@/components/StorePromoBanner';
 export default function HomePage() {
   const router = useRouter(); // <--- هذا هو السطر الذي يمنع الخطأ
   const [products, setProducts] = useState<any[]>([]);
@@ -565,6 +566,12 @@ export default function HomePage() {
   // ==========================================
   // ==========================================
   // ==========================================
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, []);
   // ==========================================
   // ==========================================
   // ==========================================
@@ -1534,6 +1541,10 @@ export default function HomePage() {
         </div>
       </nav>
 
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      <StorePromoBanner />
       {/* =============================== */}
       {/* =============================== */}
       {/* =============================== */}

@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   FolderPlus,
   Filter,
+  Check,
 } from 'lucide-react';
 
 
@@ -366,7 +367,12 @@ export default function AdminProductsPage() {
       setUploading(false);
     }
   };
-
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
   // حفظ أو تحديث المنتج
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -382,12 +388,18 @@ export default function AdminProductsPage() {
 
     setSubmitting(true);
 
+    const parsedStock = Math.max(
+      0,
+      Number.isNaN(parseInt(stock, 10)) ? 0 : parseInt(stock, 10),
+    );
+
     const productData = {
       name,
       description,
       price: parseFloat(price),
       compare_at_price: comparePrice ? parseFloat(comparePrice) : null,
-      stock_quantity: parseInt(stock),
+      stock_quantity: parsedStock,
+      stock: parsedStock,
       category_id: categoryId ? categoryId : null,
       images: images,
       rating: parseInt(rating) || 5,
@@ -444,7 +456,12 @@ export default function AdminProductsPage() {
       }
     }
   };
-
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
   const handleEditClick = (product: any) => {
     setEditingId(product.id);
     setName(product.name || '');
@@ -453,7 +470,8 @@ export default function AdminProductsPage() {
     setComparePrice(
       product.compare_at_price ? product.compare_at_price.toString() : '',
     );
-    setStock(product.stock_quantity ? product.stock_quantity.toString() : '10');
+    const currentStock = product.stock_quantity ?? product.stock ?? 0;
+    setStock(currentStock.toString());
     setCategoryId(product.category_id || '');
     setImages(product.images || []);
     setRating(product.rating ? product.rating.toString() : '5');
@@ -465,6 +483,56 @@ export default function AdminProductsPage() {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+  // =============================
+
+  // States للتحديث السريع للستوك والتوست
+  const [savingStockId, setSavingStockId] = useState<string | null>(null);
+  const [stockToast, setStockToast] = useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
+
+  const showStockToast = (
+    message: string,
+    type: 'success' | 'error' = 'success',
+  ) => {
+    setStockToast({ message, type });
+    setTimeout(() => {
+      setStockToast(null);
+    }, 3000);
+  };
+
+  const handleInlineStockSave = async (productId: string, newStock: number) => {
+    const safeStock = Math.max(0, Number.isNaN(newStock) ? 0 : newStock);
+    setSavingStockId(productId);
+
+    const { error } = await supabase
+      .from('products')
+      .update({
+        stock_quantity: safeStock,
+        stock: safeStock,
+      })
+      .eq('id', productId);
+
+    setSavingStockId(null);
+
+    if (error) {
+      showStockToast('Failed to update stock: ' + error.message, 'error');
+    } else {
+      showStockToast(`Stock updated to ${safeStock} ✓`, 'success');
+      fetchData();
+    }
+  };
+  // =============================
+  // =============================
+  // =============================
 
   const resetForm = () => {
     setEditingId(null);
@@ -480,6 +548,11 @@ export default function AdminProductsPage() {
     setShowInFlash(false);
     setShowInCatalog(false);
   };
+
+  // =============================
+  // =============================
+  // =============================
+  // =============================
 
   const confirmDelete = (id: string) => {
     setProductToDelete(id);
@@ -1295,6 +1368,7 @@ export default function AdminProductsPage() {
                       <th className='py-3.5 px-4'>Product & Category</th>
                       <th className='py-3.5 px-3'>Price / Compare</th>
                       <th className='py-3.5 px-3'>Assigned Sections</th>
+                      <th className='py-3.5 px-3'>Stock</th>
                       <th className='py-3.5 px-4 text-right'>Actions</th>
                     </tr>
                   </thead>
@@ -1303,6 +1377,9 @@ export default function AdminProductsPage() {
                       const matchedCat = categories.find(
                         (c) => c.id === product.category_id,
                       );
+                      const currentRowStock =
+                        product.stock_quantity ?? product.stock ?? 0;
+
                       return (
                         <tr
                           key={product.id}
@@ -1347,6 +1424,10 @@ export default function AdminProductsPage() {
                                 {matchedCat ? matchedCat.name : 'Uncategorized'}
                               </span>
                             </div>
+                            {/* ======================== */}
+                            {/* ======================== */}
+                            {/* ======================== */}
+                            {/* ======================== */}
                           </td>
 
                           <td className='py-4 px-3'>
@@ -1359,6 +1440,8 @@ export default function AdminProductsPage() {
                               </div>
                             )}
                           </td>
+                          {/* ======================== */}
+                          {/* ======================== */}
 
                           <td className='py-4 px-3'>
                             <div className='flex items-center gap-1 text-[10px] font-bold flex-wrap'>
@@ -1379,6 +1462,76 @@ export default function AdminProductsPage() {
                               )}
                             </div>
                           </td>
+                          {/* ======================== */}
+                          {/* ======================== */}
+
+                          {/* خانة تعديل الستوك السريعة + زر صح (دبل كليك / دبل تاتش) */}
+                          <td className='py-4 px-3'>
+                            <div className='flex items-center gap-1'>
+                              <input
+                                key={`${product.id}-${currentRowStock}`}
+                                type='number'
+                                min='0'
+                                readOnly
+                                defaultValue={currentRowStock}
+                                id={`stock-input-${product.id}`}
+                                aria-label={`Stock for ${product.name}`}
+                                onDoubleClick={(e) => {
+                                  const el = e.currentTarget;
+                                  el.readOnly = false;
+                                  el.focus();
+                                  el.select();
+                                }}
+                                onTouchEnd={(e) => {
+                                  const el = e.currentTarget;
+                                  const now = Date.now();
+                                  const lastTap = Number(
+                                    el.dataset.lastTap || '0',
+                                  );
+                                  if (now - lastTap < 320) {
+                                    e.preventDefault();
+                                    el.readOnly = false;
+                                    el.focus();
+                                    el.select();
+                                  }
+                                  el.dataset.lastTap = String(now);
+                                }}
+                                onBlur={(e) => {
+                                  // يرجع readOnly تاني لو خرجت من الخانة من غير حفظ
+                                  e.currentTarget.readOnly = true;
+                                }}
+                                title='Double click or double tap to edit'
+                                className='w-12 px-1.5 py-1 bg-[#141d2f] border border-slate-700/80 read-only:border-slate-800 read-only:text-slate-300 focus:border-emerald-500 focus:text-white rounded-lg text-xs font-bold outline-none text-center transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                              />
+                              <button
+                                type='button'
+                                disabled={savingStockId === product.id}
+                                onClick={() => {
+                                  const inputEl = document.getElementById(
+                                    `stock-input-${product.id}`,
+                                  ) as HTMLInputElement | null;
+                                  const rawVal = inputEl
+                                    ? parseInt(inputEl.value, 10)
+                                    : currentRowStock;
+                                  handleInlineStockSave(
+                                    product.id,
+                                    Number.isNaN(rawVal) ? 0 : rawVal,
+                                  );
+                                  if (inputEl) inputEl.readOnly = true;
+                                }}
+                                title='Save Stock'
+                                className='p-1.5 bg-emerald-950/50 hover:bg-emerald-800/50 text-emerald-400 rounded-lg border border-emerald-500/30 transition cursor-pointer disabled:opacity-50 flex items-center justify-center'
+                              >
+                                {savingStockId === product.id ? (
+                                  <Loader2 size={13} className='animate-spin' />
+                                ) : (
+                                  <Check size={13} />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                          {/* ======================== */}
+                          {/* ======================== */}
 
                           <td className='py-4 px-4 text-right'>
                             <div className='flex items-center justify-end gap-2'>
@@ -1389,6 +1542,8 @@ export default function AdminProductsPage() {
                               >
                                 <Pencil size={16} />
                               </button>
+                              {/* ======================== */}
+
                               <button
                                 onClick={() => confirmDelete(product.id)}
                                 className='p-2.5 bg-red-950/40 hover:bg-red-900/40 text-red-400 rounded-xl transition border border-red-500/30 cursor-pointer shadow-sm'
@@ -1563,6 +1718,29 @@ export default function AdminProductsPage() {
           </div>
         </div>
       )}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* توست صغير لتأكيد تحديث الستوك */}
+      {stockToast && (
+        <div
+          className={`fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg border flex items-center gap-2 transition ${
+            stockToast.type === 'success'
+              ? 'bg-emerald-950/95 text-emerald-300 border-emerald-500/40'
+              : 'bg-red-950/95 text-red-300 border-red-500/40'
+          }`}
+        >
+          <span>{stockToast.message}</span>
+        </div>
+      )}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
+      {/* ====================== */}
     </div>
   );
 }

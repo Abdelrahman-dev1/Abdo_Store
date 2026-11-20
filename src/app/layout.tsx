@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import SplashScreen from '@/components/SplashScreen';
 
 /* ==========================================================
    1. إعدادات خطوط النظام (Geist) لتحسين الأداء والسرعة
@@ -119,7 +120,7 @@ export default function RootLayout({
     <html
       lang='en'
       dir='ltr'
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark scroll-smooth"`}
     >
       <body className='min-h-full flex flex-col bg-[#07090e] text-slate-100 selection:bg-red-500 selection:text-white font-sans antialiased'>
         {/* ==========================================================
@@ -129,7 +130,10 @@ export default function RootLayout({
         {/* ==========================================================
             5. حاوية محتوى الموقع الأساسية
            ========================================================== */}
-        <div className='flex-1 flex flex-col min-h-screen'>{children}</div>
+        <div className='flex-1 flex flex-col min-h-screen'>
+          <SplashScreen />
+          {children}
+        </div>
       </body>
     </html>
   );

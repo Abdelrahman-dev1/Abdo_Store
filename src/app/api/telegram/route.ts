@@ -45,7 +45,7 @@ const DEFAULT_TELEGRAM_CONFIG: Required<ChannelConfig> = {
     city: false,
     governorate: false,
     postal_code: false,
-    customer_notes: false,
+    customer_notes: true,
     items: true,
     subtotal: true,
     discount_code: false,
@@ -443,7 +443,9 @@ export async function POST(req: Request) {
       city,
       governorate: '',
       postal_code: '',
-      customer_notes: '',
+      customer_notes: String(
+        body?.customer_notes ?? body?.orderNote ?? '',
+      ).trim(),
       items: makeItemsText(rawItems, currency, true),
       subtotal: formatMoney(subtotal, currency),
       discount_code: '',
@@ -460,13 +462,18 @@ export async function POST(req: Request) {
     let whatsappUrl: string | null = null;
     if (normalizedPhone) {
       const itemsSummary = makeItemsText(rawItems, currency, false);
+      const notesLine = values.customer_notes
+        ? `📝 *ملاحظات العميل:* ${values.customer_notes}\n`
+        : '';
+
       const whatsappMessage =
         `مرحباً بك يا *${customerName}* 👋\n\n` +
         `شكراً لتسوقك من *Abdo Store* ❤️\n\n` +
         `🧾 *تفاصيل طلبك (${orderNumber}):*\n` +
         `${itemsSummary}\n\n` +
         `💰 *الإجمالي النهائي:* ${formatMoney(totalAmount, currency)}\n` +
-        `📍 *عنوان التوصيل:* ${address}\n\n` +
+        `📍 *عنوان التوصيل:* ${address}\n` +
+        `${notesLine}\n` +
         `نحن نتواصل معك الآن لتأكيد تفاصيل الشحن والتوصيل.`;
 
       whatsappUrl =
