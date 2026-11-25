@@ -23,6 +23,7 @@ import {
   RefreshCw,
   BookmarkCheck,
   Zap,
+  MessageSquareText,
 } from 'lucide-react';
 
 interface DriverProfile {
@@ -56,7 +57,7 @@ interface DeliveryDetails {
     customer_name: string;
     customer_phone: string;
     customer_address: string;
-    city: string | null;
+    // city: string | null;
     notes: string | null;
     total_amount: number;
     subtotal: number | null;
@@ -82,7 +83,67 @@ function DriverAcceptContent() {
   const [submittingAccept, setSubmittingAccept] = useState<boolean>(false);
   const [confirmingDelivery, setConfirmingDelivery] = useState<boolean>(false);
   const [copiedAddress, setCopiedAddress] = useState<boolean>(false);
+// ======================================
+// ======================================
+// ======================================
+// ======================================
+// ======================================
+// ======================================
+// ======================================
+const [isReviewsModalOpen, setIsReviewsModalOpen] = useState<boolean>(false);
+const [driverReviews, setDriverReviews] = useState<
+  Array<{
+    id: string;
+    customer_rating: number | null;
+    customer_review: string | null;
+    created_at?: string;
+  }>
+>([]);
+const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
 
+const handleOpenDriverReviews = async () => {
+  setIsReviewsModalOpen(true);
+  if (!verifiedDriver?.id) {
+    setDriverReviews([]);
+    return;
+  }
+
+  setLoadingReviews(true);
+  try {
+    const { data, error } = await supabase
+      .from('deliveries')
+      .select(
+        'id, customer_rating, customer_review, is_review_hidden, admin_review_reply, updated_at',
+      )
+      .eq('driver_id', verifiedDriver.id)
+      .not('customer_review', 'is', null)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading driver reviews:', error);
+      setDriverReviews([]);
+      return;
+    }
+
+    if (Array.isArray(data)) {
+      const visibleReviews = data.filter(
+        (item) =>
+          !Boolean(item.is_review_hidden) &&
+          item.customer_review &&
+          String(item.customer_review).trim() !== '',
+      );
+      setDriverReviews(visibleReviews);
+    }
+  } finally {
+    setLoadingReviews(false);
+  }
+};
+// ======================================
+// ======================================
+// ======================================
+// ======================================
+// ======================================
+// ======================================
   const [feedbackModal, setFeedbackModal] = useState<{
     isOpen: boolean;
     type: 'success' | 'error' | 'warning';
@@ -149,7 +210,6 @@ function DriverAcceptContent() {
               customer_name,
               customer_phone,
               customer_address,
-              city,
               notes,
               total_amount,
               subtotal,
@@ -349,7 +409,7 @@ function DriverAcceptContent() {
       ``,
       `👤 *اسم العميل:* ${ord.customer_name}`,
       `📞 *تليفون العميل:* ${ord.customer_phone}`,
-      `📍 *العنوان:* ${ord.customer_address}${ord.city ? ` (${ord.city})` : ''}`,
+      `📍 *العنوان:* ${ord.customer_address}`,
       ord.notes ? `📝 *ملاحظات:* ${ord.notes}` : '',
       `💰 *هتاخد من العميل:* ${totalToCollect} ${storeCurrency}`,
       `🛵 *أجرتك في المشوار:* ${deliveryFee} ${storeCurrency}`,
@@ -591,7 +651,6 @@ const canViewFullCustomerDetails =
             </div>
           </div>
         )}
-
         {/* بطاقة ترحيب السواق المتعرف عليه */}
         {verifiedDriver && (
           <div className='bg-[#0e1626] border-2 border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-2'>
@@ -606,7 +665,7 @@ const canViewFullCustomerDetails =
                   </span>
                   {(verifiedDriver.completed_deliveries || 0) > 3 && (
                     <span className='px-2 py-0.5 rounded-lg bg-purple-600 text-white text-xs font-black flex items-center gap-1'>
-                      <Sparkles size={12} /> VIP
+                      <Zap size={12} /> VIP
                     </span>
                   )}
                 </div>
@@ -618,11 +677,21 @@ const canViewFullCustomerDetails =
                     <Star size={14} className='fill-amber-400' />
                     {Number(verifiedDriver.average_rating || 0).toFixed(1)}
                   </span>
+                  <button
+                    type='button'
+                    onClick={handleOpenDriverReviews}
+                    title='عرض تعليقات العملاء'
+                    className='inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-sky-300 text-xs font-bold transition cursor-pointer'
+                  >
+                    <MessageSquareText size={14} />
+                    <span>التعليقات</span>
+                  </button>
                 </div>
               </div>
             </div>
 
             <button
+              type='button'
               onClick={() => {
                 if (typeof window !== 'undefined') {
                   localStorage.removeItem(DRIVER_STORAGE_KEY);
@@ -630,10 +699,83 @@ const canViewFullCustomerDetails =
                 setVerifiedDriver(null);
                 setDriverPhoneInput('');
               }}
-              className='px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 hover:text-rose-400 shrink-0'
+              className='px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 hover:text-rose-400 shrink-0 cursor-pointer'
             >
               تغيير الرقم
             </button>
+          </div>
+        )}
+
+        {isReviewsModalOpen && verifiedDriver && (
+          <div
+            dir='rtl'
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsReviewsModalOpen(false);
+              }
+            }}
+            className='fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4'
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className='w-full max-w-md rounded-3xl bg-[#0d1524] border border-slate-800 p-4 shadow-2xl space-y-3 text-white'
+            >
+              <div className='flex items-center justify-between border-b border-slate-800/80 pb-2.5'>
+                <div>
+                  <h3 className='text-sm font-black text-white'>
+                    تعليقات العملاء ({verifiedDriver.full_name})
+                  </h3>
+                  <p className='text-[11px] text-slate-400'>
+                    المتوسط الحالي:{' '}
+                    {Number(verifiedDriver.average_rating || 0).toFixed(1)} ★
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  onClick={() => setIsReviewsModalOpen(false)}
+                  className='w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center justify-center cursor-pointer'
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className='max-h-72 overflow-y-auto space-y-2 pr-0.5'>
+                {loadingReviews ? (
+                  <p className='text-xs text-slate-400 text-center py-6'>
+                    جاري تحميل التعليقات...
+                  </p>
+                ) : driverReviews.filter((r) => !Boolean(r.is_review_hidden))
+                    .length === 0 ? (
+                  <p className='text-xs text-slate-400 text-center py-6'>
+                    لا توجد تعليقات مكتوبة حتى الآن.
+                  </p>
+                ) : (
+                  driverReviews
+                    .filter((rev) => !Boolean(rev.is_review_hidden))
+                    .map((rev) => (
+                      <div
+                        key={rev.id}
+                        className='bg-[#090f19] border border-slate-800 rounded-2xl p-3 space-y-1.5'
+                      >
+                        <div className='flex items-center justify-between'>
+                          <span className='inline-flex items-center gap-1 text-xs font-black text-amber-400'>
+                            <Star size={12} className='fill-amber-400' />
+                            {Number(rev.customer_rating || 0)}/5
+                          </span>
+                        </div>
+                        <p className='text-xs text-slate-200 leading-relaxed'>
+                          {rev.customer_review}
+                        </p>
+                        {rev.admin_review_reply && (
+                          <p className='text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1'>
+                            رد الإدارة: {rev.admin_review_reply}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -736,7 +878,7 @@ const canViewFullCustomerDetails =
                   </span>
                   <span className='font-black text-base sm:text-lg text-white leading-snug'>
                     {ord.customer_address}
-                    {ord.city ? ` — ${ord.city}` : ''}
+                    {/* {ord.city ? ` — ${ord.city}` : ''} */}
                   </span>
                 </div>
               </div>
@@ -815,7 +957,7 @@ const canViewFullCustomerDetails =
                 <span className='text-slate-400'>منطقة العميل:</span>
                 <span className='text-white font-black'>
                   {ord.customer_address}
-                  {ord.city ? ` — ${ord.city}` : ''}
+                  {/* {ord.city ? ` — ${ord.city}` : ''} */}
                 </span>
               </div>
             </div>
@@ -993,7 +1135,7 @@ const canViewFullCustomerDetails =
                       </span>
                       <span className='text-base font-black text-white leading-relaxed'>
                         {ord.customer_address}
-                        {ord.city ? ` — ${ord.city}` : ''}
+                        {/* {ord.city ? ` — ${ord.city}` : ''} */}
                       </span>
                     </div>
                   </div>
@@ -1008,9 +1150,7 @@ const canViewFullCustomerDetails =
                     <button
                       type='button'
                       onClick={() =>
-                        handleCopyAddress(
-                          `${ord.customer_address} ${ord.city || ''}`,
-                        )
+                        handleCopyAddress(ord.customer_address || '')
                       }
                       className='py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-black flex items-center justify-center gap-1.5'
                     >
@@ -1028,7 +1168,7 @@ const canViewFullCustomerDetails =
 
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        `${ord.customer_address} ${ord.city || ''}`,
+                        `${ord.customer_address || ''}`,
                       )}`}
                       target='_blank'
                       rel='noopener noreferrer'

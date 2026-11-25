@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Star,
   Sparkles,
+  Zap,
   MessageCircle,
   Package,
   RefreshCw,
@@ -27,6 +28,7 @@ import {
   ThumbsUp,
   User,
   Gift,
+  MessageSquareText,
 } from 'lucide-react';
 
 interface DriverInfo {
@@ -60,7 +62,7 @@ interface CustomerDeliveryDetails {
     customer_name: string;
     customer_phone: string;
     customer_address: string;
-    city: string | null;
+    // city: string | null;
     total_amount: number;
     subtotal: number | null;
     items: OrderItem[] | null;
@@ -95,7 +97,7 @@ function CustomerConfirmContent() {
   const [reviewComment, setReviewComment] = useState<string>('');
   const [submittingRating, setSubmittingRating] = useState<boolean>(false);
   const [ratingSubmitted, setRatingSubmitted] = useState<boolean>(false);
-
+const [isRatingModalOpen, setIsRatingModalOpen] = useState<boolean>(true);
   // حالات الإلغاء الطارئ من العميل
   const [cancelModal, setCancelModal] = useState<{
     isOpen: boolean;
@@ -173,7 +175,6 @@ function CustomerConfirmContent() {
               customer_name,
               customer_phone,
               customer_address,
-              city,
               total_amount,
               subtotal,
               items,
@@ -199,10 +200,13 @@ function CustomerConfirmContent() {
         const typedData = data as unknown as CustomerDeliveryDetails;
         setDelivery(typedData);
 
-        if (typedData.customer_rating) {
-          setSelectedRating(typedData.customer_rating);
-          setRatingSubmitted(true);
-        }
+if (typedData.customer_rating) {
+  setSelectedRating(typedData.customer_rating);
+  if (typedData.customer_review) {
+    setReviewComment(typedData.customer_review);
+  }
+  setRatingSubmitted(true);
+}
 
         // حساب عدد الطلبات المكتملة السابقة للعميل إن وُجد user_id
         if (typedData.orders?.user_id) {
@@ -330,11 +334,91 @@ function CustomerConfirmContent() {
       setConfirmingReceipt(false);
     }
   };
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
+const [isCustomerReviewsModalOpen, setIsCustomerReviewsModalOpen] =
+  useState<boolean>(false);
+const [driverPublicReviews, setDriverPublicReviews] = useState<
+  Array<{
+    id: string;
+    customer_rating: number | null;
+    customer_review: string | null;
+    is_review_hidden?: boolean | null;
+    admin_review_reply?: string | null;
+    updated_at?: string;
+  }>
+>([]);
+const [loadingPublicReviews, setLoadingPublicReviews] =
+  useState<boolean>(false);
 
+const handleOpenDriverPublicReviews = async () => {
+  const driverId = delivery?.drivers?.id || delivery?.driver_id;
+  setIsCustomerReviewsModalOpen(true);
+  if (!driverId) {
+    setDriverPublicReviews([]);
+    return;
+  }
+
+  setLoadingPublicReviews(true);
+  try {
+    const { data, error } = await supabase
+      .from('deliveries')
+      .select(
+        'id, customer_rating, customer_review, is_review_hidden, admin_review_reply, updated_at',
+      )
+      .eq('driver_id', driverId)
+      .not('customer_review', 'is', null)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading public driver reviews:', error);
+      setDriverPublicReviews([]);
+      return;
+    }
+
+    if (Array.isArray(data)) {
+      setDriverPublicReviews(
+        data.filter(
+          (item) =>
+            !Boolean(item.is_review_hidden) &&
+            item.customer_review &&
+            String(item.customer_review).trim() !== '',
+        ),
+      );
+    }
+  } finally {
+    setLoadingPublicReviews(false);
+  }
+};
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
+// =======================
   // 2. العميل يرسل تقييم المندوب
-  const handleSubmitDriverRating = async (e: React.FormEvent) => {
+  // 2. العميل يرسل تقييم المندوب
+  const handleSubmitDriverRating = async (
+    e: React.FormEvent,
+    overrideRating?: number,
+  ) => {
     e.preventDefault();
     if (!delivery) return;
+
+    const finalRating =
+      typeof overrideRating === 'number' ? overrideRating : selectedRating;
+
+    if (typeof overrideRating === 'number') {
+      setSelectedRating(overrideRating);
+    }
+
     setSubmittingRating(true);
 
     try {
@@ -349,7 +433,7 @@ function CustomerConfirmContent() {
       const { error } = await supabase
         .from('deliveries')
         .update({
-          customer_rating: selectedRating,
+          customer_rating: finalRating,
           customer_review: combinedReview || null,
           updated_at: now,
         })
@@ -358,11 +442,12 @@ function CustomerConfirmContent() {
       if (error) throw error;
 
       // تحديث متوسط تقييم المندوب في جدول drivers
-      if (delivery.drivers) {
+      const targetDriverId = delivery.drivers?.id || delivery.driver_id;
+      if (targetDriverId) {
         const { data: ratedDeliveries } = await supabase
           .from('deliveries')
           .select('customer_rating')
-          .eq('driver_id', delivery.drivers.id)
+          .eq('driver_id', targetDriverId)
           .not('customer_rating', 'is', null);
 
         if (ratedDeliveries && ratedDeliveries.length > 0) {
@@ -375,7 +460,7 @@ function CustomerConfirmContent() {
           await supabase
             .from('drivers')
             .update({ average_rating: avg })
-            .eq('id', delivery.drivers.id);
+            .eq('id', targetDriverId);
         }
       }
 
@@ -484,7 +569,7 @@ function CustomerConfirmContent() {
     return evaluatePromoRules(promoRules, {
       subtotal: orderSubtotal,
       itemsCount: totalItemsCount,
-      city: ord.city ?? '',
+      // city: ord.city ?? '',
       orderDate: orderCreatedDate,
       completedOrdersCount: customerCompletedOrders,
     });
@@ -540,6 +625,22 @@ function CustomerConfirmContent() {
     Boolean(ord.free_shipping_reason) ||
     deliveryFee === 0;
 
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
+    // ========================================
   return (
     <div
       dir='rtl'
@@ -663,7 +764,6 @@ function CustomerConfirmContent() {
             )}
           </div>
         )}
-
         {/* بطاقة بيانات مندوب التوصيل */}
         {!isCancelled && delivery.drivers && (
           <div className='bg-[#0e1626] border border-slate-800 rounded-3xl p-5 space-y-4'>
@@ -672,10 +772,21 @@ function CustomerConfirmContent() {
                 <User size={19} className='text-blue-400' />
                 بيانات مندوب التوصيل
               </h2>
-              <span className='px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1'>
-                <Star size={12} className='fill-amber-400 text-amber-400' />
-                {Number(delivery.drivers.average_rating || 5).toFixed(1)}
-              </span>
+              <div className='flex items-center gap-2'>
+                <span className='px-2.5 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1'>
+                  <Star size={12} className='fill-amber-400 text-amber-400' />
+                  {Number(delivery.drivers.average_rating || 5).toFixed(1)}
+                </span>
+                <button
+                  type='button'
+                  onClick={handleOpenDriverPublicReviews}
+                  title='عرض تعليقات العملاء عن المندوب'
+                  className='px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 flex items-center gap-1 transition cursor-pointer'
+                >
+                  <MessageSquareText size={13} />
+                  <span>التعليقات</span>
+                </button>
+              </div>
             </div>
 
             <div className='flex items-center justify-between'>
@@ -716,6 +827,80 @@ function CustomerConfirmContent() {
                 <MessageCircle size={18} />
                 واتساب المندوب
               </a>
+            </div>
+          </div>
+        )}
+
+        {isCustomerReviewsModalOpen && delivery?.drivers && (
+          <div
+            dir='rtl'
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsCustomerReviewsModalOpen(false);
+              }
+            }}
+            className='fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4'
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className='w-full max-w-md rounded-3xl bg-[#0d1524] border border-slate-800 p-4 shadow-2xl space-y-3 text-white'
+            >
+              <div className='flex items-center justify-between border-b border-slate-800/80 pb-2.5'>
+                <div>
+                  <h3 className='text-sm font-black text-white'>
+                    آراء العملاء في ({delivery.drivers.full_name})
+                  </h3>
+                  <p className='text-[11px] text-amber-400 font-bold'>
+                    المتوسط:{' '}
+                    {Number(delivery.drivers.average_rating || 5).toFixed(1)} ★
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  onClick={() => setIsCustomerReviewsModalOpen(false)}
+                  className='w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center justify-center cursor-pointer'
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className='max-h-72 overflow-y-auto space-y-2 pr-0.5'>
+                {loadingPublicReviews ? (
+                  <p className='text-xs text-slate-400 text-center py-6'>
+                    جاري تحميل التعليقات...
+                  </p>
+                ) : driverPublicReviews.filter(
+                    (r) => !Boolean(r.is_review_hidden),
+                  ).length === 0 ? (
+                  <p className='text-xs text-slate-400 text-center py-6'>
+                    لا توجد تعليقات منشورة لهذا المندوب حتى الآن.
+                  </p>
+                ) : (
+                  driverPublicReviews
+                    .filter((rev) => !Boolean(rev.is_review_hidden))
+                    .map((rev) => (
+                      <div
+                        key={rev.id}
+                        className='bg-[#090f19] border border-slate-800 rounded-2xl p-3 space-y-1.5'
+                      >
+                        <div className='flex items-center justify-between'>
+                          <span className='inline-flex items-center gap-1 text-xs font-black text-amber-400'>
+                            <Star size={12} className='fill-amber-400' />
+                            {Number(rev.customer_rating || 0)}/5
+                          </span>
+                        </div>
+                        <p className='text-xs text-slate-200 leading-relaxed'>
+                          {rev.customer_review}
+                        </p>
+                        {rev.admin_review_reply && (
+                          <p className='text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1'>
+                            رد الإدارة: {rev.admin_review_reply}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -802,7 +987,7 @@ function CustomerConfirmContent() {
                   <div className='pt-3 border-t border-slate-800/90 space-y-2.5'>
                     <div className='flex items-center justify-between'>
                       <span className='text-xs font-black text-sky-300 flex items-center gap-1.5'>
-                        <Sparkles size={14} className='text-sky-400' />
+                        <Zap size={14} className='text-sky-400' />
                         قريب من عروض إضافية في طلبك القادم:
                       </span>
                     </div>
@@ -929,7 +1114,7 @@ function CustomerConfirmContent() {
                 </span>
                 <p className='text-base sm:text-lg font-black text-white leading-relaxed'>
                   {ord.customer_address}
-                  {ord.city ? ` — ${ord.city}` : ''}
+                  {/* {ord.city ? ` — ${ord.city}` : ''} */}
                 </p>
               </div>
             </div>
@@ -1029,31 +1214,49 @@ function CustomerConfirmContent() {
             )}
           </div>
         )}
-
         {/* قسم تقييم المندوب (يظهر بمجرد تأكيد العميل للاستلام أو اكتمال الطلب) */}
         {!isCancelled &&
           (delivery.customer_confirmed || isCompleted) &&
           delivery.drivers && (
             <div className='bg-[#0e1626] border border-purple-500/40 rounded-3xl p-5 space-y-4 shadow-xl'>
-              <div className='text-center space-y-1'>
-                <span className='inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30'>
-                  <Sparkles size={12} /> رأيك يهمنا
-                </span>
-                <h3 className='text-lg font-black text-white'>
-                  قيّم خدمة المندوب ({delivery.drivers.full_name})
-                </h3>
-                <p className='text-xs text-slate-400'>
-                  اختر عدد النجوم المناسبة لمستوى الخدمة والتوصيل
-                </p>
-              </div>
-
               {ratingSubmitted ? (
-                <div className='bg-[#090f19] border border-slate-800 rounded-2xl p-4 text-center space-y-2'>
+                <div className='bg-[#090f19] border border-emerald-500/30 rounded-2xl p-4 space-y-3 text-center'>
+                  <div className='flex items-center justify-between gap-2'>
+                    <span className='inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'>
+                      <ThumbsUp size={12} /> تم التقييم
+                    </span>
+                    <button
+                      type='button'
+                      onClick={() => setIsRatingModalOpen(true)}
+                      className='text-[11px] font-bold text-purple-300 hover:text-purple-200 underline cursor-pointer'
+                    >
+                      تعديل التقييم
+                    </button>
+                  </div>
+
+                  <div className='space-y-1'>
+                    <h3 className='text-base font-black text-white'>
+                      تقييمك للمندوب ({delivery.drivers.full_name}):{' '}
+                      <span className='text-amber-400'>{selectedRating}/5</span>
+                    </h3>
+                    <p className='text-xs font-bold text-emerald-400'>
+                      {selectedRating === 5
+                        ? 'ممتاز'
+                        : selectedRating === 4
+                          ? 'جيد جداً'
+                          : selectedRating === 3
+                            ? 'مقبول'
+                            : selectedRating === 2
+                              ? 'ضعيف'
+                              : 'سيء'}
+                    </p>
+                  </div>
+
                   <div className='flex items-center justify-center gap-1.5'>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        size={26}
+                        size={20}
                         className={
                           star <= selectedRating
                             ? 'fill-amber-400 text-amber-400'
@@ -1062,77 +1265,199 @@ function CustomerConfirmContent() {
                       />
                     ))}
                   </div>
-                  <p className='text-sm font-black text-emerald-400 flex items-center justify-center gap-1.5'>
-                    <ThumbsUp size={16} /> شكراً لتقييمك! تم حفظ رأيك بنجاح.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitDriverRating} className='space-y-4'>
-                  {/* نجوم التقييم التفاعلية */}
-                  <div className='flex items-center justify-center gap-2 py-2'>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type='button'
-                        onClick={() => setSelectedRating(star)}
-                        className='p-1 transition-transform hover:scale-110 active:scale-95'
-                      >
-                        <Star
-                          size={34}
-                          className={
-                            star <= selectedRating
-                              ? 'fill-amber-400 text-amber-400 drop-shadow'
-                              : 'text-slate-700 hover:text-slate-500'
-                          }
-                        />
-                      </button>
-                    ))}
-                  </div>
 
-                  {/* أوسمة سريعة للتقييم */}
-                  <div className='flex flex-wrap justify-center gap-1.5'>
-                    {[
-                      'سريع جداً ⚡',
-                      'تعامل راقي 🤝',
-                      'التزام بالمواعيد ⏱️',
-                      'حافظ على الطلب 📦',
-                    ].map((tag) => {
-                      const active = selectedTags.includes(tag);
-                      return (
-                        <button
+                  {selectedTags.length > 0 && (
+                    <div className='flex flex-wrap justify-center gap-1.5'>
+                      {selectedTags.map((tag) => (
+                        <span
                           key={tag}
-                          type='button'
-                          onClick={() => toggleTag(tag)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                            active
-                              ? 'bg-purple-600/25 border-purple-500 text-purple-200'
-                              : 'bg-[#090f19] border-slate-800 text-slate-400 hover:text-white'
-                          }`}
+                          className='px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-purple-600/20 border border-purple-500/30 text-purple-200'
                         >
                           {tag}
-                        </button>
-                      );
-                    })}
-                  </div>
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
-                  <textarea
-                    rows={2}
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder='أضف تعليقاً اختيارياً للمندوب...'
-                    className='w-full bg-[#090f19] border border-slate-800 focus:border-purple-500 rounded-2xl p-3 text-xs text-white placeholder-slate-500 outline-none'
-                  />
-
+                  {reviewComment && (
+                    <p className='text-xs text-slate-300 bg-slate-900/80 border border-slate-800 rounded-xl px-3 py-2'>
+                      “{reviewComment}”
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className='text-center space-y-2.5'>
+                  <span className='inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30'>
+                    <Zap size={12} /> رأيك يهمنا
+                  </span>
+                  <h3 className='text-lg font-black text-white'>
+                    قيّم خدمة المندوب ({delivery.drivers.full_name})
+                  </h3>
+                  <p className='text-xs text-slate-400'>
+                    اختر عدد النجوم المناسبة لمستوى الخدمة والتوصيل
+                  </p>
                   <button
-                    type='submit'
-                    disabled={submittingRating}
-                    className='w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-lg shadow-purple-600/20'
+                    type='button'
+                    onClick={() => setIsRatingModalOpen(true)}
+                    className='px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black transition cursor-pointer'
                   >
-                    {submittingRating
-                      ? 'جاري إرسال التقييم...'
-                      : 'إرسال التقييم'}
+                    فتح نافذة التقييم (1 - 5)
                   </button>
-                </form>
+                </div>
+              )}
+
+              {isRatingModalOpen && (
+                <div
+                  dir='rtl'
+                  className='fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-3'
+                >
+                  <div className='w-full max-w-[300px] rounded-2xl bg-[#0d1524] border border-slate-800 p-3.5 shadow-2xl space-y-2.5 text-white'>
+                    {/* رأس المودال المصغر */}
+                    <div className='flex items-center justify-between border-b border-slate-800/80 pb-2'>
+                      <div>
+                        <h3 className='text-xs font-black text-white'>
+                          تقييم التوصيل
+                        </h3>
+                        <p className='text-[10px] text-slate-400'>
+                          اختر من 1 إلى 5 واضغط تقديم
+                        </p>
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => setIsRatingModalOpen(false)}
+                        className='w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold flex items-center justify-center cursor-pointer'
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {ratingSubmitted ? (
+                      <div className='bg-[#090f19] border border-emerald-500/30 rounded-xl p-3 text-center space-y-1.5'>
+                        <div className='flex items-center justify-center gap-1'>
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={15}
+                              className={
+                                star <= selectedRating
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-slate-700'
+                              }
+                            />
+                          ))}
+                        </div>
+                        <p className='text-xs font-black text-emerald-400 flex items-center justify-center gap-1'>
+                          <ThumbsUp size={13} /> تم إرسال التقييم بنجاح!
+                        </p>
+                        <p className='text-[10px] text-slate-400'>
+                          تقييمك ({selectedRating}/5) محفوظ ومسمّع.
+                        </p>
+                      </div>
+                    ) : (
+                      <form
+                        onSubmit={handleSubmitDriverRating}
+                        className='space-y-2'
+                      >
+                        {/* اختيارات 1 إلى 5 مع زر تقديم جنب كل اختيار */}
+                        <div className='space-y-1'>
+                          {[
+                            { value: 5, label: 'ممتاز' },
+                            { value: 4, label: 'جيد جداً' },
+                            { value: 3, label: 'مقبول' },
+                            { value: 2, label: 'ضعيف' },
+                            { value: 1, label: 'سيء' },
+                          ].map((option) => {
+                            const isSelected = selectedRating === option.value;
+                            return (
+                              <div
+                                key={option.value}
+                                onClick={() => setSelectedRating(option.value)}
+                                className={`flex items-center justify-between gap-1.5 rounded-xl px-2 py-1 border transition cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-purple-600/20 border-purple-500'
+                                    : 'bg-[#090f19] border-slate-800 hover:border-slate-700'
+                                }`}
+                              >
+                                <div className='flex items-center gap-1.5 min-w-0'>
+                                  <span className='w-5 h-5 rounded-md bg-slate-800 text-[10px] font-black flex items-center justify-center text-amber-300 shrink-0'>
+                                    {option.value}
+                                  </span>
+                                  <Star
+                                    size={12}
+                                    className='fill-amber-400 text-amber-400 shrink-0'
+                                  />
+                                  <span className='text-[11px] font-bold text-slate-200 truncate'>
+                                    {option.label}
+                                  </span>
+                                </div>
+
+                                <button
+                                  type='button'
+                                  disabled={submittingRating}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSubmitDriverRating(e, option.value);
+                                  }}
+                                  className='px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white font-black text-[10px] shrink-0 cursor-pointer'
+                                >
+                                  {submittingRating && isSelected
+                                    ? '...'
+                                    : 'تقديم'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* أوسمة سريعة مصغرة */}
+                        <div className='flex flex-wrap gap-1'>
+                          {[
+                            'سريع ⚡',
+                            'تعامل راقي 🤝',
+                            'مواعيد ⏱️',
+                            'سليم 📦',
+                          ].map((tag) => {
+                            const active = selectedTags.includes(tag);
+                            return (
+                              <button
+                                key={tag}
+                                type='button'
+                                onClick={() => toggleTag(tag)}
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition cursor-pointer ${
+                                  active
+                                    ? 'bg-purple-600/25 border-purple-500 text-purple-200'
+                                    : 'bg-[#090f19] border-slate-800 text-slate-400 hover:text-white'
+                                }`}
+                              >
+                                {tag}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* إنبوت تعليق مصغر */}
+                        <input
+                          type='text'
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder='تعليق اختياري...'
+                          className='w-full bg-[#090f19] border border-slate-800 focus:border-purple-500 rounded-xl px-2.5 py-1.5 text-[11px] text-white placeholder-slate-500 outline-none'
+                        />
+
+                        {/* زر تقديم واضح أسفل الاختيارات */}
+                        <button
+                          type='submit'
+                          disabled={submittingRating}
+                          className='w-full py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white font-black text-xs cursor-pointer'
+                        >
+                          {submittingRating
+                            ? 'جاري التقييم...'
+                            : `تقديم (${selectedRating}/5)`}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}

@@ -68,9 +68,6 @@ export default function MyOrdersPage() {
 
   return (
     <div className='min-h-screen bg-[#07090e] text-slate-100 pb-16 font-sans relative selection:bg-red-500 selection:text-white'>
-      {/* Custom Neon Scrollbar Styles */}
-
-
       {/* Background Glow Orbs */}
       <div className='fixed top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none' />
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
@@ -257,6 +254,8 @@ export default function MyOrdersPage() {
                                 alt={item.name || 'Product'}
                                 width={100}
                                 height={100}
+                                loading='lazy'
+                                sizes='48px'
                                 className='w-12 h-12 object-cover rounded-xl border border-slate-700 shrink-0 bg-slate-900'
                               />
                               <div className='flex-1 min-w-0'>

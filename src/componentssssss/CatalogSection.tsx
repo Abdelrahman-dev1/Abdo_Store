@@ -292,7 +292,7 @@ export default function CatalogSection() {
         <div className='flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-800/80 pb-8'>
           <div className='space-y-3'>
             <div className='inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold tracking-wide'>
-              <Sparkles className='w-4 h-4 animate-spin-slow' />
+              <Zap className='w-4 h-4 animate-spin-slow' />
               <span>كتالوج المنتجات الحصري 2026</span>
             </div>
             <h2 className='text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight'>
@@ -392,11 +392,19 @@ export default function CatalogSection() {
                     <div>
                       {/* حاوية الصورة والبادجات */}
                       <div className='relative w-full h-48 sm:h-52 rounded-xl overflow-hidden bg-slate-900 mb-4'>
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className='w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-700 ease-out'
+                        <Image
+                          src={item.image || '/placeholder.png'}
+                          alt={item.title || 'Item'}
+                          width={600}
+                          height={600}
                           loading='lazy'
+                          sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
+                          unoptimized={
+                            typeof item.image === 'string' &&
+                            (item.image.startsWith('blob:') ||
+                              item.image.startsWith('data:'))
+                          }
+                          className='w-full h-full object-cover object-center transform group-hover:scale-110 transition-transform duration-700 ease-out'
                         />
                         <div className='absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity' />
 
@@ -546,9 +554,18 @@ export default function CatalogSection() {
 
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6 items-center'>
               <div className='relative h-64 md:h-80 rounded-2xl overflow-hidden bg-slate-950'>
-                <img
-                  src={selectedProduct.image}
-                  alt={selectedProduct.title}
+                <Image
+                  src={selectedProduct.image || '/placeholder.png'}
+                  alt={selectedProduct.title || 'Selected Product'}
+                  width={600}
+                  height={600}
+                  loading='lazy'
+                  sizes='(max-width: 768px) 100vw, 50vw'
+                  unoptimized={
+                    typeof selectedProduct.image === 'string' &&
+                    (selectedProduct.image.startsWith('blob:') ||
+                      selectedProduct.image.startsWith('data:'))
+                  }
                   className='w-full h-full object-cover'
                 />
                 <span

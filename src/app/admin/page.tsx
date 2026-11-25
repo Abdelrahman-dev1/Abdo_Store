@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
   const [statsPasscodeInput, setStatsPasscodeInput] = useState<string>('');
   const [statsPasscodeError, setStatsPasscodeError] = useState<string>('');
   const [savingSettings, setSavingSettings] = useState(false);
-
+  const [addProductUnlocked, setAddProductUnlocked] = useState(false);
   // إحصائيات المتجر
   const [stats, setStats] = useState({
     totalRevenue: 0,
@@ -176,13 +176,13 @@ export default function AdminDashboardPage() {
     await supabase.auth.signOut();
     router.push('/admin/login');
   };
-
   // مصفوفة الروابط السريعة تحت الناف بار
   const quickNavModules = [
     {
       title: 'Products',
       href: '/admin/products',
       icon: ShoppingBag,
+      protected: true,
       accent:
         'hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]',
       iconStyle:
@@ -224,6 +224,7 @@ export default function AdminDashboardPage() {
       title: 'Settings',
       href: '/admin/settings',
       icon: Settings,
+      protected: true,
       accent:
         'hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]',
       iconStyle:
@@ -337,13 +338,48 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className='flex items-center gap-3'>
-            <Link
-              href='/admin/products'
-              className='px-5 py-3 bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-red-950/50 transition flex items-center gap-2'
-            >
-              <span>Add Product</span>
-              <ArrowUpRight size={15} />
-            </Link>
+            {statsUnlocked ? (
+              <Link
+                href='/admin/products'
+                className='px-5 py-3 bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-red-950/50 transition flex items-center gap-2'
+              >
+                <span>Add Product</span>
+                <ArrowUpRight size={15} />
+                <span
+                  role='button'
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setStatsUnlocked(false);
+                    // setAddProductUnlocked(false);
+                  }}
+                  title='Lock Add Product'
+                  className='p-1 rounded bg-black/25 hover:bg-black/40 cursor-pointer'
+                >
+                  {statsUnlocked ? <Unlock size={13} /> : <Lock size={13} />}
+                  {/* {statsUnlocked ? <Unlock size={12} /> : <Lock size={12} />} */}
+                  {/* <Lock size={12} /> */}
+                </span>
+              </Link>
+            ) : (
+              <button
+                type='button'
+                onClick={() => {
+                  setStatsPasscodeInput('');
+                  setStatsPasscodeError('');
+                  setStatsPasscodeOpen(true);
+                }}
+                className='px-5 py-3 bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-500 hover:to-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-red-950/50 transition flex items-center gap-2 cursor-pointer'
+                title='Enter admin passcode to unlock Add Product'
+              >
+                {statsUnlocked ? <Unlock size={14} /> : <Lock size={14} />}
+                {/* <Lock size={14} /> */}
+                <span>Add Product</span>
+                {/* <span className='blur-[2px] select-none'>Add Product</span> */}
+                <ArrowUpRight size={15} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -351,12 +387,10 @@ export default function AdminDashboardPage() {
         <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3'>
           {quickNavModules.map((item) => {
             const IconComponent = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`group relative bg-[#0e1626]/90 backdrop-blur-xl px-3.5 py-3 rounded-2xl border border-slate-800/90 transition-all duration-200 flex items-center justify-between shadow-lg hover:-translate-y-0.5 ${item.accent} last:col-span-2 sm:last:col-span-1`}
-              >
+            const isLocked = item.protected && !statsUnlocked;
+
+            const cardContent = (
+              <>
                 <div className='flex items-center gap-3 min-w-0'>
                   <div
                     className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-colors duration-200 ${item.iconStyle}`}
@@ -364,13 +398,56 @@ export default function AdminDashboardPage() {
                     <IconComponent size={18} />
                   </div>
                   <span
-                    className={`font-extrabold text-xs sm:text-sm text-slate-100 truncate transition-colors ${item.textHover}`}
+                    className={`font-extrabold text-xs sm:text-sm text-slate-100 truncate transition-colors duration-200 ${item.textHover}`}
                   >
                     {item.title}
                   </span>
                 </div>
 
                 <div className='flex items-center gap-1.5 shrink-0'>
+                  {item.protected && (
+                    <span
+                      role='button'
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (statsUnlocked) {
+                            setStatsUnlocked(false);
+                          } else {
+                            setStatsPasscodeInput('');
+                            setStatsPasscodeError('');
+                            setStatsPasscodeOpen(true);
+                          }
+                        }
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (statsUnlocked) {
+                          setStatsUnlocked(false);
+                        } else {
+                          setStatsPasscodeInput('');
+                          setStatsPasscodeError('');
+                          setStatsPasscodeOpen(true);
+                        }
+                      }}
+                      title={statsUnlocked ? 'Lock' : 'Unlock'}
+                      className={`p-1 rounded-md border cursor-pointer ${
+                        statsUnlocked
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                      }`}
+                    >
+                      {statsUnlocked ? (
+                        <Unlock size={12} />
+                      ) : (
+                        <Lock size={12} />
+                      )}
+                      {/* <Lock size={12} /> */}
+                    </span>
+                  )}
                   {item.badge && (
                     <span className='px-1.5 py-0.5 text-[10px] font-black rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse'>
                       {item.badge}
@@ -378,6 +455,36 @@ export default function AdminDashboardPage() {
                   )}
                   <ArrowUpRight className='w-4 h-4 text-slate-600 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all' />
                 </div>
+              </>
+            );
+
+            const sharedClassName = `group relative bg-[#0e1626]/90 backdrop-blur-xl px-3.5 py-3 rounded-2xl border border-slate-800/90 transition-all duration-200 flex items-center justify-between shadow-lg hover:-translate-y-0.5 ${item.accent} last:col-span-2 sm:last:col-span-1 cursor-pointer`;
+
+            if (isLocked) {
+              return (
+                <button
+                  key={item.href}
+                  type='button'
+                  onClick={() => {
+                    setStatsPasscodeInput('');
+                    setStatsPasscodeError('');
+                    setStatsPasscodeOpen(true);
+                  }}
+                  title='Enter admin passcode to unlock'
+                  className={`${sharedClassName} text-left`}
+                >
+                  {cardContent}
+                </button>
+              );
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={sharedClassName}
+              >
+                {cardContent}
               </Link>
             );
           })}
@@ -537,6 +644,8 @@ export default function AdminDashboardPage() {
                   e.preventDefault();
                   if (statsPasscodeInput.trim() === '16605189') {
                     setStatsUnlocked(true);
+
+                    setAddProductUnlocked(true);
                     setStatsPasscodeOpen(false);
                     setStatsPasscodeInput('');
                     setStatsPasscodeError('');
@@ -880,11 +989,63 @@ export default function AdminDashboardPage() {
 
             <button
               type='button'
-              onClick={handleResetOrdersAndRevenue}
+              onClick={() => {
+                if (statsUnlocked) {
+                  handleResetOrdersAndRevenue();
+                } else {
+                  setStatsPasscodeInput('');
+                  setStatsPasscodeError('');
+                  setStatsPasscodeOpen(true);
+                }
+              }}
               className='px-5 py-3 bg-red-950/40 hover:bg-red-900/40 border border-red-500/40 text-red-400 font-bold rounded-xl text-xs transition flex items-center gap-2 cursor-pointer shadow-lg shadow-red-950/20'
+              title={
+                statsUnlocked
+                  ? 'Reset Revenue & Orders Archive'
+                  : 'Enter passcode to unlock reset action'
+              }
             >
               <RefreshCw size={15} />
               <span>Reset Revenue &amp; Orders Archive</span>
+              <span
+                role='button'
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (statsUnlocked) {
+                      setStatsUnlocked(false);
+                    } else {
+                      setStatsPasscodeInput('');
+                      setStatsPasscodeError('');
+                      setStatsPasscodeOpen(true);
+                    }
+                  }
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (statsUnlocked) {
+                    setStatsUnlocked(false);
+                  } else {
+                    setStatsPasscodeInput('');
+                    setStatsPasscodeError('');
+                    setStatsPasscodeOpen(true);
+                  }
+                }}
+                title={
+                  statsUnlocked ? 'Lock reset button' : 'Unlock reset button'
+                }
+                className={`p-1 rounded-md border transition ${
+                  statsUnlocked
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                }`}
+              >
+                {statsUnlocked ? <Unlock size={12} /> : <Lock size={12} />}
+                {/* <Lock size={12} /> */}
+              </span>
             </button>
           </div>
         </div>

@@ -16,11 +16,11 @@ type OrderFieldKey =
   | 'subtotal'
   | 'discount_code'
   | 'discount_amount'
-  | 'shipping_cost'
+  // | 'shipping_cost'
   | 'tax_amount'
   | 'payment_method'
   | 'payment_status'
-  | 'delivery_method'
+  // | 'delivery_method'
   | 'total_amount'
   | 'whatsapp_contact_link';
 
@@ -50,11 +50,11 @@ const DEFAULT_TELEGRAM_CONFIG: Required<ChannelConfig> = {
     subtotal: true,
     discount_code: false,
     discount_amount: false,
-    shipping_cost: true,
+    // shipping_cost: true,
     tax_amount: false,
     payment_method: true,
     payment_status: false,
-    delivery_method: true,
+    // delivery_method: true,
     total_amount: true,
     whatsapp_contact_link: true,
   },
@@ -75,11 +75,11 @@ const FIELD_LABELS: Record<OrderFieldKey, string> = {
   subtotal: '💵 Subtotal',
   discount_code: '🏷️ Discount code',
   discount_amount: '💸 Discount amount',
-  shipping_cost: '🚚 Shipping cost',
+  // shipping_cost: '🚚 Shipping cost',
   tax_amount: '🧮 Tax amount',
   payment_method: '💳 Payment method',
   payment_status: '✅ Payment status',
-  delivery_method: '📦 Delivery method',
+  // delivery_method: '📦 Delivery method',
   total_amount: '💰 Grand total',
   whatsapp_contact_link: '💬 Quick WhatsApp contact',
 };
@@ -407,16 +407,16 @@ export async function POST(req: Request) {
     );
 
     const subtotal = firstValue(body.subtotal, order.subtotal);
-    const shippingCost = firstValue(body.shipping_cost, order.shipping_cost);
+    // const shippingCost = firstValue(body.shipping_cost, order.shipping_cost);
     const totalAmount = firstValue(body.total_amount, order.total_amount);
     const paymentMethod = asText(
       firstValue(body.payment_method, payment.method, order.payment_method),
       100,
     );
-    const deliveryMethod = asText(
-      firstValue(body.delivery_method, shipping.method, order.delivery_method),
-      100,
-    );
+    // const deliveryMethod = asText(
+    //   firstValue(body.delivery_method, shipping.method, order.delivery_method),
+    //   100,
+    // );
 
     const normalizedPhone = normalizePhone(customerPhone);
 
@@ -450,11 +450,11 @@ export async function POST(req: Request) {
       subtotal: formatMoney(subtotal, currency),
       discount_code: '',
       discount_amount: '',
-      shipping_cost: formatMoney(shippingCost, currency),
+      // shipping_cost: formatMoney(shippingCost, currency),
       tax_amount: '',
       payment_method: paymentMethod,
       payment_status: '',
-      delivery_method: deliveryMethod,
+      // delivery_method: deliveryMethod,
       total_amount: formatMoney(totalAmount, currency),
       whatsapp_contact_link: '',
     };

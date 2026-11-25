@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image'
 import {
   Search,
   ArrowUpDown,
@@ -18,10 +19,12 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
+  ChevronRight,
   ChevronUp,
   ChevronDown,
   BarChart2,
   X,
+  ChevronLeft,
 } from 'lucide-react';
 
 interface ProductsAnalyticsTabProps {
@@ -133,7 +136,24 @@ const LENS_TABS: {
     activeGradient: 'from-fuchsia-600 to-violet-600',
   },
 ];
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
 
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+
+// ==================
+// ==================
+// ==================
+// ==================
 function extractImageUrl(raw: any, catalogProd?: CatalogProduct): string {
   const candidates = [
     raw?.image,
@@ -202,6 +222,10 @@ export default function ProductsAnalyticsTab({
   const [sortDirection, setSortDirection] = useState<'desc' | 'asc'>('desc');
   const [expandedRowKey, setExpandedRowKey] = useState<string | null>(null);
 
+
+const [analyticsCategoryModalOpen, setAnalyticsCategoryModalOpen] =
+  useState(false);
+
   // Blur lock state for all 4 analytics boxes (unlocked via passcode 16605189)
   const [analyticsUnlocked, setAnalyticsUnlocked] = useState<boolean>(false);
   const [passcodeModalOpen, setPasscodeModalOpen] = useState<boolean>(false);
@@ -210,6 +234,74 @@ export default function ProductsAnalyticsTab({
 
   // Reset warning modal state
   const [resetWarningOpen, setResetWarningOpen] = useState<boolean>(false);
+  // =======================
+  // =======================
+  const lockResetAgain = () => {
+    setIsResetLocked(true);
+    setResetPasswordInput('');
+    setResetPasswordError('');
+  };
+  // =======================
+  // =======================
+  const [isResetLocked, setIsResetLocked] = useState(true);
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+  const [resetPasswordInput, setResetPasswordInput] = useState('');
+  const [resetPasswordError, setResetPasswordError] = useState('');
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageAnimKey, setTablePageAnimKey] = useState(0);
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  const executeResetFilters = () => {
+    // حط هنا نفس كود الـ Reset الأصلي اللي كان بيعمل ريست للفلاتر
+    setResetWarningOpen(true);
+  };
+
+  const handleResetButtonClick = () => {
+    if (!isResetLocked) {
+      executeResetFilters();
+      return;
+    }
+    setResetPasswordInput('');
+    setResetPasswordError('');
+    setResetPasswordModalOpen(true);
+  };
+const RESET_LOCK_CODE = '16605189';
+  const handleConfirmResetPassword = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (resetPasswordInput.trim() === RESET_LOCK_CODE) {
+      setIsResetLocked(false);
+      setResetPasswordModalOpen(false);
+      setResetPasswordInput('');
+      setResetPasswordError('');
+      executeResetFilters();
+    } else {
+      setResetPasswordError('الباسورد غير صحيح، حاول مرة أخرى.');
+    }
+  };
+  // =======================
+  // =======================
+  // =======================
+  // =======================
+  // =======================
 
   // Table slider scroll container ref
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -686,7 +778,61 @@ export default function ProductsAnalyticsTab({
   const blurValueClass = analyticsUnlocked
     ? 'transition-all duration-300'
     : 'blur-md select-none pointer-events-none transition-all duration-300';
+// ================================
+// ================================
+// ================================
+// ================================
+useEffect(() => {
+    if (!resetWarningOpen) {
+      setIsResetLocked(true);
+    }
+  }, [resetWarningOpen]);
 
+    // باقي JSX بتاع ProductsAnalyticsTab
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+const TABLE_ROWS_PER_PAGE = 10;
+const totalTablePages = Math.max(
+  1,
+  Math.ceil((analytics?.tableRows?.length || 0) / TABLE_ROWS_PER_PAGE),
+);
+const safeTablePage = Math.min(tablePage, totalTablePages);
+const tableStartIndex = (safeTablePage - 1) * TABLE_ROWS_PER_PAGE;
+const tableEndIndex = Math.min(
+  tableStartIndex + TABLE_ROWS_PER_PAGE,
+  analytics?.tableRows?.length || 0,
+);
+const paginatedTableRows = (analytics?.tableRows || []).slice(
+  tableStartIndex,
+  tableEndIndex,
+);
+
+const handleTablePageChange = (nextPage: number) => {
+  const clamped = Math.max(1, Math.min(nextPage, totalTablePages));
+  if (clamped === safeTablePage) return;
+  setTablePage(clamped);
+  setTablePageAnimKey((k) => k + 1);
+  setExpandedRowKey(null);
+};
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
+// ================================
   return (
     <div className='px-3 sm:px-6 lg:px-8 py-3 sm:py-4 space-y-4 text-slate-100 max-w-[1600px] mx-auto'>
       {/* 1. Header & 4 Protected Analytics Boxes (Balanced Mid-Tone Palette) */}
@@ -737,7 +883,7 @@ export default function ProductsAnalyticsTab({
 
             <button
               type='button'
-              onClick={() => setResetWarningOpen(true)}
+              onClick={handleResetButtonClick}
               className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/75 hover:bg-rose-950/60 border border-slate-600/80 hover:border-rose-400/50 text-xs font-bold text-slate-200 hover:text-rose-200 transition-all duration-200 active:scale-95 cursor-pointer'
             >
               <RotateCcw size={13} className='text-rose-400' />
@@ -779,7 +925,9 @@ export default function ProductsAnalyticsTab({
           {/* Card 2: Total Products Revenue (Green / Emerald) */}
           <div className='rounded-xl bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400/60 p-3 transition-all duration-200 hover:-translate-y-0.5'>
             <div className='flex items-center justify-between gap-1 text-[11px] text-slate-300'>
-              <span className='font-bold truncate'>Products Revenue</span>
+              <span className='font-bold text-[10px] sm:text-[11px] leading-tight'>
+                Products Revenue
+              </span>
               <div className='flex items-center gap-1 shrink-0'>
                 <button
                   type='button'
@@ -882,54 +1030,122 @@ export default function ProductsAnalyticsTab({
             />
           </div>
 
-          {/* Category Filter */}
           <div className='md:col-span-3'>
-            <div className='flex items-center gap-1.5 rounded-xl bg-slate-900/90 border border-slate-700 px-2.5 py-2'>
-              <Tag size={14} className='text-violet-300 shrink-0' />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className='w-full bg-transparent text-xs text-white outline-none cursor-pointer'
+            <button
+              type='button'
+              onClick={() => setAnalyticsCategoryModalOpen(true)}
+              className='w-full flex items-center justify-between gap-2 rounded-xl bg-gradient-to-r from-[#141d33] via-slate-900 to-[#111c36] hover:from-red-600/20 hover:to-blue-600/25 border border-violet-500/35 hover:border-blue-400/50 px-3 py-2 text-xs text-white transition-all duration-200 cursor-pointer shadow-sm'
+            >
+              <span className='flex items-center gap-1.5 min-w-0'>
+                <Tag size={14} className='text-violet-300 shrink-0' />
+                <span className='font-bold truncate'>
+                  {selectedCategory === 'all'
+                    ? `All Categories (${analytics.availableCategories.length})`
+                    : selectedCategory}
+                </span>
+              </span>
+              <span className='text-[10px] font-black px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-200 border border-blue-400/30 shrink-0'>
+                Select
+              </span>
+            </button>
+
+            {analyticsCategoryModalOpen && (
+              <div
+                onClick={() => setAnalyticsCategoryModalOpen(false)}
+                className='fixed inset-0 z-50 pt-20 pb-4 px-3 sm:px-4 bg-black/75 backdrop-blur-sm flex items-center justify-center overflow-y-auto animate-fadeIn'
               >
-                <option value='all' className='bg-slate-900'>
-                  All Categories ({analytics.availableCategories.length})
-                </option>
-                {analytics.availableCategories.map((cat) => (
-                  <option key={cat} value={cat} className='bg-slate-900'>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className='w-full max-w-sm max-h-[calc(100vh-6.5rem)] my-auto rounded-2xl bg-[#0c1424] border border-blue-500/35 shadow-2xl flex flex-col overflow-hidden transition-all duration-200'
+                >
+                  <div className='px-4 py-3 bg-gradient-to-r from-red-600/25 via-violet-600/20 to-blue-600/25 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0'>
+                    <div className='flex items-center gap-2 min-w-0'>
+                      <span className='w-2.5 h-2.5 rounded-full bg-gradient-to-r from-red-500 via-fuchsia-500 to-blue-500 animate-pulse shrink-0' />
+                      <h4 className='text-xs sm:text-sm font-black text-white truncate'>
+                        Filter by Category (
+                        {analytics.availableCategories.length})
+                      </h4>
+                    </div>
+                    <button
+                      type='button'
+                      onClick={() => setAnalyticsCategoryModalOpen(false)}
+                      aria-label='Close category modal'
+                      className='p-1 rounded-lg bg-slate-800/80 hover:bg-red-500/20 text-slate-300 hover:text-red-300 border border-slate-700/80 transition cursor-pointer shrink-0'
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className='p-3 space-y-1.5 max-h-[240px] sm:max-h-[270px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-900/70 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-b [&::-webkit-scrollbar-thumb]:from-red-500/70 [&::-webkit-scrollbar-thumb]:to-blue-500/70'>
+                    <button
+                      type='button'
+                      onClick={() => {
+                        setSelectedCategory('all');
+                        setAnalyticsCategoryModalOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition-all duration-150 cursor-pointer ${
+                        selectedCategory === 'all'
+                          ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white border-blue-300/40 shadow-md'
+                          : 'bg-[#121c30] text-slate-200 border-slate-800 hover:border-blue-500/40 hover:bg-[#17233b]'
+                      }`}
+                    >
+                      <span>All Categories</span>
+                      <span className='px-2 py-0.5 rounded-full font-mono text-[10px] bg-black/30 text-blue-200'>
+                        {analytics.availableCategories.length}
+                      </span>
+                    </button>
+
+                    {analytics.availableCategories.map((cat) => {
+                      const isSelected = selectedCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type='button'
+                          onClick={() => {
+                            setSelectedCategory(cat);
+                            setAnalyticsCategoryModalOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition-all duration-150 cursor-pointer ${
+                            isSelected
+                              ? 'bg-gradient-to-r from-red-600 via-fuchsia-600 to-blue-600 text-white border-blue-300/40 shadow-md'
+                              : 'bg-[#121c30] text-slate-200 border-slate-800 hover:border-violet-500/40 hover:bg-[#17233b]'
+                          }`}
+                        >
+                          <span className='truncate'>{cat}</span>
+                          {isSelected && (
+                            <span className='text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white shrink-0'>
+                              Active
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+          {/* ======================= */}
+          {/* ======================= */}
+          {/* ======================= */}
 
           {/* Sort Buttons */}
           <div className='md:col-span-4 flex flex-wrap items-center justify-start md:justify-end gap-1.5'>
             {(
               [
-                {
-                  id: 'sold',
-                  label: 'Sold',
-                  activeCls: 'bg-blue-600 border-blue-400',
-                },
-                {
-                  id: 'revenue',
-                  label: 'Revenue',
-                  activeCls: 'bg-emerald-600 border-emerald-400',
-                },
-                {
-                  id: 'price',
-                  label: 'Price',
-                  activeCls: 'bg-violet-600 border-violet-400',
-                },
-                {
-                  id: 'discount',
-                  label: 'Discount',
-                  activeCls: 'bg-rose-600 border-rose-400',
-                },
-              ] as { id: SortField; label: string; activeCls: string }[]
+                { id: 'sold', label: 'Sold' },
+                { id: 'revenue', label: 'Revenue' },
+                { id: 'price', label: 'Price' },
+                { id: 'discount', label: 'Discount' },
+              ] as { id: SortField; label: string }[]
             ).map((btn) => {
               const active = sortField === btn.id;
+              const isAsc = active && sortDirection === 'asc';
+
+              const activeDirectionCls = isAsc
+                ? 'bg-rose-500/15 border-rose-400/50 text-rose-200 shadow-sm shadow-rose-950/30'
+                : 'bg-emerald-500/15 border-emerald-400/50 text-emerald-200 shadow-sm shadow-emerald-950/30';
+
               return (
                 <button
                   key={btn.id}
@@ -937,21 +1153,24 @@ export default function ProductsAnalyticsTab({
                   onClick={() => handleToggleSort(btn.id)}
                   className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold border transition-all duration-200 cursor-pointer ${
                     active
-                      ? `${btn.activeCls} text-white shadow-sm`
+                      ? activeDirectionCls
                       : 'bg-slate-900/80 text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
                   }`}
                 >
                   <span>{btn.label}</span>
                   <ArrowUpDown
                     size={11}
-                    className={
-                      active && sortDirection === 'asc' ? 'rotate-180' : ''
-                    }
+                    className={`transition-transform duration-200 ${
+                      isAsc ? 'rotate-180 text-rose-300' : 'text-emerald-300'
+                    }`}
                   />
                 </button>
               );
             })}
           </div>
+          {/* ======================= */}
+          {/* ======================= */}
+          {/* ======================= */}
         </div>
       </div>
 
@@ -1034,6 +1253,82 @@ export default function ProductsAnalyticsTab({
             </div>
           </div>
         </div>
+
+        {/* شريط الـ Pagination ثابت فوق منطقة السكرول الخاصة بالتيبول */}
+        {activeLens !== 'categories' &&
+          activeLens !== 'bought_together' &&
+          analytics.tableRows.length > TABLE_ROWS_PER_PAGE && (
+            <div
+              dir='ltr'
+              className='mb-2.5 flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/95 border border-slate-700/80 text-xs shrink-0'
+            >
+              {/* عداد الصفوف والصفحات */}
+              <div className='flex items-center gap-2 text-slate-400'>
+                <span className='w-2 h-2 rounded-full bg-blue-400 animate-pulse' />
+                <span>
+                  Showing{' '}
+                  <strong className='text-white font-mono'>
+                    {tableStartIndex + 1}–{tableEndIndex}
+                  </strong>{' '}
+                  of{' '}
+                  <strong className='text-blue-300 font-mono'>
+                    {analytics.tableRows.length}
+                  </strong>
+                </span>
+                <span className='text-slate-600'>•</span>
+                <span className='px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-300 font-mono text-[11px] font-bold'>
+                  Page {safeTablePage} / {totalTablePages}
+                </span>
+              </div>
+
+              {/* أزرار السابق والتالي وأرقام الصفحات */}
+              <div
+                key={`table-page-bar-${tablePageAnimKey}`}
+                className='flex items-center gap-1 flex-wrap'
+              >
+                <button
+                  type='button'
+                  onClick={() => handleTablePageChange(safeTablePage - 1)}
+                  disabled={safeTablePage === 1}
+                  className='inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700/90 text-slate-300 font-bold hover:border-blue-500/50 hover:text-white disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer'
+                >
+                  <ChevronLeft size={13} />
+                  <span>Prev</span>
+                </button>
+
+                {Array.from({ length: totalTablePages }, (_, i) => {
+                  const pageNum = i + 1;
+                  const isActive = pageNum === safeTablePage;
+
+                  return (
+                    <button
+                      key={`table-page-${pageNum}`}
+                      type='button'
+                      onClick={() => handleTablePageChange(pageNum)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`min-w-[28px] h-[28px] px-2 rounded-lg font-mono text-xs font-black transition cursor-pointer ${
+                        isActive
+                          ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white border border-blue-300/40 shadow-sm'
+                          : 'bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-600 hover:text-white'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  type='button'
+                  onClick={() => handleTablePageChange(safeTablePage + 1)}
+                  disabled={safeTablePage === totalTablePages}
+                  className='inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700/90 text-slate-300 font-bold hover:border-blue-500/50 hover:text-white disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer'
+                >
+                  <span>Next</span>
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+          )}
 
         {/* Scrollable Slider Area (prevents endless page scrolling) */}
         <div
@@ -1169,7 +1464,8 @@ export default function ProductsAnalyticsTab({
                     </td>
                   </tr>
                 ) : (
-                  analytics.tableRows.map((row, idx) => {
+                  paginatedTableRows.map((row, idx) => {
+                    const displayRowNumber = tableStartIndex + idx + 1;
                     const isExpanded = expandedRowKey === row.key;
                     return (
                       <tr
@@ -1184,12 +1480,16 @@ export default function ProductsAnalyticsTab({
                           <div className='flex items-start gap-2.5'>
                             <div className='relative shrink-0'>
                               <span className='absolute -top-1 -left-1 z-10 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-600 text-[9px] font-mono font-black text-amber-300'>
-                                #{idx + 1}
+                                #{displayRowNumber}
                               </span>
                               {row.imageUrl ? (
-                                <img
+                                <Image
                                   src={row.imageUrl}
-                                  alt={row.name}
+                                  alt={row.name || 'Item'}
+                                  width={112}
+                                  height={112}
+                                  loading='lazy'
+                                  sizes='(max-width: 640px) 48px, 56px'
                                   className='w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border border-slate-600 bg-slate-900 transition-transform duration-200 group-hover:scale-105'
                                 />
                               ) : (
@@ -1398,15 +1698,21 @@ export default function ProductsAnalyticsTab({
             <div className='flex items-center justify-end gap-2 pt-1'>
               <button
                 type='button'
-                onClick={() => setResetWarningOpen(false)}
+                onClick={() => {
+                  setResetWarningOpen(false);
+                  lockResetAgain();
+                }}
                 className='px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold text-slate-200 cursor-pointer'
               >
                 Keep Filters
               </button>
               <button
                 type='button'
-                onClick={executeResetAllFilters}
                 className='px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-black text-white cursor-pointer'
+                onClick={() => {
+                  executeResetAllFilters();
+                  lockResetAgain();
+                }}
               >
                 Yes, Reset
               </button>
@@ -1414,6 +1720,95 @@ export default function ProductsAnalyticsTab({
           </div>
         </div>
       )}
+
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {resetPasswordModalOpen && (
+        <div
+          dir='ltr'
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4'
+        >
+          <form
+            onSubmit={handleConfirmResetPassword}
+            className='w-full max-w-xs rounded-2xl bg-[#0b1324] border border-rose-500/35 p-4 shadow-2xl space-y-3'
+          >
+            <div className='flex items-center justify-between border-b border-slate-800 pb-2'>
+              <span className='text-xs font-black text-rose-300 uppercase tracking-wide'>
+                Reset Filters Lock
+              </span>
+              <button
+                type='button'
+                onClick={() => setResetPasswordModalOpen(false)}
+                className='text-slate-400 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded cursor-pointer'
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className='text-[11px] text-slate-400'>
+              Enter passcode to unlock{' '}
+              <strong className='text-slate-200'>Reset Filters</strong>.
+            </p>
+
+            <input
+              type='password'
+              inputMode='numeric'
+              autoFocus
+              value={resetPasswordInput}
+              onChange={(e) => {
+                setResetPasswordInput(e.target.value);
+                if (resetPasswordError) setResetPasswordError('');
+              }}
+              placeholder='••••••'
+              className='w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700/90 focus:border-rose-500/70 outline-none text-xs font-mono text-white tracking-widest'
+            />
+
+            {resetPasswordError && (
+              <p className='text-[11px] font-semibold text-rose-400'>
+                {resetPasswordError}
+              </p>
+            )}
+
+            <div className='flex items-center justify-end gap-2 pt-1'>
+              <button
+                type='button'
+                onClick={() => setResetPasswordModalOpen(false)}
+                className='px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 cursor-pointer'
+              >
+                Cancel
+              </button>
+              <button
+                type='submit'
+                className='px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white text-xs font-black shadow-sm cursor-pointer'
+              >
+                Unlock & Reset
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
+      {/* ======================== */}
     </div>
   );
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+
+  // =======================================
+  // =======================================
 }

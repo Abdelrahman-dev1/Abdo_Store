@@ -41,9 +41,23 @@ export default function AdminOrdersPage() {
 
   // ======================
   // ======================
+
+  const [liveOrderPage, setLiveOrderPage] = useState(1);
+  const [liveOrderPageAnimKey, setLiveOrderPageAnimKey] = useState(0);
   // ======================
   const [liveStatusFilter, setLiveStatusFilter] = useState<string>('all');
 
+  // ======================
+  // ======================
+  // ======================
+  // ======================
+  const [regularPage, setRegularPage] = useState(1);
+  const [regularPageAnimKey, setRegularPageAnimKey] = useState(0);
+  // ======================
+  // ======================
+  // ======================
+  const [vipPage, setVipPage] = useState(1);
+  const [vipPageAnimKey, setVipPageAnimKey] = useState(0);
   // ======================
   // ======================
 
@@ -119,6 +133,12 @@ export default function AdminOrdersPage() {
   // =================================
   // =================================
   // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+  // =================================
+
   // =================================
   // =================================
   // =================================
@@ -268,13 +288,20 @@ export default function AdminOrdersPage() {
   // =======================================
   // =======================================
   // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
   const getWhatsAppLink = (order: any) => {
     let phone = (order.customer_phone || order.phone || '').replace(/\D/g, '');
     if (phone.length === 11 && phone.startsWith('01')) {
       phone = '2' + phone;
     }
 
-    let itemsList = [];
+    let itemsList: any[] = [];
     try {
       itemsList =
         typeof order.items === 'string'
@@ -287,26 +314,61 @@ export default function AdminOrdersPage() {
     const itemsFormatted = itemsList
       .map(
         (item: any) =>
-          `• Product: ${item.name} | Qty: ${item.quantity} | Price: ${item.price} EGP | Subtotal: ${item.price * item.quantity} EGP`,
+          `• المنتج: ${item.name} | الكمية: ${item.quantity} | السعر: ${item.price} ج.م | الإجمالي الفرعي: ${item.price * item.quantity} ج.م`,
       )
       .join('\n---\n');
 
+    // صافي إجمالي المنتجات من العناصر نفسها لتجنب أي شحن مضاف مسبقاً
+    const productsSubtotal = itemsList.reduce(
+      (sum: number, item: any) =>
+        sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+      0,
+    );
+
+    const orderNumberText = order.order_number
+      ? `#${order.order_number}`
+      : order.id
+        ? `#${String(order.id).slice(0, 6)}`
+        : 'غير محدد';
+
+    const customerNameText = (
+      order.customer_name ||
+      order.full_name ||
+      order.name ||
+      ''
+    ).trim();
+
+    const customerNameLine = customerNameText
+      ? `👤 اسم العميل: ${customerNameText}\n`
+      : '';
+
     const notesText = order.customer_notes?.trim()
-      ? `📝 Customer Notes: ${order.customer_notes.trim()}\n`
+      ? `📝 ملاحظات العميل: ${order.customer_notes.trim()}\n`
       : '';
 
     const message =
-      `السلام عليكم بنكلم حضرتك بخصوص الاورد اللي طلبته من Abdo Store\n\n` +
-      `Here are your order details:\n\n` +
+      `السلام عليكم، بنكلم حضرتك بخصوص الطلب اللي طلبته من Abdo Store\n` +
+      `وحابين نأكد تفاصيله مع حضرتك:\n\n` +
+      `🔢 رقم الطلب: ${orderNumberText}\n` +
+      `${customerNameLine}\n` +
+      `تفاصيل الطلب:\n\n` +
       `${itemsFormatted}\n\n` +
       `-------------------\n` +
-      `📦 Total Amount: ${order.total_amount} EGP\n` +
-      `📍 Delivery Address: ${order.city ? order.city + ', ' : ''}${order.customer_address || 'Not Specified'}\n` +
+      `📦 إجمالي المنتجات: ${productsSubtotal} ج.م\n` +
+      `🚚 مصاريف الشحن: \n` +
+      `💵 إجمالي الدفع عند الاستلام: \n` +
+      `📍 عنوان التوصيل: ${order.customer_address || 'غير محدد'}\n` +
       `${notesText}\n` +
-      `Thank you for shopping with us! ✨`;
+      `لو الاوردر تمام يريت تبلغني عشان ابعتهولك في اسرع وقت 🤍`;
 
     return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   };
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
+  // =======================================
   // =======================================
   // =======================================
   // =======================================
@@ -338,7 +400,7 @@ export default function AdminOrdersPage() {
       order.phone ||
       ''
     ).toLowerCase();
-    const city = (order.city || '').toLowerCase();
+    // const city = (order.city || '').toLowerCase();
     const address = (order.customer_address || '').toLowerCase();
     const orderId = (order.id || '').toLowerCase();
     const totalAmount = String(order.total_amount || '');
@@ -346,7 +408,7 @@ export default function AdminOrdersPage() {
     if (
       customerName.includes(q) ||
       customerPhone.includes(q) ||
-      city.includes(q) ||
+      // city.includes(q) ||
       address.includes(q) ||
       orderId.includes(q) ||
       totalAmount.includes(q)
@@ -457,6 +519,65 @@ export default function AdminOrdersPage() {
     };
   }, [statusFilteredOrders, searchQuery]);
 
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  const VIP_PER_PAGE = 6;
+  const totalVipPages = Math.max(
+    1,
+    Math.ceil((processedData?.vipProfiles?.length || 0) / VIP_PER_PAGE),
+  );
+  const safeVipPage = Math.min(vipPage, totalVipPages);
+  const vipStartIndex = (safeVipPage - 1) * VIP_PER_PAGE;
+  const vipEndIndex = Math.min(
+    vipStartIndex + VIP_PER_PAGE,
+    processedData?.vipProfiles?.length || 0,
+  );
+  const paginatedVipProfiles = (processedData?.vipProfiles || []).slice(
+    vipStartIndex,
+    vipEndIndex,
+  );
+
+  const handleVipPageChange = (nextPage: number) => {
+    const clamped = Math.max(1, Math.min(nextPage, totalVipPages));
+    if (clamped === safeVipPage) return;
+    setVipPage(clamped);
+    setVipPageAnimKey((k) => k + 1);
+    setExpandedProfileKey(null);
+    if (vipSliderRef.current) {
+      vipSliderRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+  };
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
+  // ==========================================
   return (
     <div className='min-h-screen bg-[#111827] text-slate-100 pb-14 font-sans relative selection:bg-amber-500 selection:text-white text-xs'>
       {/* Admin Navbar */}
@@ -674,7 +795,7 @@ export default function AdminOrdersPage() {
                 order?.customer_name,
                 order?.customer_phone,
                 order?.phone,
-                order?.city,
+                // order?.city,
                 order?.customer_address,
                 order?.customer_notes,
                 order?.notes,
@@ -690,6 +811,48 @@ export default function AdminOrdersPage() {
               return haystack.includes(q);
             },
           );
+
+          // =====================================
+          // =====================================
+          // =====================================
+          // =====================================
+          // =====================================
+          // =====================================
+          // =====================================
+          const LIVE_ORDERS_PER_PAGE = 10;
+          const totalLiveOrderPages = Math.max(
+            1,
+            Math.ceil(filteredLiveOrders.length / LIVE_ORDERS_PER_PAGE),
+          );
+          const safeLiveOrderPage = Math.min(
+            liveOrderPage,
+            totalLiveOrderPages,
+          );
+          const liveOrderStartIndex =
+            (safeLiveOrderPage - 1) * LIVE_ORDERS_PER_PAGE;
+          const liveOrderEndIndex = Math.min(
+            liveOrderStartIndex + LIVE_ORDERS_PER_PAGE,
+            filteredLiveOrders.length,
+          );
+          const paginatedLiveOrders = filteredLiveOrders.slice(
+            liveOrderStartIndex,
+            liveOrderEndIndex,
+          );
+
+          const handleLiveOrderPageChange = (nextPage: number) => {
+            const clamped = Math.max(
+              1,
+              Math.min(nextPage, totalLiveOrderPages),
+            );
+            if (clamped === safeLiveOrderPage) return;
+            setLiveOrderPage(clamped);
+            setLiveOrderPageAnimKey((k) => k + 1);
+          };
+          // =====================================
+          // =====================================
+          // =====================================
+          // =====================================
+          // =====================================
 
           const statusCounts = {
             all: timeFilteredOrders.length,
@@ -792,7 +955,61 @@ export default function AdminOrdersPage() {
                   Instant Feed
                 </span>
               </div>
+              {/* ============================ */}
+              {/* ============================ */}
+              {/* ============================ */}
+              {/* ============================ */}
+              {filteredLiveOrders.length > LIVE_ORDERS_PER_PAGE && (
+                <div
+                  dir='ltr'
+                  className='flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-xl bg-[#0b1324]/95 border border-cyan-500/30 shadow-md backdrop-blur-xl'
+                >
+                  <div className='flex items-center gap-1 pr-1.5 border-r border-slate-800 shrink-0'>
+                    <span className='w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping' />
+                    <span className='text-[9px] sm:text-[11px] font-bold text-slate-300 whitespace-nowrap'>
+                      Showing{' '}
+                      <span className='font-black text-cyan-300'>
+                        {liveOrderStartIndex + 1}–{liveOrderEndIndex}
+                      </span>{' '}
+                      of{' '}
+                      <span className='font-black text-white'>
+                        {filteredLiveOrders.length}
+                      </span>
+                    </span>
+                  </div>
 
+                  <div
+                    key={`live-order-page-bar-${liveOrderPageAnimKey}`}
+                    className='flex items-center gap-1 overflow-x-auto max-w-[140px] sm:max-w-none py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  >
+                    {Array.from({ length: totalLiveOrderPages }, (_, i) => {
+                      const pageNum = i + 1;
+                      const isActive = pageNum === safeLiveOrderPage;
+
+                      return (
+                        <button
+                          key={`live-order-page-${pageNum}`}
+                          type='button'
+                          onClick={() => handleLiveOrderPageChange(pageNum)}
+                          aria-current={isActive ? 'page' : undefined}
+                          title={`صفحة ${pageNum}`}
+                          className={`min-w-[20px] h-[20px] sm:min-w-[26px] sm:h-[26px] px-1 sm:px-1.5 rounded-lg text-[9px] sm:text-xs font-black transition-all duration-200 cursor-pointer flex items-center justify-center shrink-0 ${
+                            isActive
+                              ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white shadow-sm shadow-rose-500/30 scale-105 border border-cyan-300/40'
+                              : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/40 active:scale-95'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {/* ============================ */}
+              {/* ============================ */}
+              {/* ============================ */}
+              {/* ============================ */}
               {/* Comprehensive Search Bar */}
               <div className='relative'>
                 <Search
@@ -859,8 +1076,12 @@ export default function AdminOrdersPage() {
                       : `No orders in "${liveStatusFilter}" status right now.`}
                   </div>
                 ) : (
-                  filteredLiveOrders.map((order: any, idx: number) => {
-                    const orderKey = String(order?.id ?? `live_${idx}`);
+                  paginatedLiveOrders.map((order: any, idx: number) => {
+                    const displayOrderIndex = liveOrderStartIndex + idx;
+                    const orderKey = String(
+                      order?.id ?? `live_${displayOrderIndex}`,
+                    );
+
                     const isVipOrder =
                       orders.filter(
                         (o: any) =>
@@ -1084,19 +1305,75 @@ export default function AdminOrdersPage() {
                   })
                 )}
               </div>
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* {filteredLiveOrders.length > LIVE_ORDERS_PER_PAGE && (
+                <div
+                  dir='ltr'
+                  className='flex flex-wrap items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-[#0b1324]/95 border border-cyan-500/30 shadow-lg backdrop-blur-xl'
+                >
+                  <div className='flex items-center gap-1.5 pr-2 border-r border-slate-800 shrink-0'>
+                    <span className='w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping' />
+                    <span className='text-[10px] sm:text-[11px] font-bold text-slate-300 whitespace-nowrap'>
+                      Showing{' '}
+                      <span className='font-black text-cyan-300'>
+                        {liveOrderStartIndex + 1}–{liveOrderEndIndex}
+                      </span>{' '}
+                      of{' '}
+                      <span className='font-black text-white'>
+                        {filteredLiveOrders.length}
+                      </span>
+                    </span>
+                  </div>
 
+                  <div
+                    key={`live-order-page-bar-${liveOrderPageAnimKey}`}
+                    className='flex items-center gap-1 overflow-x-auto max-w-[160px] sm:max-w-none py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  >
+                    {Array.from({ length: totalLiveOrderPages }, (_, i) => {
+                      const pageNum = i + 1;
+                      const isActive = pageNum === safeLiveOrderPage;
+
+                      return (
+                        <button
+                          key={`live-order-page-${pageNum}`}
+                          type='button'
+                          onClick={() => handleLiveOrderPageChange(pageNum)}
+                          aria-current={isActive ? 'page' : undefined}
+                          title={`صفحة ${pageNum}`}
+                          className={`min-w-[24px] h-[24px] sm:min-w-[28px] sm:h-[28px] px-1.5 rounded-xl text-[10px] sm:text-xs font-black transition-all duration-300 cursor-pointer flex items-center justify-center shrink-0 ${
+                            isActive
+                              ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white shadow-md shadow-rose-500/30 scale-105 border border-cyan-300/40'
+                              : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-cyan-200 border border-slate-700/80 hover:border-cyan-500/40 active:scale-95'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )} */}
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* =========================== */}
+              {/* =========================== */}
               {liveOrderModal.isOpen && (
                 <div
-                  className='fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fadeIn'
+                  className='fixed inset-0 z-50 pt-20 pb-4 px-3 sm:px-4 bg-black/75 backdrop-blur-sm flex items-center justify-center overflow-y-auto animate-fadeIn'
                   onClick={() =>
                     setLiveOrderModal({ isOpen: false, order: null, items: [] })
                   }
                 >
                   <div
-                    className='w-full max-w-2xl max-h-[86vh] rounded-2xl bg-[#0f172a] border border-slate-700 shadow-2xl flex flex-col overflow-hidden transition-all duration-200'
+                    className='w-full max-w-lg my-auto rounded-2xl bg-[#0f172a] border border-slate-700 shadow-2xl flex flex-col overflow-hidden transition-all duration-200'
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className='px-4 py-3 bg-gradient-to-r from-indigo-950/80 via-[#111827] to-blue-950/70 border-b border-slate-800 flex items-center justify-between gap-2'>
+                    <div className='px-4 py-3 bg-gradient-to-r from-indigo-950/80 via-[#111827] to-blue-950/70 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0'>
                       <div>
                         <h4 className='text-sm font-black text-white'>
                           Order #{liveOrderModal.order?.order_number || '—'}{' '}
@@ -1124,7 +1401,7 @@ export default function AdminOrdersPage() {
                       </button>
                     </div>
 
-                    <div className='px-4 py-3 bg-[#0b1120] border-b border-slate-800 grid grid-cols-2 gap-2.5'>
+                    <div className='px-4 py-3 bg-[#0b1120] border-b border-slate-800 grid grid-cols-2 gap-2.5 shrink-0'>
                       <div className='p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-between'>
                         <div>
                           <span className='block text-[10px] font-bold text-blue-300 uppercase'>
@@ -1153,7 +1430,7 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
-                    <div className='p-4 space-y-2.5 overflow-y-auto'>
+                    <div className='p-3.5 sm:p-4 space-y-2.5 max-h-[245px] sm:max-h-[265px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-900/70 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-700/80 hover:[&::-webkit-scrollbar-thumb]:bg-slate-600'>
                       {liveOrderModal.items.length === 0 ? (
                         <p className='text-center text-xs text-slate-400 py-6'>
                           No items found in this order.
@@ -1167,16 +1444,20 @@ export default function AdminOrdersPage() {
                               className='p-3 rounded-xl bg-[#111827] border border-slate-800 hover:border-indigo-500/40 transition-all duration-200 flex gap-3 items-start'
                             >
                               {info.imageUrl ? (
-                                <img
+                                <Image
                                   src={info.imageUrl}
-                                  alt={info.name}
+                                  alt={info.name || 'Item'}
+                                  width={128}
+                                  height={128}
+                                  loading='lazy'
+                                  sizes='64px'
+                                  unoptimized={
+                                    info.imageUrl.startsWith('blob:') ||
+                                    info.imageUrl.startsWith('data:')
+                                  }
                                   className='w-16 h-16 rounded-xl object-cover border border-slate-700 bg-slate-900 shrink-0'
                                 />
-                              ) : (
-                                <div className='w-16 h-16 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-400 shrink-0'>
-                                  NO IMG
-                                </div>
-                              )}
+                              ) : null}
 
                               <div className='min-w-0 flex-1 space-y-1'>
                                 <div className='flex items-start justify-between gap-2'>
@@ -1494,6 +1775,15 @@ export default function AdminOrdersPage() {
             {/* ========================================================= */}
             {processedData.vipProfiles.length > 0 && (
               <div className='space-y-3 bg-[#1f2937]/40 p-3.5 sm:p-4 rounded-2xl border border-slate-700/70'>
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
                 <div className='flex items-center justify-between gap-2 flex-wrap'>
                   <div className='flex items-center gap-1.5 px-1'>
                     <Crown className='w-4 h-4 text-amber-400 shrink-0' />
@@ -1539,475 +1829,538 @@ export default function AdminOrdersPage() {
                     </button>
                   </div>
                 </div>
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {processedData.vipProfiles.length > VIP_PER_PAGE && (
+                  <div
+                    dir='ltr'
+                    className='flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-xl bg-[#0b1324]/95 border border-amber-500/30 shadow-md backdrop-blur-xl'
+                  >
+                    <div className='flex items-center gap-1 pr-1.5 border-r border-slate-800 shrink-0'>
+                      <span className='w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping' />
+                      <span className='text-[9px] sm:text-[11px] font-bold text-slate-300 whitespace-nowrap'>
+                        Showing{' '}
+                        <span className='font-black text-amber-300'>
+                          {vipStartIndex + 1}–{vipEndIndex}
+                        </span>{' '}
+                        of{' '}
+                        <span className='font-black text-white'>
+                          {processedData.vipProfiles.length}
+                        </span>
+                      </span>
+                    </div>
 
+                    <div
+                      key={`vip-page-bar-${vipPageAnimKey}`}
+                      className='flex items-center gap-1 overflow-x-auto max-w-[115px] sm:max-w-none py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                    >
+                      {Array.from({ length: totalVipPages }, (_, i) => {
+                        const pageNum = i + 1;
+                        const isActive = pageNum === safeVipPage;
+
+                        return (
+                          <button
+                            key={`vip-page-${pageNum}`}
+                            type='button'
+                            onClick={() => handleVipPageChange(pageNum)}
+                            aria-current={isActive ? 'page' : undefined}
+                            title={`صفحة ${pageNum}`}
+                            className={`min-w-[20px] h-[20px] sm:min-w-[26px] sm:h-[26px] px-1 sm:px-1.5 rounded-lg text-[9px] sm:text-xs font-black transition-all duration-200 cursor-pointer flex items-center justify-center shrink-0 ${
+                              isActive
+                                ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white shadow-sm shadow-rose-500/30 scale-105 border border-cyan-300/40'
+                                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-amber-200 border border-slate-700/80 hover:border-amber-500/40 active:scale-95'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
+                {/* ========================= */}
                 {/* الاسلايدر الأفقي */}
                 <div
                   ref={vipSliderRef}
                   className='flex overflow-x-auto gap-3.5 pb-3 pt-1 snap-x scroll-smooth'
                   style={{ scrollSnapType: 'x mandatory' }}
                 >
-                  {processedData.vipProfiles.map(
-                    (profile: any, pIdx: number) => {
-                      const isExpanded = expandedProfileKey === profile.key;
-                      const profileKey = profile.key;
-                      const pSearch = (profileSearchQueries[profileKey] || '')
-                        .toLowerCase()
-                        .trim();
-                      const pStatus = profileStatusFilters[profileKey] || 'all';
+                  {paginatedVipProfiles.map((profile: any, pIdx: number) => {
+                    const displayVipIndex = vipStartIndex + pIdx;
+                    // ======================
+                    // ======================
+                    // ======================
+                    // ======================
 
-                      const pTotal = profile.orders.length;
-                      const pPending = profile.orders.filter(
-                        (o: any) => o.status === 'pending',
-                      ).length;
-                      const pShipping = profile.orders.filter(
-                        (o: any) => o.status === 'shipping',
-                      ).length;
-                      const pDelivered = profile.orders.filter(
-                        (o: any) => o.status === 'delivered',
-                      ).length;
-                      const pCancelled = profile.orders.filter(
-                        (o: any) => o.status === 'cancelled',
-                      ).length;
+                    // ======================
+                    // ======================
+                    // ======================
+                    const isExpanded = expandedProfileKey === profile.key;
+                    const profileKey = profile.key;
+                    const pSearch = (profileSearchQueries[profileKey] || '')
+                      .toLowerCase()
+                      .trim();
+                    const pStatus = profileStatusFilters[profileKey] || 'all';
 
-                      const parseOrderItems = (order: any) => {
-                        try {
-                          return typeof order.items === 'string'
-                            ? JSON.parse(order.items)
-                            : order.items || [];
-                        } catch {
-                          return [];
+                    const pTotal = profile.orders.length;
+                    const pPending = profile.orders.filter(
+                      (o: any) => o.status === 'pending',
+                    ).length;
+                    const pShipping = profile.orders.filter(
+                      (o: any) => o.status === 'shipping',
+                    ).length;
+                    const pDelivered = profile.orders.filter(
+                      (o: any) => o.status === 'delivered',
+                    ).length;
+                    const pCancelled = profile.orders.filter(
+                      (o: any) => o.status === 'cancelled',
+                    ).length;
+
+                    const parseOrderItems = (order: any) => {
+                      try {
+                        return typeof order.items === 'string'
+                          ? JSON.parse(order.items)
+                          : order.items || [];
+                      } catch {
+                        return [];
+                      }
+                    };
+
+                    const profileOrdersFiltered = profile.orders.filter(
+                      (order: any) => {
+                        if (pStatus !== 'all' && order.status !== pStatus)
+                          return false;
+
+                        if (!pSearch) {
+                          return matchesSearch(
+                            order,
+                            '',
+                            profile.customerName,
+                            profile.customerPhone,
+                          );
                         }
-                      };
 
-                      const profileOrdersFiltered = profile.orders.filter(
-                        (order: any) => {
-                          if (pStatus !== 'all' && order.status !== pStatus)
-                            return false;
-
-                          if (!pSearch) {
-                            return matchesSearch(
-                              order,
-                              '',
-                              profile.customerName,
-                              profile.customerPhone,
-                            );
-                          }
-
-                          const itemsArr = parseOrderItems(order);
-                          const matchesProductName = itemsArr.some(
-                            (item: any) =>
-                              String(item?.name || '')
-                                .toLowerCase()
-                                .includes(pSearch),
-                          );
-
-                          const orderTotalStr = String(
-                            order.total_amount ?? '',
-                          ).toLowerCase();
-                          const matchesItemPrice = itemsArr.some(
-                            (item: any) => {
-                              const unitPrice = String(item?.price ?? '');
-                              const lineTotal = String(
-                                Number(item?.price || 0) *
-                                  Number(item?.quantity || 1),
-                              );
-                              return (
-                                unitPrice.includes(pSearch) ||
-                                lineTotal.includes(pSearch)
-                              );
-                            },
-                          );
-                          const matchesPrice =
-                            orderTotalStr.includes(pSearch) || matchesItemPrice;
-
-                          const matchesNote = String(order.customer_notes || '')
+                        const itemsArr = parseOrderItems(order);
+                        const matchesProductName = itemsArr.some((item: any) =>
+                          String(item?.name || '')
                             .toLowerCase()
-                            .includes(pSearch);
+                            .includes(pSearch),
+                        );
 
-                          return (
-                            matchesSearch(
-                              order,
-                              pSearch,
-                              profile.customerName,
-                              profile.customerPhone,
-                            ) ||
-                            matchesProductName ||
-                            matchesPrice ||
-                            matchesNote
+                        const orderTotalStr = String(
+                          order.total_amount ?? '',
+                        ).toLowerCase();
+                        const matchesItemPrice = itemsArr.some((item: any) => {
+                          const unitPrice = String(item?.price ?? '');
+                          const lineTotal = String(
+                            Number(item?.price || 0) *
+                              Number(item?.quantity || 1),
                           );
-                        },
-                      );
+                          return (
+                            unitPrice.includes(pSearch) ||
+                            lineTotal.includes(pSearch)
+                          );
+                        });
+                        const matchesPrice =
+                          orderTotalStr.includes(pSearch) || matchesItemPrice;
 
-                      return (
-                        <div
-                          key={profileKey}
-                          className={`min-w-[275px] sm:min-w-[320px] max-w-[350px] flex-shrink-0 snap-start bg-[#1f2937]/95 rounded-xl border transition-all ${
-                            isExpanded
-                              ? 'border-amber-500 ring-1 ring-amber-500/40'
-                              : 'border-slate-700/80 hover:border-slate-600'
-                          } p-3.5 space-y-3 relative`}
-                        >
-                          {/* بادج رقم الترتيب في الاسلايدر */}
-                          <span className='absolute top-2.5 left-2.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded'>
-                            #{pIdx + 1}
-                          </span>
+                        const matchesNote = String(order.customer_notes || '')
+                          .toLowerCase()
+                          .includes(pSearch);
 
-                          <div className='flex items-center justify-between gap-2.5 pt-2'>
-                            <div className='flex items-center gap-2.5 min-w-0'>
-                              <div className='w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-xs shrink-0'>
-                                {profile.customerName.charAt(0).toUpperCase()}
+                        return (
+                          matchesSearch(
+                            order,
+                            pSearch,
+                            profile.customerName,
+                            profile.customerPhone,
+                          ) ||
+                          matchesProductName ||
+                          matchesPrice ||
+                          matchesNote
+                        );
+                      },
+                    );
+
+                    return (
+                      <div
+                        key={profileKey}
+                        className={`min-w-[275px] sm:min-w-[320px] max-w-[350px] flex-shrink-0 snap-start bg-[#1f2937]/95 rounded-xl border transition-all ${
+                          isExpanded
+                            ? 'border-amber-500 ring-1 ring-amber-500/40'
+                            : 'border-slate-700/80 hover:border-slate-600'
+                        } p-3.5 space-y-3 relative`}
+                      >
+                        {/* بادج رقم الترتيب في الاسلايدر */}
+                        <span className='absolute top-2.5 left-2.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded'>
+                          #{pIdx + 1}
+                        </span>
+
+                        <div className='flex items-center justify-between gap-2.5 pt-2'>
+                          <div className='flex items-center gap-2.5 min-w-0'>
+                            <div className='w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-xs shrink-0'>
+                              {profile.customerName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className='min-w-0'>
+                              <div className='flex items-center gap-1.5 flex-wrap'>
+                                <h4 className='text-xs font-bold text-white truncate max-w-[120px]'>
+                                  {profile.customerName}
+                                </h4>
+                                <span className='bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0'>
+                                  <Crown size={9} /> VIP
+                                </span>
                               </div>
-                              <div className='min-w-0'>
-                                <div className='flex items-center gap-1.5 flex-wrap'>
-                                  <h4 className='text-xs font-bold text-white truncate max-w-[120px]'>
-                                    {profile.customerName}
-                                  </h4>
-                                  <span className='bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0'>
-                                    <Crown size={9} /> VIP
-                                  </span>
-                                </div>
-                                <p
-                                  className='text-[10px] text-slate-400 truncate'
-                                  dir='ltr'
-                                >
-                                  {profile.customerPhone}
-                                </p>
+                              <p
+                                className='text-[10px] text-slate-400 truncate'
+                                dir='ltr'
+                              >
+                                {profile.customerPhone}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type='button'
+                            onClick={() =>
+                              setExpandedProfileKey(
+                                isExpanded ? null : profileKey,
+                              )
+                            }
+                            className='flex items-center gap-1 bg-[#374151] hover:bg-[#4b5563] text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-slate-600 shrink-0 cursor-pointer'
+                          >
+                            <Eye size={12} />
+                            <span>{isExpanded ? 'Hide' : 'Open'}</span>
+                          </button>
+                        </div>
+
+                        <div className='flex justify-between items-center text-[10px] bg-[#111827] px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300'>
+                          <span>
+                            Orders:{' '}
+                            <strong className='text-amber-300'>{pTotal}</strong>
+                          </span>
+                          <span>
+                            Total:{' '}
+                            <strong className='text-emerald-400'>
+                              {profile.totalSpent} EGP
+                            </strong>
+                          </span>
+                        </div>
+
+                        {/* المحتوى التفصيلي عند الضغط على فتح */}
+                        {isExpanded && (
+                          <div className='pt-2.5 border-t border-slate-700/80 space-y-2.5 animate-fadeIn'>
+                            <div className='grid grid-cols-5 gap-1 text-center'>
+                              <div
+                                onClick={() =>
+                                  setProfileStatusFilters({
+                                    ...profileStatusFilters,
+                                    [profileKey]: 'all',
+                                  })
+                                }
+                                className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'all' ? 'bg-blue-600/30 border-blue-500 text-white font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                              >
+                                All ({pTotal})
+                              </div>
+                              <div
+                                onClick={() =>
+                                  setProfileStatusFilters({
+                                    ...profileStatusFilters,
+                                    [profileKey]: 'pending',
+                                  })
+                                }
+                                className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'pending' ? 'bg-amber-600/30 border-amber-500 text-amber-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                              >
+                                Pend ({pPending})
+                              </div>
+                              <div
+                                onClick={() =>
+                                  setProfileStatusFilters({
+                                    ...profileStatusFilters,
+                                    [profileKey]: 'shipping',
+                                  })
+                                }
+                                className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'shipping' ? 'bg-blue-600/30 border-blue-500 text-blue-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                              >
+                                Ship ({pShipping})
+                              </div>
+                              <div
+                                onClick={() =>
+                                  setProfileStatusFilters({
+                                    ...profileStatusFilters,
+                                    [profileKey]: 'delivered',
+                                  })
+                                }
+                                className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'delivered' ? 'bg-emerald-600/30 border-emerald-500 text-emerald-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                              >
+                                Deliv ({pDelivered})
+                              </div>
+                              <div
+                                onClick={() =>
+                                  setProfileStatusFilters({
+                                    ...profileStatusFilters,
+                                    [profileKey]: 'cancelled',
+                                  })
+                                }
+                                className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'cancelled' ? 'bg-red-600/30 border-red-500 text-red-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                              >
+                                Canc ({pCancelled})
                               </div>
                             </div>
 
-                            <button
-                              type='button'
-                              onClick={() =>
-                                setExpandedProfileKey(
-                                  isExpanded ? null : profileKey,
-                                )
-                              }
-                              className='flex items-center gap-1 bg-[#374151] hover:bg-[#4b5563] text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-slate-600 shrink-0 cursor-pointer'
-                            >
-                              <Eye size={12} />
-                              <span>{isExpanded ? 'Hide' : 'Open'}</span>
-                            </button>
-                          </div>
+                            <div className='relative'>
+                              <Search
+                                size={13}
+                                className='absolute left-2.5 top-2 text-slate-400 pointer-events-none'
+                              />
+                              <input
+                                type='text'
+                                placeholder='Search product, price, note...'
+                                value={profileSearchQueries[profileKey] || ''}
+                                onChange={(e) =>
+                                  setProfileSearchQueries({
+                                    ...profileSearchQueries,
+                                    [profileKey]: e.target.value,
+                                  })
+                                }
+                                className='w-full pl-8 pr-2.5 py-1 bg-[#111827] border border-slate-700 rounded-lg text-[11px] text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-amber-500'
+                                dir='ltr'
+                              />
+                            </div>
 
-                          <div className='flex justify-between items-center text-[10px] bg-[#111827] px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300'>
-                            <span>
-                              Orders:{' '}
-                              <strong className='text-amber-300'>
-                                {pTotal}
-                              </strong>
-                            </span>
-                            <span>
-                              Total:{' '}
-                              <strong className='text-emerald-400'>
-                                {profile.totalSpent} EGP
-                              </strong>
-                            </span>
-                          </div>
+                            <div className='max-h-64 overflow-y-auto pr-1 space-y-2'>
+                              {profileOrdersFiltered.length === 0 ? (
+                                <p className='text-[10px] text-slate-500 text-center py-3'>
+                                  No matching orders.
+                                </p>
+                              ) : (
+                                profileOrdersFiltered.map((order: any) => {
+                                  const itemsList = parseOrderItems(order);
+                                  const hasNote = Boolean(
+                                    order.customer_notes?.trim(),
+                                  );
+                                  const isItemsOpen =
+                                    vipOrderDetailsKey === order.id;
+                                  const isNoteOpen =
+                                    vipOrderNoteKey === order.id;
 
-                          {/* المحتوى التفصيلي عند الضغط على فتح */}
-                          {isExpanded && (
-                            <div className='pt-2.5 border-t border-slate-700/80 space-y-2.5 animate-fadeIn'>
-                              <div className='grid grid-cols-5 gap-1 text-center'>
-                                <div
-                                  onClick={() =>
-                                    setProfileStatusFilters({
-                                      ...profileStatusFilters,
-                                      [profileKey]: 'all',
-                                    })
-                                  }
-                                  className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'all' ? 'bg-blue-600/30 border-blue-500 text-white font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                >
-                                  All ({pTotal})
-                                </div>
-                                <div
-                                  onClick={() =>
-                                    setProfileStatusFilters({
-                                      ...profileStatusFilters,
-                                      [profileKey]: 'pending',
-                                    })
-                                  }
-                                  className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'pending' ? 'bg-amber-600/30 border-amber-500 text-amber-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                >
-                                  Pend ({pPending})
-                                </div>
-                                <div
-                                  onClick={() =>
-                                    setProfileStatusFilters({
-                                      ...profileStatusFilters,
-                                      [profileKey]: 'shipping',
-                                    })
-                                  }
-                                  className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'shipping' ? 'bg-blue-600/30 border-blue-500 text-blue-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                >
-                                  Ship ({pShipping})
-                                </div>
-                                <div
-                                  onClick={() =>
-                                    setProfileStatusFilters({
-                                      ...profileStatusFilters,
-                                      [profileKey]: 'delivered',
-                                    })
-                                  }
-                                  className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'delivered' ? 'bg-emerald-600/30 border-emerald-500 text-emerald-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                >
-                                  Deliv ({pDelivered})
-                                </div>
-                                <div
-                                  onClick={() =>
-                                    setProfileStatusFilters({
-                                      ...profileStatusFilters,
-                                      [profileKey]: 'cancelled',
-                                    })
-                                  }
-                                  className={`cursor-pointer p-1 rounded border text-[9px] transition ${pStatus === 'cancelled' ? 'bg-red-600/30 border-red-500 text-red-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                >
-                                  Canc ({pCancelled})
-                                </div>
-                              </div>
-
-                              <div className='relative'>
-                                <Search
-                                  size={13}
-                                  className='absolute left-2.5 top-2 text-slate-400 pointer-events-none'
-                                />
-                                <input
-                                  type='text'
-                                  placeholder='Search product, price, note...'
-                                  value={profileSearchQueries[profileKey] || ''}
-                                  onChange={(e) =>
-                                    setProfileSearchQueries({
-                                      ...profileSearchQueries,
-                                      [profileKey]: e.target.value,
-                                    })
-                                  }
-                                  className='w-full pl-8 pr-2.5 py-1 bg-[#111827] border border-slate-700 rounded-lg text-[11px] text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-amber-500'
-                                  dir='ltr'
-                                />
-                              </div>
-
-                              <div className='max-h-64 overflow-y-auto pr-1 space-y-2'>
-                                {profileOrdersFiltered.length === 0 ? (
-                                  <p className='text-[10px] text-slate-500 text-center py-3'>
-                                    No matching orders.
-                                  </p>
-                                ) : (
-                                  profileOrdersFiltered.map((order: any) => {
-                                    const itemsList = parseOrderItems(order);
-                                    const hasNote = Boolean(
-                                      order.customer_notes?.trim(),
-                                    );
-                                    const isItemsOpen =
-                                      vipOrderDetailsKey === order.id;
-                                    const isNoteOpen =
-                                      vipOrderNoteKey === order.id;
-
-                                    return (
-                                      <div
-                                        key={order.id}
-                                        className='bg-[#111827] p-2.5 rounded-lg border border-slate-800 space-y-2 text-[11px]'
-                                      >
-                                        <div className='flex items-center justify-between gap-1 border-b border-slate-800 pb-2 flex-wrap'>
-                                          <span className='font-bold text-[9px] text-slate-300 bg-[#1f2937] px-1.5 py-0.5 rounded border border-slate-700'>
-                                            #
-                                            {order.id.slice(0, 5).toUpperCase()}
-                                          </span>
-                                          <select
-                                            value={order.status}
-                                            onChange={(e) =>
-                                              handleStatusChange(
-                                                order.id,
-                                                e.target.value,
-                                              )
-                                            }
-                                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded border outline-none cursor-pointer ${
-                                              order.status === 'pending'
-                                                ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
-                                                : order.status === 'shipping'
-                                                  ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
-                                                  : order.status === 'delivered'
-                                                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                                                    : 'bg-red-950/40 text-red-300 border-red-500/40'
-                                            }`}
+                                  return (
+                                    <div
+                                      key={order.id}
+                                      className='bg-[#111827] p-2.5 rounded-lg border border-slate-800 space-y-2 text-[11px]'
+                                    >
+                                      <div className='flex items-center justify-between gap-1 border-b border-slate-800 pb-2 flex-wrap'>
+                                        <span
+                                          dir='ltr'
+                                          className='font-bold text-[9px] text-slate-300 bg-[#1f2937] px-1.5 py-0.5 rounded border border-slate-700'
+                                        >
+                                          #
+                                          {order.order_number ??
+                                            String(order.id ?? '')
+                                              .slice(0, 5)
+                                              .toUpperCase()}
+                                        </span>
+                                        <select
+                                          value={order.status}
+                                          onChange={(e) =>
+                                            handleStatusChange(
+                                              order.id,
+                                              e.target.value,
+                                            )
+                                          }
+                                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded border outline-none cursor-pointer ${
+                                            order.status === 'pending'
+                                              ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
+                                              : order.status === 'shipping'
+                                                ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
+                                                : order.status === 'delivered'
+                                                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
+                                                  : 'bg-red-950/40 text-red-300 border-red-500/40'
+                                          }`}
+                                        >
+                                          <option
+                                            value='pending'
+                                            className='bg-[#1f2937] text-amber-300'
                                           >
-                                            <option
-                                              value='pending'
-                                              className='bg-[#1f2937] text-amber-300'
-                                            >
-                                              Pending
-                                            </option>
-                                            <option
-                                              value='shipping'
-                                              className='bg-[#1f2937] text-blue-300'
-                                            >
-                                              Shipping
-                                            </option>
-                                            <option
-                                              value='delivered'
-                                              className='bg-[#1f2937] text-emerald-300'
-                                            >
-                                              Delivered
-                                            </option>
-                                            <option
-                                              value='cancelled'
-                                              className='bg-[#1f2937] text-red-300'
-                                            >
-                                              Cancelled
-                                            </option>
-                                          </select>
-                                          <span className='font-bold text-amber-300'>
-                                            {order.total_amount} EGP
-                                          </span>
-                                          <a
-                                            href={getWhatsAppLink(order)}
-                                            target='_blank'
-                                            rel='noopener noreferrer'
-                                            className='bg-emerald-600/20 text-emerald-400 p-1 rounded border border-emerald-500/30'
+                                            Pending
+                                          </option>
+                                          <option
+                                            value='shipping'
+                                            className='bg-[#1f2937] text-blue-300'
                                           >
-                                            <MessageCircle size={13} />
-                                          </a>
-                                        </div>
+                                            Shipping
+                                          </option>
+                                          <option
+                                            value='delivered'
+                                            className='bg-[#1f2937] text-emerald-300'
+                                          >
+                                            Delivered
+                                          </option>
+                                          <option
+                                            value='cancelled'
+                                            className='bg-[#1f2937] text-red-300'
+                                          >
+                                            Cancelled
+                                          </option>
+                                        </select>
+                                        <span className='font-bold text-amber-300'>
+                                          {order.total_amount} EGP
+                                        </span>
+                                        <a
+                                          href={getWhatsAppLink(order)}
+                                          target='_blank'
+                                          rel='noopener noreferrer'
+                                          className='bg-emerald-600/20 text-emerald-400 p-1 rounded border border-emerald-500/30'
+                                        >
+                                          <MessageCircle size={13} />
+                                        </a>
+                                      </div>
 
-                                        <div className='text-[10px] text-slate-300 truncate'>
-                                          📍{' '}
-                                          {order.city ? `${order.city}, ` : ''}
-                                          {order.customer_address ||
-                                            'No address'}
-                                        </div>
+                                      <div className='text-[10px] text-slate-300 truncate'>
+                                        {/* 📍 {order.city ? `${order.city}, ` : ''} */}
+                                        {order.customer_address || 'No address'}
+                                      </div>
 
-                                        {/* أزرار مدمجة لفتح/قفل المنتجات والملاحظات بشكل مستقل */}
-                                        <div className='flex items-center gap-1.5 flex-wrap pt-0.5'>
+                                      {/* أزرار مدمجة لفتح/قفل المنتجات والملاحظات بشكل مستقل */}
+                                      <div className='flex items-center gap-1.5 flex-wrap pt-0.5'>
+                                        <button
+                                          type='button'
+                                          onClick={() =>
+                                            setVipOrderDetailsKey(
+                                              isItemsOpen ? null : order.id,
+                                            )
+                                          }
+                                          className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-950/60 hover:bg-blue-900/60 text-blue-300 border border-blue-500/30 transition cursor-pointer'
+                                        >
+                                          <Eye size={11} />
+                                          <span>
+                                            {isItemsOpen
+                                              ? 'Hide Products'
+                                              : `Products (${itemsList.length})`}
+                                          </span>
+                                        </button>
+
+                                        {hasNote && (
                                           <button
                                             type='button'
                                             onClick={() =>
-                                              setVipOrderDetailsKey(
-                                                isItemsOpen ? null : order.id,
+                                              setVipOrderNoteKey(
+                                                isNoteOpen ? null : order.id,
                                               )
                                             }
-                                            className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-950/60 hover:bg-blue-900/60 text-blue-300 border border-blue-500/30 transition cursor-pointer'
+                                            className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 transition cursor-pointer'
                                           >
-                                            <Eye size={11} />
+                                            <span>📝</span>
                                             <span>
-                                              {isItemsOpen
-                                                ? 'Hide Products'
-                                                : `Products (${itemsList.length})`}
+                                              {isNoteOpen
+                                                ? 'Hide Note'
+                                                : 'Note'}
                                             </span>
                                           </button>
+                                        )}
+                                      </div>
 
-                                          {hasNote && (
-                                            <button
-                                              type='button'
-                                              onClick={() =>
-                                                setVipOrderNoteKey(
-                                                  isNoteOpen ? null : order.id,
-                                                )
-                                              }
-                                              className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 transition cursor-pointer'
-                                            >
-                                              <span>📝</span>
-                                              <span>
-                                                {isNoteOpen
-                                                  ? 'Hide Note'
-                                                  : 'Note'}
-                                              </span>
-                                            </button>
-                                          )}
-                                        </div>
+                                      {/* عرض اسم كل منتج وسعره بوضوح عند الضغط */}
+                                      {isItemsOpen && (
+                                        <div className='bg-[#1f2937]/90 border border-blue-500/30 rounded-lg p-2 space-y-1.5 animate-fadeIn'>
+                                          {itemsList.length === 0 ? (
+                                            <p className='text-[10px] text-slate-400'>
+                                              No items found.
+                                            </p>
+                                          ) : (
+                                            itemsList.map(
+                                              (item: any, idx: number) => {
+                                                const unitPrice = Number(
+                                                  item.price || 0,
+                                                );
+                                                const qty = Number(
+                                                  item.quantity || 1,
+                                                );
+                                                return (
+                                                  // ================================
+                                                  // ================================
+                                                  // ================================
+                                                  // ================================
+                                                  // ================================
+                                                  <div
+                                                    key={idx}
+                                                    className='border-b border-slate-800 last:border-b-0 pb-1.5 last:pb-0'
+                                                  >
+                                                    <div className='flex items-start gap-2'>
+                                                      {item.image && (
+                                                        <Image
+                                                          src={item.image}
+                                                          alt={
+                                                            item.name || 'item'
+                                                          }
+                                                          width={26}
+                                                          height={26}
+                                                          loading='lazy'
+                                                          sizes='26px'
+                                                          className='w-[26px] h-[26px] rounded object-cover border border-slate-700 shrink-0 mt-0.5'
+                                                        />
+                                                      )}
 
-                                        {/* عرض اسم كل منتج وسعره بوضوح عند الضغط */}
-                                        {isItemsOpen && (
-                                          <div className='bg-[#1f2937]/90 border border-blue-500/30 rounded-lg p-2 space-y-1.5 animate-fadeIn'>
-                                            {itemsList.length === 0 ? (
-                                              <p className='text-[10px] text-slate-400'>
-                                                No items found.
-                                              </p>
-                                            ) : (
-                                              itemsList.map(
-                                                (item: any, idx: number) => {
-                                                  const unitPrice = Number(
-                                                    item.price || 0,
-                                                  );
-                                                  const qty = Number(
-                                                    item.quantity || 1,
-                                                  );
-                                                  return (
-                                                    // ================================
-                                                    // ================================
-                                                    // ================================
-                                                    // ================================
-                                                    // ================================
-                                                    <div
-                                                      key={idx}
-                                                      className='border-b border-slate-800 last:border-b-0 pb-1.5 last:pb-0'
-                                                    >
-                                                      <div className='flex items-start gap-2'>
-                                                        {item.image && (
-                                                          <Image
-                                                            src={item.image}
-                                                            alt={
-                                                              item.name ||
-                                                              'item'
-                                                            }
-                                                            width={26}
-                                                            height={26}
-                                                            className='w-[26px] h-[26px] rounded object-cover border border-slate-700 shrink-0 mt-0.5'
-                                                          />
-                                                        )}
-
-                                                        <div className='min-w-0 flex-1 space-y-0.5'>
-                                                          <p className='text-[10.5px] font-semibold text-white leading-snug break-words'>
-                                                            {idx + 1}.{' '}
-                                                            {item.name ||
-                                                              'Unnamed Product'}
-                                                          </p>
-                                                          <div className='flex items-center justify-between gap-2 text-[9.5px] text-slate-400'>
-                                                            <span>
-                                                              Qty:{' '}
-                                                              <strong className='text-slate-200'>
-                                                                {qty}
-                                                              </strong>{' '}
-                                                              × {unitPrice} EGP
-                                                            </span>
-                                                            <span className='text-emerald-400 font-bold shrink-0'>
-                                                              {unitPrice * qty}{' '}
-                                                              EGP
-                                                            </span>
-                                                          </div>
+                                                      <div className='min-w-0 flex-1 space-y-0.5'>
+                                                        <p className='text-[10.5px] font-semibold text-white leading-snug break-words'>
+                                                          {idx + 1}.{' '}
+                                                          {item.name ||
+                                                            'Unnamed Product'}
+                                                        </p>
+                                                        <div className='flex items-center justify-between gap-2 text-[9.5px] text-slate-400'>
+                                                          <span>
+                                                            Qty:{' '}
+                                                            <strong className='text-slate-200'>
+                                                              {qty}
+                                                            </strong>{' '}
+                                                            × {unitPrice} EGP
+                                                          </span>
+                                                          <span className='text-emerald-400 font-bold shrink-0'>
+                                                            {unitPrice * qty}{' '}
+                                                            EGP
+                                                          </span>
                                                         </div>
                                                       </div>
                                                     </div>
+                                                  </div>
 
-                                                    // =====================================
-                                                    // =====================================
-                                                    // =====================================
-                                                    // =====================================
-                                                    // =====================================
-                                                  );
-                                                },
-                                              )
-                                            )}
-                                          </div>
-                                        )}
+                                                  // =====================================
+                                                  // =====================================
+                                                  // =====================================
+                                                  // =====================================
+                                                  // =====================================
+                                                );
+                                              },
+                                            )
+                                          )}
+                                        </div>
+                                      )}
 
-                                        {/* عرض الملاحظة عند الضغط بشكل مستقل */}
-                                        {hasNote && isNoteOpen && (
-                                          <div className='text-[10px] text-amber-200 bg-amber-950/40 border border-amber-500/30 px-2 py-1.5 rounded-lg break-words animate-fadeIn'>
-                                            <span className='font-bold text-amber-400'>
-                                              📝 Note:{' '}
-                                            </span>
-                                            {order.customer_notes.trim()}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })
-                                )}
-                              </div>
+                                      {/* عرض الملاحظة عند الضغط بشكل مستقل */}
+                                      {hasNote && isNoteOpen && (
+                                        <div className='text-[10px] text-amber-200 bg-amber-950/40 border border-amber-500/30 px-2 py-1.5 rounded-lg break-words animate-fadeIn'>
+                                          <span className='font-bold text-amber-400'>
+                                            📝 Note:{' '}
+                                          </span>
+                                          {order.customer_notes.trim()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    },
-                  )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2061,7 +2414,51 @@ export default function AdminOrdersPage() {
                 );
 
                 const regularProfiles = Array.from(regularProfilesMap.values());
+                // =========================
+                // =========================
+                // =========================
+                // =========================
+                // =========================
+                const REGULAR_PER_PAGE = 6;
+                const totalRegularPages = Math.max(
+                  1,
+                  Math.ceil(regularProfiles.length / REGULAR_PER_PAGE),
+                );
+                const safeRegularPage = Math.min(
+                  regularPage,
+                  totalRegularPages,
+                );
+                const regularStartIndex =
+                  (safeRegularPage - 1) * REGULAR_PER_PAGE;
+                const regularEndIndex = Math.min(
+                  regularStartIndex + REGULAR_PER_PAGE,
+                  regularProfiles.length,
+                );
+                const paginatedRegularProfiles = regularProfiles.slice(
+                  regularStartIndex,
+                  regularEndIndex,
+                );
 
+                const handleRegularPageChange = (nextPage: number) => {
+                  const clamped = Math.max(
+                    1,
+                    Math.min(nextPage, totalRegularPages),
+                  );
+                  if (clamped === safeRegularPage) return;
+                  setRegularPage(clamped);
+                  setRegularPageAnimKey((k) => k + 1);
+                  setExpandedProfileKey(null);
+                  if (regularSliderRef.current) {
+                    regularSliderRef.current.scrollTo({
+                      left: 0,
+                      behavior: 'smooth',
+                    });
+                  }
+                };
+                // =========================
+                // =========================
+                // =========================
+                // =========================
                 return (
                   <div className='space-y-3 bg-[#1f2937]/40 p-3.5 sm:p-4 rounded-2xl border border-slate-700/70'>
                     <div className='flex items-center justify-between gap-2 flex-wrap'>
@@ -2114,490 +2511,575 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {regularProfiles.length > REGULAR_PER_PAGE && (
+                      <div
+                        dir='ltr'
+                        className='flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-xl bg-[#0b1324]/95 border border-sky-500/30 shadow-md backdrop-blur-xl'
+                      >
+                        <div className='flex items-center gap-1 pr-1.5 border-r border-slate-800 shrink-0'>
+                          <span className='w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping' />
+                          <span className='text-[9px] sm:text-[11px] font-bold text-slate-300 whitespace-nowrap'>
+                            Showing{' '}
+                            <span className='font-black text-sky-300'>
+                              {regularStartIndex + 1}–{regularEndIndex}
+                            </span>{' '}
+                            of{' '}
+                            <span className='font-black text-white'>
+                              {regularProfiles.length}
+                            </span>
+                          </span>
+                        </div>
+
+                        <div
+                          key={`regular-page-bar-${regularPageAnimKey}`}
+                          className='flex items-center gap-1 overflow-x-auto max-w-[115px] sm:max-w-none py-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                        >
+                          {Array.from({ length: totalRegularPages }, (_, i) => {
+                            const pageNum = i + 1;
+                            const isActive = pageNum === safeRegularPage;
+
+                            return (
+                              <button
+                                key={`regular-page-${pageNum}`}
+                                type='button'
+                                onClick={() => handleRegularPageChange(pageNum)}
+                                aria-current={isActive ? 'page' : undefined}
+                                title={`صفحة ${pageNum}`}
+                                className={`min-w-[20px] h-[20px] sm:min-w-[26px] sm:h-[26px] px-1 sm:px-1.5 rounded-lg text-[9px] sm:text-xs font-black transition-all duration-200 cursor-pointer flex items-center justify-center shrink-0 ${
+                                  isActive
+                                    ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white shadow-sm shadow-rose-500/30 scale-105 border border-cyan-300/40'
+                                    : 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-sky-200 border border-slate-700/80 hover:border-sky-500/40 active:scale-95'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+                    {/* ===================== */}
+
                     {/* الاسلايدر الأفقي للعملاء العاديين */}
                     <div
                       ref={regularSliderRef}
                       className='flex overflow-x-auto gap-3.5 pb-3 pt-1 snap-x scroll-smooth'
                       style={{ scrollSnapType: 'x mandatory' }}
                     >
-                      {regularProfiles.map((profile: any, rIdx: number) => {
-                        const isExpanded = expandedProfileKey === profile.key;
-                        const profileKey = profile.key;
-                        const rSearch = (profileSearchQueries[profileKey] || '')
-                          .toLowerCase()
-                          .trim();
-                        const rStatus =
-                          profileStatusFilters[profileKey] || 'all';
+                      {paginatedRegularProfiles.map(
+                        (profile: any, rIdx: number) => {
+                          const displayRegularIndex = regularStartIndex + rIdx;
 
-                        const rTotal = profile.orders.length;
-                        const rPending = profile.orders.filter(
-                          (o: any) => o.status === 'pending',
-                        ).length;
-                        const rShipping = profile.orders.filter(
-                          (o: any) => o.status === 'shipping',
-                        ).length;
-                        const rDelivered = profile.orders.filter(
-                          (o: any) => o.status === 'delivered',
-                        ).length;
-                        const rCancelled = profile.orders.filter(
-                          (o: any) => o.status === 'cancelled',
-                        ).length;
+                          const isExpanded = expandedProfileKey === profile.key;
+                          const profileKey = profile.key;
+                          const rSearch = (
+                            profileSearchQueries[profileKey] || ''
+                          )
+                            .toLowerCase()
+                            .trim();
+                          const rStatus =
+                            profileStatusFilters[profileKey] || 'all';
 
-                        const regularOrdersFiltered = profile.orders.filter(
-                          (order: any) => {
-                            if (rStatus !== 'all' && order.status !== rStatus)
-                              return false;
+                          const rTotal = profile.orders.length;
+                          const rPending = profile.orders.filter(
+                            (o: any) => o.status === 'pending',
+                          ).length;
+                          const rShipping = profile.orders.filter(
+                            (o: any) => o.status === 'shipping',
+                          ).length;
+                          const rDelivered = profile.orders.filter(
+                            (o: any) => o.status === 'delivered',
+                          ).length;
+                          const rCancelled = profile.orders.filter(
+                            (o: any) => o.status === 'cancelled',
+                          ).length;
 
-                            if (!rSearch) {
-                              return matchesSearch(
-                                order,
-                                '',
-                                profile.customerName,
-                                profile.customerPhone,
+                          const regularOrdersFiltered = profile.orders.filter(
+                            (order: any) => {
+                              if (rStatus !== 'all' && order.status !== rStatus)
+                                return false;
+
+                              if (!rSearch) {
+                                return matchesSearch(
+                                  order,
+                                  '',
+                                  profile.customerName,
+                                  profile.customerPhone,
+                                );
+                              }
+
+                              const itemsArr = parseRegularItems(order);
+                              const matchesProductName = itemsArr.some(
+                                (item: any) =>
+                                  String(item?.name || '')
+                                    .toLowerCase()
+                                    .includes(rSearch),
                               );
-                            }
 
-                            const itemsArr = parseRegularItems(order);
-                            const matchesProductName = itemsArr.some(
-                              (item: any) =>
-                                String(item?.name || '')
-                                  .toLowerCase()
-                                  .includes(rSearch),
-                            );
+                              const orderTotalStr = String(
+                                order.total_amount ?? '',
+                              ).toLowerCase();
+                              const matchesItemPrice = itemsArr.some(
+                                (item: any) => {
+                                  const unitPrice = String(item?.price ?? '');
+                                  const lineTotal = String(
+                                    Number(item?.price || 0) *
+                                      Number(item?.quantity || 1),
+                                  );
+                                  return (
+                                    unitPrice.includes(rSearch) ||
+                                    lineTotal.includes(rSearch)
+                                  );
+                                },
+                              );
+                              const matchesPrice =
+                                orderTotalStr.includes(rSearch) ||
+                                matchesItemPrice;
 
-                            const orderTotalStr = String(
-                              order.total_amount ?? '',
-                            ).toLowerCase();
-                            const matchesItemPrice = itemsArr.some(
-                              (item: any) => {
-                                const unitPrice = String(item?.price ?? '');
-                                const lineTotal = String(
-                                  Number(item?.price || 0) *
-                                    Number(item?.quantity || 1),
-                                );
-                                return (
-                                  unitPrice.includes(rSearch) ||
-                                  lineTotal.includes(rSearch)
-                                );
-                              },
-                            );
-                            const matchesPrice =
-                              orderTotalStr.includes(rSearch) ||
-                              matchesItemPrice;
+                              const matchesNote = String(
+                                order.customer_notes || '',
+                              )
+                                .toLowerCase()
+                                .includes(rSearch);
 
-                            const matchesNote = String(
-                              order.customer_notes || '',
-                            )
-                              .toLowerCase()
-                              .includes(rSearch);
+                              return (
+                                matchesSearch(
+                                  order,
+                                  rSearch,
+                                  profile.customerName,
+                                  profile.customerPhone,
+                                ) ||
+                                matchesProductName ||
+                                matchesPrice ||
+                                matchesNote
+                              );
+                            },
+                          );
 
-                            return (
-                              matchesSearch(
-                                order,
-                                rSearch,
-                                profile.customerName,
-                                profile.customerPhone,
-                              ) ||
-                              matchesProductName ||
-                              matchesPrice ||
-                              matchesNote
-                            );
-                          },
-                        );
+                          return (
+                            <div
+                              key={profileKey}
+                              className={`min-w-[275px] sm:min-w-[320px] max-w-[350px] flex-shrink-0 snap-start bg-[#1f2937]/95 rounded-xl border transition-all ${
+                                isExpanded
+                                  ? 'border-sky-500 ring-1 ring-sky-500/40'
+                                  : 'border-slate-700/80 hover:border-slate-600'
+                              } p-3.5 space-y-3 relative`}
+                            >
+                              {/* بادج رقم الترتيب في الاسلايدر */}
+                              <span className='absolute top-2.5 left-2.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded'>
+                                #{rIdx + 1}
+                              </span>
 
-                        return (
-                          <div
-                            key={profileKey}
-                            className={`min-w-[275px] sm:min-w-[320px] max-w-[350px] flex-shrink-0 snap-start bg-[#1f2937]/95 rounded-xl border transition-all ${
-                              isExpanded
-                                ? 'border-sky-500 ring-1 ring-sky-500/40'
-                                : 'border-slate-700/80 hover:border-slate-600'
-                            } p-3.5 space-y-3 relative`}
-                          >
-                            {/* بادج رقم الترتيب في الاسلايدر */}
-                            <span className='absolute top-2.5 left-2.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded'>
-                              #{rIdx + 1}
-                            </span>
-
-                            <div className='flex items-center justify-between gap-2.5 pt-2'>
-                              <div className='flex items-center gap-2.5 min-w-0'>
-                                <div className='w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-xs shrink-0'>
-                                  {profile.customerName.charAt(0).toUpperCase()}
-                                </div>
-                                <div className='min-w-0'>
-                                  <div className='flex items-center gap-1.5 flex-wrap'>
-                                    <h4 className='text-xs font-bold text-white truncate max-w-[120px]'>
-                                      {profile.customerName}
-                                    </h4>
-                                    <span className='bg-sky-500/15 text-sky-300 border border-sky-500/25 text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0'>
-                                      Normal
-                                    </span>
+                              <div className='flex items-center justify-between gap-2.5 pt-2'>
+                                <div className='flex items-center gap-2.5 min-w-0'>
+                                  <div className='w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-xs shrink-0'>
+                                    {profile.customerName
+                                      .charAt(0)
+                                      .toUpperCase()}
                                   </div>
-                                  <p
-                                    className='text-[10px] text-slate-400 truncate'
-                                    dir='ltr'
-                                  >
-                                    {profile.customerPhone}
-                                  </p>
+                                  <div className='min-w-0'>
+                                    <div className='flex items-center gap-1.5 flex-wrap'>
+                                      <h4 className='text-xs font-bold text-white truncate max-w-[120px]'>
+                                        {profile.customerName}
+                                      </h4>
+                                      <span className='bg-sky-500/15 text-sky-300 border border-sky-500/25 text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0'>
+                                        Normal
+                                      </span>
+                                    </div>
+                                    <p
+                                      className='text-[10px] text-slate-400 truncate'
+                                      dir='ltr'
+                                    >
+                                      {profile.customerPhone}
+                                    </p>
+                                  </div>
                                 </div>
+
+                                <button
+                                  type='button'
+                                  onClick={() =>
+                                    setExpandedProfileKey(
+                                      isExpanded ? null : profileKey,
+                                    )
+                                  }
+                                  className='flex items-center gap-1 bg-[#374151] hover:bg-[#4b5563] text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-slate-600 shrink-0 cursor-pointer'
+                                >
+                                  <Eye size={12} />
+                                  <span>{isExpanded ? 'Hide' : 'Open'}</span>
+                                </button>
                               </div>
 
-                              <button
-                                type='button'
-                                onClick={() =>
-                                  setExpandedProfileKey(
-                                    isExpanded ? null : profileKey,
-                                  )
-                                }
-                                className='flex items-center gap-1 bg-[#374151] hover:bg-[#4b5563] text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border border-slate-600 shrink-0 cursor-pointer'
-                              >
-                                <Eye size={12} />
-                                <span>{isExpanded ? 'Hide' : 'Open'}</span>
-                              </button>
-                            </div>
+                              <div className='flex justify-between items-center text-[10px] bg-[#111827] px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300'>
+                                <span>
+                                  Orders:{' '}
+                                  <strong className='text-sky-300'>
+                                    {rTotal}
+                                  </strong>
+                                </span>
+                                <span>
+                                  Total:{' '}
+                                  <strong className='text-emerald-400'>
+                                    {profile.totalSpent} EGP
+                                  </strong>
+                                </span>
+                              </div>
 
-                            <div className='flex justify-between items-center text-[10px] bg-[#111827] px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300'>
-                              <span>
-                                Orders:{' '}
-                                <strong className='text-sky-300'>
-                                  {rTotal}
-                                </strong>
-                              </span>
-                              <span>
-                                Total:{' '}
-                                <strong className='text-emerald-400'>
-                                  {profile.totalSpent} EGP
-                                </strong>
-                              </span>
-                            </div>
+                              {/* المحتوى التفصيلي عند الضغط على فتح */}
+                              {isExpanded && (
+                                <div className='pt-2.5 border-t border-slate-700/80 space-y-2.5 animate-fadeIn'>
+                                  <div className='grid grid-cols-5 gap-1 text-center'>
+                                    <div
+                                      onClick={() =>
+                                        setProfileStatusFilters({
+                                          ...profileStatusFilters,
+                                          [profileKey]: 'all',
+                                        })
+                                      }
+                                      className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'all' ? 'bg-sky-600/30 border-sky-500 text-white font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                                    >
+                                      All ({rTotal})
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        setProfileStatusFilters({
+                                          ...profileStatusFilters,
+                                          [profileKey]: 'pending',
+                                        })
+                                      }
+                                      className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'pending' ? 'bg-amber-600/30 border-amber-500 text-amber-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                                    >
+                                      Pend ({rPending})
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        setProfileStatusFilters({
+                                          ...profileStatusFilters,
+                                          [profileKey]: 'shipping',
+                                        })
+                                      }
+                                      className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'shipping' ? 'bg-blue-600/30 border-blue-500 text-blue-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                                    >
+                                      Ship ({rShipping})
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        setProfileStatusFilters({
+                                          ...profileStatusFilters,
+                                          [profileKey]: 'delivered',
+                                        })
+                                      }
+                                      className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'delivered' ? 'bg-emerald-600/30 border-emerald-500 text-emerald-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                                    >
+                                      Deliv ({rDelivered})
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        setProfileStatusFilters({
+                                          ...profileStatusFilters,
+                                          [profileKey]: 'cancelled',
+                                        })
+                                      }
+                                      className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'cancelled' ? 'bg-red-600/30 border-red-500 text-red-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                                    >
+                                      Canc ({rCancelled})
+                                    </div>
+                                  </div>
 
-                            {/* المحتوى التفصيلي عند الضغط على فتح */}
-                            {isExpanded && (
-                              <div className='pt-2.5 border-t border-slate-700/80 space-y-2.5 animate-fadeIn'>
-                                <div className='grid grid-cols-5 gap-1 text-center'>
-                                  <div
-                                    onClick={() =>
-                                      setProfileStatusFilters({
-                                        ...profileStatusFilters,
-                                        [profileKey]: 'all',
-                                      })
-                                    }
-                                    className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'all' ? 'bg-sky-600/30 border-sky-500 text-white font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                  >
-                                    All ({rTotal})
+                                  <div className='relative'>
+                                    <Search
+                                      size={13}
+                                      className='absolute left-2.5 top-2 text-slate-400 pointer-events-none'
+                                    />
+                                    <input
+                                      type='text'
+                                      placeholder='Search product, price, note...'
+                                      value={
+                                        profileSearchQueries[profileKey] || ''
+                                      }
+                                      onChange={(e) =>
+                                        setProfileSearchQueries({
+                                          ...profileSearchQueries,
+                                          [profileKey]: e.target.value,
+                                        })
+                                      }
+                                      className='w-full pl-8 pr-2.5 py-1 bg-[#111827] border border-slate-700 rounded-lg text-[11px] text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-sky-500'
+                                      dir='ltr'
+                                    />
                                   </div>
-                                  <div
-                                    onClick={() =>
-                                      setProfileStatusFilters({
-                                        ...profileStatusFilters,
-                                        [profileKey]: 'pending',
-                                      })
-                                    }
-                                    className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'pending' ? 'bg-amber-600/30 border-amber-500 text-amber-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                  >
-                                    Pend ({rPending})
-                                  </div>
-                                  <div
-                                    onClick={() =>
-                                      setProfileStatusFilters({
-                                        ...profileStatusFilters,
-                                        [profileKey]: 'shipping',
-                                      })
-                                    }
-                                    className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'shipping' ? 'bg-blue-600/30 border-blue-500 text-blue-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                  >
-                                    Ship ({rShipping})
-                                  </div>
-                                  <div
-                                    onClick={() =>
-                                      setProfileStatusFilters({
-                                        ...profileStatusFilters,
-                                        [profileKey]: 'delivered',
-                                      })
-                                    }
-                                    className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'delivered' ? 'bg-emerald-600/30 border-emerald-500 text-emerald-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                  >
-                                    Deliv ({rDelivered})
-                                  </div>
-                                  <div
-                                    onClick={() =>
-                                      setProfileStatusFilters({
-                                        ...profileStatusFilters,
-                                        [profileKey]: 'cancelled',
-                                      })
-                                    }
-                                    className={`cursor-pointer p-1 rounded border text-[9px] transition ${rStatus === 'cancelled' ? 'bg-red-600/30 border-red-500 text-red-300 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
-                                  >
-                                    Canc ({rCancelled})
-                                  </div>
-                                </div>
 
-                                <div className='relative'>
-                                  <Search
-                                    size={13}
-                                    className='absolute left-2.5 top-2 text-slate-400 pointer-events-none'
-                                  />
-                                  <input
-                                    type='text'
-                                    placeholder='Search product, price, note...'
-                                    value={
-                                      profileSearchQueries[profileKey] || ''
-                                    }
-                                    onChange={(e) =>
-                                      setProfileSearchQueries({
-                                        ...profileSearchQueries,
-                                        [profileKey]: e.target.value,
-                                      })
-                                    }
-                                    className='w-full pl-8 pr-2.5 py-1 bg-[#111827] border border-slate-700 rounded-lg text-[11px] text-white placeholder-slate-500 outline-none focus:ring-1 focus:ring-sky-500'
-                                    dir='ltr'
-                                  />
-                                </div>
+                                  <div className='max-h-64 overflow-y-auto pr-1 space-y-2'>
+                                    {regularOrdersFiltered.length === 0 ? (
+                                      <p className='text-[10px] text-slate-500 text-center py-3'>
+                                        No matching orders.
+                                      </p>
+                                    ) : (
+                                      regularOrdersFiltered.map(
+                                        (order: any) => {
+                                          const itemsList =
+                                            parseRegularItems(order);
+                                          const hasNote = Boolean(
+                                            order.customer_notes?.trim(),
+                                          );
+                                          const isItemsOpen =
+                                            regularOrderDetailsKey === order.id;
+                                          const isNoteOpen =
+                                            regularOrderNoteKey === order.id;
 
-                                <div className='max-h-64 overflow-y-auto pr-1 space-y-2'>
-                                  {regularOrdersFiltered.length === 0 ? (
-                                    <p className='text-[10px] text-slate-500 text-center py-3'>
-                                      No matching orders.
-                                    </p>
-                                  ) : (
-                                    regularOrdersFiltered.map((order: any) => {
-                                      const itemsList =
-                                        parseRegularItems(order);
-                                      const hasNote = Boolean(
-                                        order.customer_notes?.trim(),
-                                      );
-                                      const isItemsOpen =
-                                        regularOrderDetailsKey === order.id;
-                                      const isNoteOpen =
-                                        regularOrderNoteKey === order.id;
-
-                                      return (
-                                        <div
-                                          key={order.id}
-                                          className='bg-[#111827] p-2.5 rounded-lg border border-slate-800 space-y-2 text-[11px]'
-                                        >
-                                          <div className='flex items-center justify-between gap-1 border-b border-slate-800 pb-2 flex-wrap'>
-                                            <span className='font-bold text-[9px] text-slate-300 bg-[#1f2937] px-1.5 py-0.5 rounded border border-slate-700'>
-                                              #
-                                              {String(order.id || '')
-                                                .slice(0, 5)
-                                                .toUpperCase()}
-                                            </span>
-                                            <select
-                                              value={order.status}
-                                              onChange={(e) =>
-                                                handleStatusChange(
-                                                  order.id,
-                                                  e.target.value,
-                                                )
-                                              }
-                                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded border outline-none cursor-pointer ${
-                                                order.status === 'pending'
-                                                  ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
-                                                  : order.status === 'shipping'
-                                                    ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
-                                                    : order.status ===
-                                                        'delivered'
-                                                      ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                                                      : 'bg-red-950/40 text-red-300 border-red-500/40'
-                                              }`}
+                                          return (
+                                            <div
+                                              key={order.id}
+                                              className='bg-[#111827] p-2.5 rounded-lg border border-slate-800 space-y-2 text-[11px]'
                                             >
-                                              <option
-                                                value='pending'
-                                                className='bg-[#1f2937] text-amber-300'
-                                              >
-                                                Pending
-                                              </option>
-                                              <option
-                                                value='shipping'
-                                                className='bg-[#1f2937] text-blue-300'
-                                              >
-                                                Shipping
-                                              </option>
-                                              <option
-                                                value='delivered'
-                                                className='bg-[#1f2937] text-emerald-300'
-                                              >
-                                                Delivered
-                                              </option>
-                                              <option
-                                                value='cancelled'
-                                                className='bg-[#1f2937] text-red-300'
-                                              >
-                                                Cancelled
-                                              </option>
-                                            </select>
-                                            <span className='font-bold text-sky-300'>
-                                              {order.total_amount} EGP
-                                            </span>
-                                            <a
-                                              href={getWhatsAppLink(order)}
-                                              target='_blank'
-                                              rel='noopener noreferrer'
-                                              className='bg-emerald-600/20 text-emerald-400 p-1 rounded border border-emerald-500/30'
-                                            >
-                                              <MessageCircle size={13} />
-                                            </a>
-                                          </div>
-
-                                          <div className='text-[10px] text-slate-300 truncate'>
-                                            📍{' '}
-                                            {order.city
-                                              ? `${order.city}, `
-                                              : ''}
-                                            {order.customer_address ||
-                                              'No address'}
-                                          </div>
-
-                                          {/* أزرار مدمجة لفتح/قفل المنتجات والملاحظات بشكل مستقل */}
-                                          <div className='flex items-center gap-1.5 flex-wrap pt-0.5'>
-                                            <button
-                                              type='button'
-                                              onClick={() =>
-                                                setRegularOrderDetailsKey(
-                                                  isItemsOpen ? null : order.id,
-                                                )
-                                              }
-                                              className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-sky-950/60 hover:bg-sky-900/60 text-sky-300 border border-sky-500/30 transition cursor-pointer'
-                                            >
-                                              <Eye size={11} />
-                                              <span>
-                                                {isItemsOpen
-                                                  ? 'Hide Products'
-                                                  : `Products (${itemsList.length})`}
-                                              </span>
-                                            </button>
-
-                                            {hasNote && (
-                                              <button
-                                                type='button'
-                                                onClick={() =>
-                                                  setRegularOrderNoteKey(
-                                                    isNoteOpen
-                                                      ? null
-                                                      : order.id,
-                                                  )
-                                                }
-                                                className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 transition cursor-pointer'
-                                              >
-                                                <span>📝</span>
-                                                <span>
-                                                  {isNoteOpen
-                                                    ? 'Hide Note'
-                                                    : 'Note'}
+                                              <div className='flex items-center justify-between gap-1 border-b border-slate-800 pb-2 flex-wrap'>
+                                                <span
+                                                  dir='ltr'
+                                                  className='font-bold text-[9px] text-slate-300 bg-[#1f2937] px-1.5 py-0.5 rounded border border-slate-700'
+                                                >
+                                                  #
+                                                  {order.order_number ??
+                                                    String(order.id || '')
+                                                      .slice(0, 5)
+                                                      .toUpperCase()}
                                                 </span>
-                                              </button>
-                                            )}
-                                          </div>
+                                                <select
+                                                  value={order.status}
+                                                  onChange={(e) =>
+                                                    handleStatusChange(
+                                                      order.id,
+                                                      e.target.value,
+                                                    )
+                                                  }
+                                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded border outline-none cursor-pointer ${
+                                                    order.status === 'pending'
+                                                      ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
+                                                      : order.status ===
+                                                          'shipping'
+                                                        ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
+                                                        : order.status ===
+                                                            'delivered'
+                                                          ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
+                                                          : 'bg-red-950/40 text-red-300 border-red-500/40'
+                                                  }`}
+                                                >
+                                                  <option
+                                                    value='pending'
+                                                    className='bg-[#1f2937] text-amber-300'
+                                                  >
+                                                    Pending
+                                                  </option>
+                                                  <option
+                                                    value='shipping'
+                                                    className='bg-[#1f2937] text-blue-300'
+                                                  >
+                                                    Shipping
+                                                  </option>
+                                                  <option
+                                                    value='delivered'
+                                                    className='bg-[#1f2937] text-emerald-300'
+                                                  >
+                                                    Delivered
+                                                  </option>
+                                                  <option
+                                                    value='cancelled'
+                                                    className='bg-[#1f2937] text-red-300'
+                                                  >
+                                                    Cancelled
+                                                  </option>
+                                                </select>
+                                                <span className='font-bold text-sky-300'>
+                                                  {order.total_amount} EGP
+                                                </span>
+                                                <a
+                                                  href={getWhatsAppLink(order)}
+                                                  target='_blank'
+                                                  rel='noopener noreferrer'
+                                                  className='bg-emerald-600/20 text-emerald-400 p-1 rounded border border-emerald-500/30'
+                                                >
+                                                  <MessageCircle size={13} />
+                                                </a>
+                                              </div>
 
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* ============================== */}
-                                          {/* عرض اسم كل منتج وسعره بوضوح عند الضغط */}
-                                          {isItemsOpen && (
-                                            <div className='bg-[#1f2937]/90 border border-sky-500/30 rounded-lg p-2 space-y-1.5 animate-fadeIn'>
-                                              {itemsList.length === 0 ? (
-                                                <p className='text-[10px] text-slate-400'>
-                                                  No items found.
-                                                </p>
-                                              ) : (
-                                                itemsList.map(
-                                                  (item: any, idx: number) => {
-                                                    const unitPrice = Number(
-                                                      item.price || 0,
-                                                    );
-                                                    const qty = Number(
-                                                      item.quantity || 1,
-                                                    );
-                                                    return (
-                                                      <div
-                                                        key={idx}
-                                                        className='border-b border-slate-800 last:border-b-0 pb-1.5 last:pb-0'
-                                                      >
-                                                        <div className='flex items-start gap-2'>
-                                                          {item.image && (
-                                                            <Image
-                                                              src={item.image}
-                                                              alt={
-                                                                item.name ||
-                                                                'item'
-                                                              }
-                                                              width={26}
-                                                              height={26}
-                                                              className='w-[26px] h-[26px] rounded object-cover border border-slate-700 shrink-0 mt-0.5'
-                                                            />
-                                                          )}
+                                              <div className='text-[10px] text-slate-300 truncate'>
+                                                📍{' '}
+                                                {/* {order.city
+                                              ? `${order.city}, `
+                                              : ''} */}
+                                                {order.customer_address ||
+                                                  'No address'}
+                                              </div>
 
-                                                          <div className='min-w-0 flex-1 space-y-0.5'>
-                                                            <p className='text-[10.5px] font-semibold text-white leading-snug break-words'>
-                                                              {idx + 1}.{' '}
-                                                              {item.name ||
-                                                                'Unnamed Product'}
-                                                            </p>
-                                                            <div className='flex items-center justify-between gap-2 text-[9.5px] text-slate-400'>
-                                                              <span>
-                                                                Qty:{' '}
-                                                                <strong className='text-slate-200'>
-                                                                  {qty}
-                                                                </strong>{' '}
-                                                                × {unitPrice}{' '}
-                                                                EGP
-                                                              </span>
-                                                              <span className='text-emerald-400 font-bold shrink-0'>
-                                                                {unitPrice *
-                                                                  qty}{' '}
-                                                                EGP
-                                                              </span>
+                                              {/* أزرار مدمجة لفتح/قفل المنتجات والملاحظات بشكل مستقل */}
+                                              <div className='flex items-center gap-1.5 flex-wrap pt-0.5'>
+                                                <button
+                                                  type='button'
+                                                  onClick={() =>
+                                                    setRegularOrderDetailsKey(
+                                                      isItemsOpen
+                                                        ? null
+                                                        : order.id,
+                                                    )
+                                                  }
+                                                  className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-sky-950/60 hover:bg-sky-900/60 text-sky-300 border border-sky-500/30 transition cursor-pointer'
+                                                >
+                                                  <Eye size={11} />
+                                                  <span>
+                                                    {isItemsOpen
+                                                      ? 'Hide Products'
+                                                      : `Products (${itemsList.length})`}
+                                                  </span>
+                                                </button>
+
+                                                {hasNote && (
+                                                  <button
+                                                    type='button'
+                                                    onClick={() =>
+                                                      setRegularOrderNoteKey(
+                                                        isNoteOpen
+                                                          ? null
+                                                          : order.id,
+                                                      )
+                                                    }
+                                                    className='inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 transition cursor-pointer'
+                                                  >
+                                                    <span>📝</span>
+                                                    <span>
+                                                      {isNoteOpen
+                                                        ? 'Hide Note'
+                                                        : 'Note'}
+                                                    </span>
+                                                  </button>
+                                                )}
+                                              </div>
+
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* ============================== */}
+                                              {/* عرض اسم كل منتج وسعره بوضوح عند الضغط */}
+                                              {isItemsOpen && (
+                                                <div className='bg-[#1f2937]/90 border border-sky-500/30 rounded-lg p-2 space-y-1.5 animate-fadeIn'>
+                                                  {itemsList.length === 0 ? (
+                                                    <p className='text-[10px] text-slate-400'>
+                                                      No items found.
+                                                    </p>
+                                                  ) : (
+                                                    itemsList.map(
+                                                      (
+                                                        item: any,
+                                                        idx: number,
+                                                      ) => {
+                                                        const unitPrice =
+                                                          Number(
+                                                            item.price || 0,
+                                                          );
+                                                        const qty = Number(
+                                                          item.quantity || 1,
+                                                        );
+                                                        return (
+                                                          <div
+                                                            key={idx}
+                                                            className='border-b border-slate-800 last:border-b-0 pb-1.5 last:pb-0'
+                                                          >
+                                                            <div className='flex items-start gap-2'>
+                                                              {item.image && (
+                                                                <Image
+                                                                  src={
+                                                                    item.image
+                                                                  }
+                                                                  alt={
+                                                                    item.name ||
+                                                                    'item'
+                                                                  }
+                                                                  width={26}
+                                                                  height={26}
+                                                                  loading='lazy'
+                                                                  sizes='26px'
+                                                                  className='w-[26px] h-[26px] rounded object-cover border border-slate-700 shrink-0 mt-0.5'
+                                                                />
+                                                              )}
+
+                                                              <div className='min-w-0 flex-1 space-y-0.5'>
+                                                                <p className='text-[10.5px] font-semibold text-white leading-snug break-words'>
+                                                                  {idx + 1}.{' '}
+                                                                  {item.name ||
+                                                                    'Unnamed Product'}
+                                                                </p>
+                                                                <div className='flex items-center justify-between gap-2 text-[9.5px] text-slate-400'>
+                                                                  <span>
+                                                                    Qty:{' '}
+                                                                    <strong className='text-slate-200'>
+                                                                      {qty}
+                                                                    </strong>{' '}
+                                                                    ×{' '}
+                                                                    {unitPrice}{' '}
+                                                                    EGP
+                                                                  </span>
+                                                                  <span className='text-emerald-400 font-bold shrink-0'>
+                                                                    {unitPrice *
+                                                                      qty}{' '}
+                                                                    EGP
+                                                                  </span>
+                                                                </div>
+                                                              </div>
                                                             </div>
                                                           </div>
-                                                        </div>
-                                                      </div>
-                                                    );
-                                                  },
-                                                )
+                                                        );
+                                                      },
+                                                    )
+                                                  )}
+                                                </div>
+                                              )}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* ========================== */}
+                                              {/* عرض الملاحظة عند الضغط بشكل مستقل */}
+                                              {hasNote && isNoteOpen && (
+                                                <div className='text-[10px] text-amber-200 bg-amber-950/40 border border-amber-500/30 px-2 py-1.5 rounded-lg break-words animate-fadeIn'>
+                                                  <span className='font-bold text-amber-400'>
+                                                    📝 Note:{' '}
+                                                  </span>
+                                                  {order.customer_notes.trim()}
+                                                </div>
                                               )}
                                             </div>
-                                          )}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* ========================== */}
-                                          {/* عرض الملاحظة عند الضغط بشكل مستقل */}
-                                          {hasNote && isNoteOpen && (
-                                            <div className='text-[10px] text-amber-200 bg-amber-950/40 border border-amber-500/30 px-2 py-1.5 rounded-lg break-words animate-fadeIn'>
-                                              <span className='font-bold text-amber-400'>
-                                                📝 Note:{' '}
-                                              </span>
-                                              {order.customer_notes.trim()}
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })
-                                  )}
+                                          );
+                                        },
+                                      )
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              )}
+                            </div>
+                          );
+                        },
+                      )}
                     </div>
                   </div>
                 );

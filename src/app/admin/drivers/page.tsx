@@ -33,6 +33,7 @@ import {
   Sparkles,
   X,
   SlidersHorizontal,
+  Zap,
 } from 'lucide-react';
 
 // تعريف نوع بيانات السواق المطابق لجدول Supabase
@@ -104,6 +105,8 @@ export default function DriversManagementPage() {
   const [idFrontFile, setIdFrontFile] = useState<File | null>(null);
   const [idBackFile, setIdBackFile] = useState<File | null>(null);
   const [personalPhotoFile, setPersonalPhotoFile] = useState<File | null>(null);
+
+  const [sortModalOpen, setSortModalOpen] = useState(false);
 
   // مرجع الإسلايدر الأفقي للتحكم في التمرير يمين ويسار
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -678,6 +681,201 @@ export default function DriversManagementPage() {
       });
   }, [drivers, activeFilter, searchQuery, sortBy]);
 
+  // ========================================
+  // ========================================
+  const [driversPage, setDriversPage] = useState(1);
+  const [driversPageAnimKey, setDriversPageAnimKey] = useState(0);
+
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  const DRIVERS_PER_PAGE = 4;
+  const totalDriversPages = Math.max(
+    1,
+    Math.ceil((filteredDrivers?.length || 0) / DRIVERS_PER_PAGE),
+  );
+  const safeDriversPage = Math.min(driversPage, totalDriversPages);
+  const driversStartIndex = (safeDriversPage - 1) * DRIVERS_PER_PAGE;
+  const driversEndIndex = Math.min(
+    driversStartIndex + DRIVERS_PER_PAGE,
+    filteredDrivers?.length || 0,
+  );
+  const paginatedDrivers = (filteredDrivers || []).slice(
+    driversStartIndex,
+    driversEndIndex,
+  );
+
+  const handleDriversPageChange = (nextPage: number) => {
+    const clamped = Math.max(1, Math.min(nextPage, totalDriversPages));
+    if (clamped === safeDriversPage) return;
+    setDriversPage(clamped);
+    setDriversPageAnimKey((k) => k + 1);
+    sliderRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+  };
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  const buildDriverWhatsAppLink = (driverPhone?: string | null) => {
+    let phone = (driverPhone || '').replace(/\D/g, '');
+    if (phone.length === 11 && phone.startsWith('01')) {
+      phone = '2' + phone;
+    }
+
+    const message = 'السلام عليكم، مع حضرتك أدمن Abdo Store.';
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  };
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  const [activeReviewDriver, setActiveReviewDriver] = useState<any>(null);
+  const [adminDriverReviews, setAdminDriverReviews] = useState<
+    Array<{
+      id: string;
+      customer_rating: number | null;
+      customer_review: string | null;
+      is_review_hidden?: boolean | null;
+      admin_review_reply?: string | null;
+      updated_at?: string;
+    }>
+  >([]);
+  const [loadingAdminReviews, setLoadingAdminReviews] =
+    useState<boolean>(false);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [reviewActionId, setReviewActionId] = useState<string | null>(null);
+
+  const fetchDriverReviewsForAdmin = async (driverObj: any) => {
+    if (!driverObj?.id) return;
+    setActiveReviewDriver(driverObj);
+    setLoadingAdminReviews(true);
+    try {
+      const { data, error } = await supabase
+        .from('deliveries')
+        .select('*')
+        .eq('driver_id', driverObj.id)
+        .not('customer_review', 'is', null)
+        .order('updated_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const filtered = data.filter(
+          (r) => r.customer_review && String(r.customer_review).trim() !== '',
+        );
+        setAdminDriverReviews(filtered);
+        const initialReplies: Record<string, string> = {};
+        for (const item of filtered) {
+          if (item.admin_review_reply) {
+            initialReplies[item.id] = item.admin_review_reply;
+          }
+        }
+        setReplyDrafts(initialReplies);
+      }
+    } finally {
+      setLoadingAdminReviews(false);
+    }
+  };
+
+  const handleToggleHideReview = async (rev: any) => {
+    setReviewActionId(rev.id);
+    const nextHidden = !Boolean(rev.is_review_hidden);
+    try {
+      const { error } = await supabase
+        .from('deliveries')
+        .update({ is_review_hidden: nextHidden })
+        .eq('id', rev.id);
+
+      if (!error) {
+        setAdminDriverReviews((prev) =>
+          prev.map((item) =>
+            item.id === rev.id
+              ? { ...item, is_review_hidden: nextHidden }
+              : item,
+          ),
+        );
+      }
+    } finally {
+      setReviewActionId(null);
+    }
+  };
+
+  const handleSaveAdminReply = async (revId: string, customReply?: string) => {
+    setReviewActionId(revId);
+    const textToSave = (customReply ?? replyDrafts[revId] ?? '').trim();
+    try {
+      const { error } = await supabase
+        .from('deliveries')
+        .update({ admin_review_reply: textToSave || null })
+        .eq('id', revId);
+
+      if (!error) {
+        setAdminDriverReviews((prev) =>
+          prev.map((item) =>
+            item.id === revId
+              ? { ...item, admin_review_reply: textToSave || null }
+              : item,
+          ),
+        );
+        setReplyDrafts((prev) => ({ ...prev, [revId]: textToSave }));
+      }
+    } finally {
+      setReviewActionId(null);
+    }
+  };
+
+  const handleDeleteReview = async (revId: string) => {
+    setReviewActionId(revId);
+    try {
+      const { error } = await supabase
+        .from('deliveries')
+        .update({
+          customer_review: null,
+          admin_review_reply: null,
+          is_review_hidden: false,
+        })
+        .eq('id', revId);
+
+      if (!error) {
+        setAdminDriverReviews((prev) =>
+          prev.filter((item) => item.id !== revId),
+        );
+      }
+    } finally {
+      setReviewActionId(null);
+    }
+  };
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
   return (
     <div className='min-h-screen bg-[#090f19] text-slate-100 pb-16'>
       {/* شريط العنوان العلوي */}
@@ -780,7 +978,7 @@ export default function DriversManagementPage() {
               </p>
             </div>
             <div className='w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400'>
-              <Sparkles size={22} />
+              <Zap size={22} />
             </div>
           </div>
         </div>
@@ -794,8 +992,9 @@ export default function DriversManagementPage() {
             </span>
             {activeFilter !== 'all' && (
               <button
+                type='button'
                 onClick={() => setActiveFilter('all')}
-                className='text-xs text-rose-400 hover:text-rose-300 font-semibold'
+                className='text-xs text-rose-400 hover:text-rose-300 font-semibold cursor-pointer'
               >
                 Reset Filter
               </button>
@@ -852,8 +1051,9 @@ export default function DriversManagementPage() {
               return (
                 <button
                   key={box.key}
+                  type='button'
                   onClick={() => setActiveFilter(box.key as FilterType)}
-                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                  className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                     isSelected
                       ? 'bg-blue-600/20 border-blue-500 shadow-lg shadow-blue-500/10'
                       : 'bg-[#090f19] border-slate-800 hover:border-slate-700'
@@ -894,23 +1094,92 @@ export default function DriversManagementPage() {
               />
               {searchQuery && (
                 <button
+                  type='button'
                   onClick={() => setSearchQuery('')}
-                  className='absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white'
+                  className='absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white cursor-pointer'
                 >
                   <X size={16} />
                 </button>
               )}
             </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className='bg-[#090f19] border border-slate-800 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-200 outline-none'
-            >
-              <option value='newest'>Sort: Newest Registered</option>
-              <option value='deliveries'>Sort: Most Deliveries</option>
-              <option value='rating'>Sort: Highest Rating</option>
-            </select>
+            <div className='relative'>
+              <button
+                type='button'
+                onClick={() => setSortModalOpen(true)}
+                className='w-full sm:w-auto flex items-center justify-between gap-2.5 bg-[#090f19] hover:bg-[#0e1726] border border-slate-800 hover:border-blue-500/60 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-slate-200 transition-all duration-200 outline-none cursor-pointer'
+              >
+                <span className='font-semibold truncate'>
+                  {sortBy === 'newest' && 'Sort: Newest Registered'}
+                  {sortBy === 'deliveries' && 'Sort: Most Deliveries'}
+                  {sortBy === 'rating' && 'Sort: Highest Rating'}
+                </span>
+                <span className='text-[10px] font-black px-2 py-0.5 rounded-md bg-gradient-to-r from-red-600/25 to-blue-600/25 text-blue-200 border border-blue-500/30 shrink-0'>
+                  Sort
+                </span>
+              </button>
+
+              {sortModalOpen && (
+                <div
+                  onClick={() => setSortModalOpen(false)}
+                  className='fixed inset-0 z-50 pt-20 pb-4 px-3 sm:px-4 bg-black/75 backdrop-blur-sm flex items-center justify-center overflow-y-auto animate-fadeIn'
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='w-full max-w-xs max-h-[calc(100vh-6.5rem)] my-auto rounded-2xl bg-[#0c1424] border border-blue-500/35 shadow-2xl flex flex-col overflow-hidden transition-all duration-200'
+                  >
+                    <div className='px-4 py-3 bg-gradient-to-r from-red-600/25 via-slate-900 to-blue-600/25 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0'>
+                      <div className='flex items-center gap-2'>
+                        <span className='w-2 h-2 rounded-full bg-gradient-to-r from-red-500 to-blue-500 animate-pulse' />
+                        <h4 className='text-xs sm:text-sm font-black text-white'>
+                          Sort By
+                        </h4>
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => setSortModalOpen(false)}
+                        aria-label='Close sort modal'
+                        className='p-1 rounded-lg bg-slate-800/80 hover:bg-red-500/20 text-slate-300 hover:text-red-300 border border-slate-700/80 transition cursor-pointer'
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div className='p-3 space-y-1.5 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-900/70 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-b [&::-webkit-scrollbar-thumb]:from-red-500/70 [&::-webkit-scrollbar-thumb]:to-blue-500/70'>
+                      {[
+                        { value: 'newest', label: 'Sort: Newest Registered' },
+                        { value: 'deliveries', label: 'Sort: Most Deliveries' },
+                        { value: 'rating', label: 'Sort: Highest Rating' },
+                      ].map((option) => {
+                        const isSelected = sortBy === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type='button'
+                            onClick={() => {
+                              setSortBy(option.value as any);
+                              setSortModalOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold border transition-all duration-150 cursor-pointer ${
+                              isSelected
+                                ? 'bg-gradient-to-r from-red-600 to-blue-600 text-white border-blue-300/40 shadow-md'
+                                : 'bg-[#121c30] text-slate-200 border-slate-800 hover:border-blue-500/40 hover:bg-[#17233b]'
+                            }`}
+                          >
+                            <span>{option.label}</span>
+                            {isSelected && (
+                              <span className='text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white'>
+                                Active
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -932,29 +1201,33 @@ export default function DriversManagementPage() {
             {/* أزرار التحكم في الإسلايدر (البداية - خطوة يسار - خطوة يمين - النهاية) */}
             <div className='flex items-center gap-1.5 self-end sm:self-auto'>
               <button
+                type='button'
                 onClick={() => scrollSlider('start')}
-                className='px-2.5 py-1.5 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-xs font-bold text-slate-300 transition-colors'
+                className='px-2.5 py-1.5 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-xs font-bold text-slate-300 transition-colors cursor-pointer'
                 title='Jump to Start'
               >
                 First
               </button>
               <button
+                type='button'
                 onClick={() => scrollSlider('left')}
-                className='p-2 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-slate-300 transition-colors'
+                className='p-2 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-slate-300 transition-colors cursor-pointer'
                 title='Scroll Left'
               >
                 <ChevronLeft size={18} />
               </button>
               <button
+                type='button'
                 onClick={() => scrollSlider('right')}
-                className='p-2 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-slate-300 transition-colors'
+                className='p-2 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-slate-300 transition-colors cursor-pointer'
                 title='Scroll Right'
               >
                 <ChevronRight size={18} />
               </button>
               <button
+                type='button'
                 onClick={() => scrollSlider('end')}
-                className='px-2.5 py-1.5 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-xs font-bold text-slate-300 transition-colors'
+                className='px-2.5 py-1.5 rounded-lg bg-[#090f19] border border-slate-800 hover:border-slate-600 text-xs font-bold text-slate-300 transition-colors cursor-pointer'
                 title='Jump to End'
               >
                 Last
@@ -977,182 +1250,291 @@ export default function DriversManagementPage() {
               </p>
             </div>
           ) : (
-            /* حاوية الإسلايدر الأفقية */
-            <div
-              ref={sliderRef}
-              className='flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scroll-smooth'
-              style={{ scrollbarWidth: 'thin' }}
-            >
-              {filteredDrivers.map((driver) => {
-                const isVip = (driver.completed_deliveries || 0) > 3;
-                return (
-                  <div
-                    key={driver.id}
-                    className='min-w-[295px] sm:min-w-[340px] max-w-[340px] snap-start bg-[#090f19] border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shrink-0 transition-all'
-                  >
-                    <div>
-                      {/* رأس الكارت: الاسم + شارة VIP + زر المفضلة */}
-                      <div className='flex items-start justify-between gap-2 pb-3 border-b border-slate-800/80'>
-                        <div>
-                          <div className='flex items-center gap-1.5 flex-wrap'>
-                            <h3 className='font-black text-base text-white'>
-                              {driver.full_name}
-                            </h3>
-                            {isVip && (
-                              <span className='px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30'>
-                                VIP ⭐
-                              </span>
-                            )}
-                          </div>
-                          <div className='flex items-center gap-2 mt-1'>
-                            <span
-                              className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
-                                driver.is_active
-                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                              }`}
-                            >
-                              {driver.is_active ? (
-                                <>
-                                  <ShieldCheck size={12} /> Active
-                                </>
-                              ) : (
-                                <>
-                                  <ShieldAlert size={12} /> Inactive
-                                </>
-                              )}
-                            </span>
+            <>
+              {!loading && filteredDrivers.length > DRIVERS_PER_PAGE && (
+                <div
+                  dir='ltr'
+                  className='flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-[#090f19]/95 border border-slate-800/90 text-xs'
+                >
+                  <div className='flex items-center gap-2 text-slate-400'>
+                    <span className='w-2 h-2 rounded-full bg-blue-400 animate-pulse' />
+                    <span>
+                      Showing{' '}
+                      <strong className='text-white font-mono'>
+                        {driversStartIndex + 1}–{driversEndIndex}
+                      </strong>{' '}
+                      of{' '}
+                      <strong className='text-blue-300 font-mono'>
+                        {filteredDrivers.length}
+                      </strong>
+                    </span>
+                    <span className='text-slate-600'>•</span>
+                    <span className='px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/25 text-blue-300 font-mono text-[11px] font-bold'>
+                      Page {safeDriversPage} / {totalDriversPages}
+                    </span>
+                  </div>
 
-                            {/* التقييم بالنجوم */}
-                            <button
-                              onClick={() => openDriverReviews(driver)}
-                              className='inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors'
-                              title='View Customer Reviews'
-                            >
-                              <Star
-                                size={11}
-                                className='fill-amber-400 text-amber-400'
-                              />
-                              {Number(driver.average_rating || 0).toFixed(1)} (
-                              {driver.total_reviews || 0})
-                            </button>
+                  <div
+                    key={`drivers-page-bar-${driversPageAnimKey}`}
+                    className='flex items-center gap-1 flex-wrap'
+                  >
+                    <button
+                      type='button'
+                      onClick={() =>
+                        handleDriversPageChange(safeDriversPage - 1)
+                      }
+                      disabled={safeDriversPage === 1}
+                      className='inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0e1626] border border-slate-700/90 text-slate-300 font-bold hover:border-blue-500/50 hover:text-white disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer'
+                    >
+                      <ChevronLeft size={13} />
+                      <span>Prev</span>
+                    </button>
+
+                    {Array.from({ length: totalDriversPages }, (_, i) => {
+                      const pageNum = i + 1;
+                      const isActive = pageNum === safeDriversPage;
+
+                      return (
+                        <button
+                          key={`drivers-page-${pageNum}`}
+                          type='button'
+                          onClick={() => handleDriversPageChange(pageNum)}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`min-w-[28px] h-[28px] px-2 rounded-lg font-mono text-xs font-black transition cursor-pointer ${
+                            isActive
+                              ? 'bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 text-white border border-blue-300/40 shadow-sm'
+                              : 'bg-[#0e1626] text-slate-400 border border-slate-800 hover:border-slate-600 hover:text-white'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type='button'
+                      onClick={() =>
+                        handleDriversPageChange(safeDriversPage + 1)
+                      }
+                      disabled={safeDriversPage === totalDriversPages}
+                      className='inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0e1626] border border-slate-700/90 text-slate-300 font-bold hover:border-blue-500/50 hover:text-white disabled:opacity-35 disabled:pointer-events-none transition cursor-pointer'
+                    >
+                      <span>Next</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div
+                ref={sliderRef}
+                className='flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scroll-smooth'
+                style={{ scrollbarWidth: 'thin' }}
+              >
+                {paginatedDrivers.map((driver) => {
+                  const isVip = (driver.completed_deliveries || 0) > 3;
+                  return (
+                    <div
+                      key={driver.id}
+                      className='min-w-[295px] sm:min-w-[340px] max-w-[340px] snap-start bg-[#090f19] border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shrink-0 transition-all'
+                    >
+                      <div>
+                        {/* رأس الكارت: الاسم + شارة VIP + زر المفضلة */}
+                        <div className='flex items-start justify-between gap-2 pb-3 border-b border-slate-800/80'>
+                          <div>
+                            <div className='flex items-center gap-1.5 flex-wrap'>
+                              <h3 className='font-black text-base text-white'>
+                                {driver.full_name}
+                              </h3>
+                              {isVip && (
+                                <span className='px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/30'>
+                                  VIP ⭐
+                                </span>
+                              )}
+                            </div>
+                            <div className='flex items-center gap-2 mt-1'>
+                              <span
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                  driver.is_active
+                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                    : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                }`}
+                              >
+                                {driver.is_active ? (
+                                  <>
+                                    <ShieldCheck size={12} /> Active
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldAlert size={12} /> Inactive
+                                  </>
+                                )}
+                              </span>
+
+                              {/* التقييم بالنجوم */}
+                              <button
+                                type='button'
+                                onClick={() =>
+                                  fetchDriverReviewsForAdmin(driver)
+                                }
+                                className='inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors cursor-pointer'
+                                title='إدارة تقييمات وكومنتات السواق'
+                              >
+                                <Star
+                                  size={11}
+                                  className='fill-amber-400 text-amber-400'
+                                />
+                                {Number(driver.average_rating || 0).toFixed(1)}{' '}
+                                ({driver.total_reviews || 0})
+                              </button>
+                            </div>
                           </div>
+
+                          {/* زر إضافة/إزالة من المفضلة */}
+                          <button
+                            type='button'
+                            onClick={() => toggleDriverFavorite(driver)}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer ${
+                              driver.is_favorite
+                                ? 'bg-pink-500/15 border-pink-500/40 text-pink-400'
+                                : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-pink-400'
+                            }`}
+                            title={
+                              driver.is_favorite
+                                ? 'Remove from Favorites'
+                                : 'Add to Favorites'
+                            }
+                          >
+                            <Heart
+                              size={17}
+                              className={
+                                driver.is_favorite ? 'fill-pink-400' : ''
+                              }
+                            />
+                          </button>
                         </div>
 
-                        {/* زر إضافة/إزالة من المفضلة */}
+                        {/* تفاصيل السواق */}
+                        <div className='py-3 space-y-2 text-xs text-slate-300'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-slate-500 flex items-center gap-1.5'>
+                              <Phone size={13} /> Driver Phone:
+                            </span>
+                            <div
+                              className='inline-flex items-center gap-1.5'
+                              dir='ltr'
+                            >
+                              <a
+                                href={`tel:${driver.phone}`}
+                                className='font-mono font-bold text-white hover:underline'
+                              >
+                                {driver.phone}
+                              </a>
+                              {driver.phone && (
+                                <a
+                                  href={buildDriverWhatsAppLink(driver.phone)}
+                                  target='_blank'
+                                  rel='noopener noreferrer'
+                                  title='مراسلة السواق عبر واتساب'
+                                  aria-label='مراسلة السواق عبر واتساب'
+                                  className='inline-flex items-center justify-center w-6 h-6 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 transition'
+                                >
+                                  <svg
+                                    className='w-3.5 h-3.5 fill-current'
+                                    viewBox='0 0 24 24'
+                                  >
+                                    <path d='M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z' />
+                                  </svg>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className='flex items-center justify-between'>
+                            <span className='text-slate-500 flex items-center gap-1.5'>
+                              <Phone size={13} /> Guarantor:
+                            </span>
+                            <span className='font-mono text-slate-300'>
+                              {driver.guarantor_phone}
+                            </span>
+                          </div>
+
+                          <div className='flex items-center justify-between'>
+                            <span className='text-slate-500 flex items-center gap-1.5'>
+                              <CreditCard size={13} /> National ID:
+                            </span>
+                            <span className='font-mono text-slate-300'>
+                              {driver.national_id}
+                            </span>
+                          </div>
+
+                          <div className='flex items-center justify-between'>
+                            <span className='text-slate-500'>Card Code:</span>
+                            <span className='font-mono text-slate-300'>
+                              {driver.card_code}
+                            </span>
+                          </div>
+
+                          <div className='flex items-center justify-between'>
+                            <span className='text-slate-500 flex items-center gap-1.5'>
+                              <Truck size={13} /> Completed Trips:
+                            </span>
+                            <span className='font-black text-blue-400'>
+                              {driver.completed_deliveries || 0} Orders
+                            </span>
+                          </div>
+
+                          <div className='pt-1 flex items-start gap-1.5 text-slate-400'>
+                            <MapPin size={13} className='shrink-0 mt-0.5' />
+                            <span className='line-clamp-2'>
+                              {driver.address}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* أزرار التحكم أسفل الكارت */}
+                      <div className='pt-3 border-t border-slate-800/80 flex items-center gap-2'>
                         <button
-                          onClick={() => toggleDriverFavorite(driver)}
-                          className={`p-2 rounded-xl border transition-all ${
-                            driver.is_favorite
-                              ? 'bg-pink-500/15 border-pink-500/40 text-pink-400'
-                              : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-pink-400'
+                          type='button'
+                          onClick={() => toggleDriverActive(driver)}
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                            driver.is_active
+                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                           }`}
-                          title={
-                            driver.is_favorite
-                              ? 'Remove from Favorites'
-                              : 'Add to Favorites'
-                          }
                         >
-                          <Heart
-                            size={17}
-                            className={
-                              driver.is_favorite ? 'fill-pink-400' : ''
-                            }
-                          />
+                          {driver.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+
+                        <button
+                          type='button'
+                          onClick={() => fetchDriverReviewsForAdmin(driver)}
+                          className='p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-amber-400 transition-colors cursor-pointer'
+                          title='إدارة تعليقات السواق'
+                        >
+                          <MessageSquare size={16} />
+                        </button>
+
+                        <button
+                          type='button'
+                          onClick={() =>
+                            setDeleteModal({
+                              isOpen: true,
+                              driver,
+                              deleting: false,
+                            })
+                          }
+                          className='p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 transition-colors cursor-pointer'
+                          title='Delete Driver'
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
-
-                      {/* تفاصيل السواق */}
-                      <div className='py-3 space-y-2 text-xs text-slate-300'>
-                        <div className='flex items-center justify-between'>
-                          <span className='text-slate-500 flex items-center gap-1.5'>
-                            <Phone size={13} /> Driver Phone:
-                          </span>
-                          <span className='font-mono font-bold text-white'>
-                            {driver.phone}
-                          </span>
-                        </div>
-
-                        <div className='flex items-center justify-between'>
-                          <span className='text-slate-500 flex items-center gap-1.5'>
-                            <Phone size={13} /> Guarantor:
-                          </span>
-                          <span className='font-mono text-slate-300'>
-                            {driver.guarantor_phone}
-                          </span>
-                        </div>
-
-                        <div className='flex items-center justify-between'>
-                          <span className='text-slate-500 flex items-center gap-1.5'>
-                            <CreditCard size={13} /> National ID:
-                          </span>
-                          <span className='font-mono text-slate-300'>
-                            {driver.national_id}
-                          </span>
-                        </div>
-
-                        <div className='flex items-center justify-between'>
-                          <span className='text-slate-500'>Card Code:</span>
-                          <span className='font-mono text-slate-300'>
-                            {driver.card_code}
-                          </span>
-                        </div>
-
-                        <div className='flex items-center justify-between'>
-                          <span className='text-slate-500 flex items-center gap-1.5'>
-                            <Truck size={13} /> Completed Trips:
-                          </span>
-                          <span className='font-black text-blue-400'>
-                            {driver.completed_deliveries || 0} Orders
-                          </span>
-                        </div>
-
-                        <div className='pt-1 flex items-start gap-1.5 text-slate-400'>
-                          <MapPin size={13} className='shrink-0 mt-0.5' />
-                          <span className='line-clamp-2'>{driver.address}</span>
-                        </div>
-                      </div>
                     </div>
-
-                    {/* أزرار التحكم أسفل الكارت */}
-                    <div className='pt-3 border-t border-slate-800/80 flex items-center gap-2'>
-                      <button
-                        onClick={() => toggleDriverActive(driver)}
-                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-colors ${
-                          driver.is_active
-                            ? 'bg-slate-800 hover:bg-slate-700 text-slate-200'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                        }`}
-                      >
-                        {driver.is_active ? 'Deactivate' : 'Activate'}
-                      </button>
-
-                      <button
-                        onClick={() => openDriverReviews(driver)}
-                        className='p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-amber-400 transition-colors'
-                        title='Customer Reviews'
-                      >
-                        <MessageSquare size={16} />
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          setDeleteModal({
-                            isOpen: true,
-                            driver,
-                            deleting: false,
-                          })
-                        }
-                        className='p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-500/40 text-rose-400 transition-colors'
-                        title='Delete Driver'
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
 
@@ -1329,7 +1711,7 @@ export default function DriversManagementPage() {
                 type='button'
                 onClick={handleGenerateLocalPdf}
                 disabled={generatingPdf}
-                className='flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all'
+                className='flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all cursor-pointer'
               >
                 <FileDown size={19} />
                 {generatingPdf
@@ -1340,7 +1722,7 @@ export default function DriversManagementPage() {
               <button
                 type='submit'
                 disabled={submittingDb}
-                className='flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all'
+                className='flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer'
               >
                 <Database size={19} />
                 {submittingDb
@@ -1383,10 +1765,11 @@ export default function DriversManagementPage() {
               </p>
 
               <button
+                type='button'
                 onClick={() =>
                   setFeedbackModal((prev) => ({ ...prev, isOpen: false }))
                 }
-                className='mt-6 w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-colors'
+                className='mt-6 w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-colors cursor-pointer'
               >
                 Close
               </button>
@@ -1417,6 +1800,7 @@ export default function DriversManagementPage() {
 
               <div className='flex gap-3 w-full mt-6'>
                 <button
+                  type='button'
                   onClick={() =>
                     setDeleteModal({
                       isOpen: false,
@@ -1425,14 +1809,15 @@ export default function DriversManagementPage() {
                     })
                   }
                   disabled={deleteModal.deleting}
-                  className='flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-colors'
+                  className='flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-colors cursor-pointer'
                 >
                   Cancel
                 </button>
                 <button
+                  type='button'
                   onClick={confirmDeleteDriver}
                   disabled={deleteModal.deleting}
-                  className='flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm transition-colors'
+                  className='flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm transition-colors cursor-pointer'
                 >
                   {deleteModal.deleting ? 'Deleting...' : 'Yes, Delete'}
                 </button>
@@ -1459,6 +1844,7 @@ export default function DriversManagementPage() {
                 </p>
               </div>
               <button
+                type='button'
                 onClick={() =>
                   setReviewsModal({
                     isOpen: false,
@@ -1467,7 +1853,7 @@ export default function DriversManagementPage() {
                     loading: false,
                   })
                 }
-                className='p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white'
+                className='p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white cursor-pointer'
               >
                 <X size={18} />
               </button>
@@ -1526,6 +1912,146 @@ export default function DriversManagementPage() {
                     )}
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. مودال تحكم الأدمن الكامل في تقييمات وكومنتات السواق */}
+      {activeReviewDriver && (
+        <div
+          dir='rtl'
+          className='fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4'
+        >
+          <div className='w-full max-w-lg rounded-3xl bg-[#0d1524] border border-slate-800 p-4 shadow-2xl space-y-3 text-white'>
+            <div className='flex items-center justify-between border-b border-slate-800/80 pb-2.5'>
+              <div>
+                <h3 className='text-sm font-black text-white'>
+                  إدارة تقييمات وكومنتات ({activeReviewDriver.full_name})
+                </h3>
+                <p className='text-[11px] text-amber-400 font-bold'>
+                  المتوسط الحالي:{' '}
+                  {Number(activeReviewDriver.average_rating || 0).toFixed(1)} ★
+                </p>
+              </div>
+              <button
+                type='button'
+                onClick={() => setActiveReviewDriver(null)}
+                className='w-7 h-7 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center justify-center cursor-pointer'
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className='max-h-96 overflow-y-auto space-y-2.5 pr-0.5'>
+              {loadingAdminReviews ? (
+                <p className='text-xs text-slate-400 text-center py-6'>
+                  جاري تحميل الكومنتات...
+                </p>
+              ) : adminDriverReviews.length === 0 ? (
+                <p className='text-xs text-slate-400 text-center py-6'>
+                  لا توجد تعليقات لهذا السواق.
+                </p>
+              ) : (
+                adminDriverReviews.map((rev) => {
+                  const busy = reviewActionId === rev.id;
+                  return (
+                    <div
+                      key={rev.id}
+                      className={`rounded-2xl border p-3 space-y-2 ${
+                        rev.is_review_hidden
+                          ? 'bg-slate-950/70 border-slate-800/60 opacity-70'
+                          : 'bg-[#090f19] border-slate-800'
+                      }`}
+                    >
+                      <div className='flex items-center justify-between gap-2'>
+                        <div className='flex items-center gap-2'>
+                          <span className='text-xs font-black text-amber-400'>
+                            {Number(rev.customer_rating || 0)}/5 ★
+                          </span>
+                          {rev.is_review_hidden && (
+                            <span className='px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30'>
+                              مخفي
+                            </span>
+                          )}
+                        </div>
+
+                        <div className='flex items-center gap-1.5'>
+                          <button
+                            type='button'
+                            disabled={busy}
+                            onClick={() => handleToggleHideReview(rev)}
+                            className='px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-200 cursor-pointer'
+                          >
+                            {rev.is_review_hidden ? 'إظهار' : 'إخفاء'}
+                          </button>
+                          <button
+                            type='button'
+                            disabled={busy}
+                            onClick={() => handleDeleteReview(rev.id)}
+                            className='px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-[10px] font-bold text-rose-300 cursor-pointer'
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className='text-xs text-slate-200 leading-relaxed'>
+                        {rev.customer_review}
+                      </p>
+
+                      <div className='flex flex-wrap items-center gap-1 pt-1'>
+                        {[
+                          '👍 تم المراجعة',
+                          '❤️ شكراً لملاحظتك',
+                          '✅ تمت المتابعة',
+                        ].map((reaction) => (
+                          <button
+                            key={reaction}
+                            type='button'
+                            disabled={busy}
+                            onClick={() =>
+                              handleSaveAdminReply(rev.id, reaction)
+                            }
+                            className='px-2 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[10px] font-bold text-slate-300 cursor-pointer'
+                          >
+                            {reaction}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className='flex items-center gap-1.5 pt-1'>
+                        <input
+                          type='text'
+                          value={replyDrafts[rev.id] ?? ''}
+                          onChange={(e) =>
+                            setReplyDrafts((prev) => ({
+                              ...prev,
+                              [rev.id]: e.target.value,
+                            }))
+                          }
+                          placeholder='اكتب رد أو تفاعل للأدمن...'
+                          className='flex-1 bg-[#0d1524] border border-slate-700/80 rounded-xl px-2.5 py-1 text-[11px] text-white outline-none'
+                        />
+                        <button
+                          type='button'
+                          disabled={busy}
+                          onClick={() => handleSaveAdminReply(rev.id)}
+                          className='px-2.5 py-1 rounded-xl bg-purple-600 hover:bg-purple-500 text-[10px] font-black text-white cursor-pointer'
+                        >
+                          حفظ الرد
+                        </button>
+                      </div>
+
+                      {rev.admin_review_reply && (
+                        <p className='text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1'>
+                          رد الأدمن: {rev.admin_review_reply}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

@@ -1,0 +1,594 @@
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { Compass } from 'lucide-react';
+type Stage = 'racing' | 'grabbing' | 'opening' | 'entering';
+export default function SplashScreen() {
+  const [visible, setVisible] = useState(true);
+  const [frame, setFrame] = useState({ progress: 0, phase: 0 });
+  const [stage, setStage] = useState<Stage>('racing');
+
+  const rafRef = useRef<number | null>(null);
+  const safetyTimerRef = useRef<number | null>(null);
+  const transitionTimersRef = useRef<number[]>([]);
+  const completedRef = useRef(false);
+
+  useEffect(() => {
+    // قللنا زمن السباق من 3.1 إلى 2.1 ثانية بالضبط.
+    const RACE_DURATION = 2100;
+    const FRAME_INTERVAL = 1000 / 40; // تحديث React بحد أقصى 40 مرة في الثانية.
+    const startTime = performance.now();
+    let lastFrameAt = 0;
+
+    const scheduleTransition = (callback: () => void, delay: number) => {
+      const timerId = window.setTimeout(callback, delay);
+      transitionTimersRef.current.push(timerId);
+    };
+
+    const finishSplash = () => {
+      if (completedRef.current) return;
+
+      completedRef.current = true;
+
+      if (safetyTimerRef.current !== null) {
+        window.clearTimeout(safetyTimerRef.current);
+        safetyTimerRef.current = null;
+      }
+
+      setFrame({
+        progress: 100,
+        phase: (performance.now() - startTime) * 0.011,
+      });
+
+      // 1. الفائز يمد إيده ويمسك الأوكرَة.
+      setStage('grabbing');
+
+      // 2. فتح الباب.
+      scheduleTransition(() => setStage('opening'), 280);
+
+      // 3. الدخول للموقع.
+      scheduleTransition(() => setStage('entering'), 720);
+
+      // 4. إزالة الـ Splash بعد اكتمال الانتقال.
+      scheduleTransition(() => setVisible(false), 1250);
+    };
+
+    // صمام أمان لو المتصفح أوقف requestAnimationFrame أو اتأخر بشدة.
+    // ده حد أقصى للأنيميشن، مش انتظار لتحميل الإنترنت.
+    safetyTimerRef.current = window.setTimeout(finishSplash, 5200);
+
+    const step = (now: number) => {
+      if (completedRef.current) return;
+
+      const elapsed = Math.max(0, now - startTime);
+      const raw = Math.min(elapsed / RACE_DURATION, 1);
+
+      if (raw >= 1) {
+        finishSplash();
+        return;
+      }
+
+      // نقلل إعادة تصيير React من 60 تحديثًا تقريبًا إلى 40 كحد أقصى.
+      if (now - lastFrameAt >= FRAME_INTERVAL) {
+        lastFrameAt = now;
+        setFrame({
+          progress: raw * 100,
+          phase: elapsed * 0.011,
+        });
+      }
+
+      rafRef.current = window.requestAnimationFrame(step);
+    };
+
+    rafRef.current = window.requestAnimationFrame(step);
+
+    return () => {
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+
+      if (safetyTimerRef.current !== null) {
+        window.clearTimeout(safetyTimerRef.current);
+      }
+
+      transitionTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+
+      transitionTimersRef.current = [];
+    };
+  }, []);
+
+  if (!visible) return null;
+  const p = frame.progress / 100;
+  // حركة المتسابق الأول (الفائز): يمشي بخطوات ثابتة ويتسارع بسيط بعد نص الطريق
+  const winnerProgress = p < 0.5 ? p * 0.92 : 0.46 + ((p - 0.5) / 0.5) * 0.54;
+  const winnerLeft = 6 + winnerProgress * 71; // يوصل عند 77% قدام الأوكرَة
+  // حركة المتسابق الثاني (اللي بيتكعبل في نص السباق عند p = 0.46)
+  const tripPoint = 0.46;
+  const hasTripped = p >= tripPoint;
+  const tripElapsed = hasTripped ? Math.min((p - tripPoint) / 0.14, 1) : 0; // مدة السقوط
+  // قبل التكعبل بيكون سابق سنة صغيرة عشان الحماس، وبعدين يتكعبل ويثبت مكانه
+  const runner2Left = !hasTripped
+    ? 8 + (p / tripPoint) * 35
+    : 43 + tripElapsed * 5.5;
+  // زاوية ميل الجسم أثناء السقوط (من 0 لـ 86 درجة على الأرض)
+  const fallAngle = hasTripped ? Math.min(tripElapsed * 86, 86) : 0;
+  const fallDropY = hasTripped ? Math.min(tripElapsed * 18, 18) : 0;
+  // حسابات المفاصل الواقعية للمتسابق الأول (فخذ + ركبة + كوع + ارتداد الجسم)
+  const wStride = stage === 'racing' ? Math.sin(frame.phase) : 0;
+  const wOppStride = stage === 'racing' ? Math.sin(frame.phase + Math.PI) : 0;
+  const wBob = stage === 'racing' ? Math.abs(Math.cos(frame.phase)) * 2.4 : 0;
+  // الرجل اليمين (فخذ + ركبة تنثني للخلف عند الرفع)
+  const wHipR = wStride * 26;
+  const wKneeR = wStride < 0 ? Math.abs(wStride) * 42 : 6;
+  // الرجل الشمال
+  const wHipL = wOppStride * 26;
+  const wKneeL = wOppStride < 0 ? Math.abs(wOppStride) * 42 : 6;
+  // الذراعين
+  const wArmR = wOppStride * 24;
+  const wArmL = wStride * 24;
+  // حسابات المفاصل الواقعية للمتسابق الثاني (قبل السقوط)
+  const r2Phase = frame.phase * 1.06 + 0.8;
+  const r2Stride = !hasTripped ? Math.sin(r2Phase) : 0.7;
+  const r2OppStride = !hasTripped ? Math.sin(r2Phase + Math.PI) : -0.5;
+  const r2Bob = !hasTripped ? Math.abs(Math.cos(r2Phase)) * 2.6 : 0;
+  const r2HipR = !hasTripped ? r2Stride * 28 : 38;
+  const r2KneeR = !hasTripped
+    ? r2Stride < 0
+      ? Math.abs(r2Stride) * 44
+      : 6
+    : 55;
+  const r2HipL = !hasTripped ? r2OppStride * 28 : -20;
+  const r2KneeL = !hasTripped
+    ? r2OppStride < 0
+      ? Math.abs(r2OppStride) * 44
+      : 6
+    : 25;
+  const isGrabbingOrMore =
+    stage === 'grabbing' || stage === 'opening' || stage === 'entering';
+  const isDoorOpen = stage === 'opening' || stage === 'entering';
+  const isEntering = stage === 'entering';
+  return (
+    <div
+      role='status'
+      aria-live='polite'
+      aria-label='جاري تجهيز المتجر'
+      className={`splash-root fixed inset-0 z-[9999] bg-[#07090e] flex flex-col items-center justify-center overflow-hidden select-none transition-[opacity,transform] duration-500 ease-out ${
+        isEntering
+          ? 'opacity-0 scale-[1.15] pointer-events-none'
+          : 'opacity-100 scale-100'
+      }`}
+    >
+      {/* إضاءة الخلفية بتدرجات شعاعية خفيفة بدل طبقات Blur كبيرة. */}
+      <div
+        aria-hidden='true'
+        className='pointer-events-none absolute inset-0'
+        style={{
+          background:
+            'radial-gradient(circle at 8% 10%, rgba(225,29,72,0.16), transparent 30%), radial-gradient(circle at 92% 34%, rgba(37,99,235,0.17), transparent 32%), radial-gradient(circle at 34% 100%, rgba(147,51,234,0.13), transparent 34%), radial-gradient(circle at 78% 88%, rgba(16,185,129,0.10), transparent 25%)',
+        }}
+      />
+      {/* المحتوى الرئيسي */}
+      <div className='relative z-10 w-full max-w-md px-6 flex flex-col items-center'>
+        {/* مسرح السباق والباب */}
+        <div className='relative w-full h-36 mb-3'>
+          {/* هالة ضوء خلف الباب */}
+          <div
+            className={`absolute right-4 bottom-2.5 w-20 h-28 rounded-2xl blur-lg transition-[opacity,transform] duration-300 ${
+              isDoorOpen
+                ? 'bg-gradient-to-tr from-rose-500/65 via-emerald-400/65 to-blue-500/75 scale-[1.2] opacity-100'
+                : isGrabbingOrMore
+                  ? 'bg-gradient-to-tr from-emerald-400/45 via-purple-500/45 to-blue-500/45 opacity-95'
+                  : 'bg-gradient-to-tr from-rose-500/30 via-purple-500/30 to-blue-500/30 opacity-80'
+            }`}
+          />
+          {/* الباب المضيء مع الأوكرَة */}
+          <div
+            className='absolute right-5 bottom-2 w-16 rounded-t-2xl border-2 border-purple-400/50 bg-[#0b1120] shadow-[0_0_25px_rgba(139,92,246,0.35)] overflow-visible'
+            style={{ height: '104px', perspective: '550px' }}
+          >
+            {/* نور المتجر الداخلي عند فتح الباب */}
+            <div
+              className={`absolute inset-0 rounded-t-[14px] transition-opacity duration-300 ${
+                isDoorOpen ? 'opacity-100' : 'opacity-15'
+              }`}
+              style={{
+                background:
+                  'radial-gradient(circle at center, #ffffff 0%, #34d399 35%, #60a5fa 70%, #a855f7 100%)',
+              }}
+            />
+            {/* ضلفة الباب */}
+            <div
+              className='relative w-full h-full rounded-t-[13px] bg-gradient-to-b from-[#131c31] via-[#0e1626] to-[#090f19] border-r border-blue-400/40 origin-left transition-transform duration-[400ms] ease-out flex items-center'
+              style={{
+                transform: isDoorOpen ? 'rotateY(-76deg)' : 'rotateY(0deg)',
+              }}
+            >
+              <div className='absolute right-2.5 top-3 bottom-3 w-[2px] rounded-full bg-gradient-to-b from-rose-500 via-purple-400 to-emerald-400 opacity-80' />
+              {/* الأوكرَة */}
+              <div
+                className={`relative -left-1.5 flex items-center transition-transform duration-200 ${
+                  isGrabbingOrMore ? 'rotate-[-22deg] scale-110' : 'rotate-0'
+                }`}
+              >
+                <span className='w-2.5 h-4 rounded-sm bg-slate-700 border border-emerald-300/60 shadow-[0_0_10px_rgba(52,211,153,0.45)]' />
+                <span className='w-3.5 h-1.5 -ml-0.5 rounded-full bg-gradient-to-r from-emerald-300 via-sky-300 to-rose-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]' />
+              </div>
+            </div>
+          </div>
+          {/* عثرة صغيرة على الأرض في نص المسار يتكعبل فيها المتسابق الثاني */}
+          <div
+            className='absolute bottom-2 w-2.5 h-1.5 rounded-t-full bg-rose-400/70 shadow-[0_0_8px_rgba(251,113,133,0.7)]'
+            style={{ left: '43.5%' }}
+          />
+          {/* المتسابق الثاني (بالأحمر والبنفسجي — بيتكعبل ويقع في نص السباق) */}
+          <div
+            className='pointer-events-none absolute inset-x-0 bottom-1.5 h-[68px]'
+            style={{
+              transform: `translate3d(${runner2Left}%, ${fallDropY}px, 0)`,
+              willChange: 'transform',
+            }}
+          >
+            <div
+              className={`absolute bottom-0 transition-opacity duration-300 ${
+                isEntering ? 'opacity-0' : 'opacity-95'
+              }`}
+              style={{ left: '-28px' }}
+            >
+              <svg
+                width='56'
+                height='68'
+                viewBox='0 0 64 74'
+                fill='none'
+                xmlns='http://www.w3.org/2000/svg'
+                style={{
+                  transform: `rotate(${fallAngle}deg) translateY(${r2Bob}px)`,
+                  transformOrigin: '32px 58px',
+                }}
+              >
+                {/* علامة دوخة فوق الراس بعد ما يقع */}
+                {hasTripped && tripElapsed > 0.7 && (
+                  <g className='animate-pulse'>
+                    <circle cx='44' cy='6' r='1.6' fill='#fb7185' />
+                    <circle cx='51' cy='9' r='1.4' fill='#c084fc' />
+                    <path
+                      d='M42 11 Q47 7 52 11'
+                      stroke='#fbbf24'
+                      strokeWidth='1.4'
+                      strokeLinecap='round'
+                    />
+                  </g>
+                )}
+                {/* الرجل الخلفية (فخذ + ركبة + قدم) */}
+                <g transform={`translate(31, 41) rotate(${r2HipL})`}>
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='11'
+                    stroke='#9333ea'
+                    strokeWidth='4'
+                    strokeLinecap='round'
+                  />
+                  <g transform={`translate(0, 11) rotate(${r2KneeL})`}>
+                    <line
+                      x1='0'
+                      y1='0'
+                      x2='0'
+                      y2='11'
+                      stroke='#9333ea'
+                      strokeWidth='3.6'
+                      strokeLinecap='round'
+                    />
+                    <line
+                      x1='0'
+                      y1='11'
+                      x2='4'
+                      y2='11'
+                      stroke='#c084fc'
+                      strokeWidth='3.2'
+                      strokeLinecap='round'
+                    />
+                  </g>
+                </g>
+                {/* الذراع الخلفية */}
+                <g
+                  transform={`translate(33, 25) rotate(${
+                    !hasTripped ? -r2Stride * 24 : -55
+                  })`}
+                >
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='13'
+                    stroke='#e11d48'
+                    strokeWidth='3.4'
+                    strokeLinecap='round'
+                  />
+                </g>
+                {/* الجذع */}
+                <line
+                  x1='34'
+                  y1='22'
+                  x2='31'
+                  y2='41'
+                  stroke='#f43f5e'
+                  strokeWidth='5'
+                  strokeLinecap='round'
+                />
+                {/* الرأس */}
+                <circle cx='35.5' cy='14' r='6' fill='#fb7185' />
+                {/* الرجل الأمامية */}
+                <g transform={`translate(31, 41) rotate(${r2HipR})`}>
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='11'
+                    stroke='#fb7185'
+                    strokeWidth='4'
+                    strokeLinecap='round'
+                  />
+                  <g transform={`translate(0, 11) rotate(${r2KneeR})`}>
+                    <line
+                      x1='0'
+                      y1='0'
+                      x2='0'
+                      y2='11'
+                      stroke='#fb7185'
+                      strokeWidth='3.6'
+                      strokeLinecap='round'
+                    />
+                    <line
+                      x1='0'
+                      y1='11'
+                      x2='4'
+                      y2='11'
+                      stroke='#fda4af'
+                      strokeWidth='3.2'
+                      strokeLinecap='round'
+                    />
+                  </g>
+                </g>
+                {/* الذراع الأمامية (تتفرد لقدام وهو بيقع) */}
+                <g
+                  transform={`translate(33, 25) rotate(${
+                    !hasTripped ? -r2OppStride * 24 : -85
+                  })`}
+                >
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='14'
+                    stroke='#c084fc'
+                    strokeWidth='3.5'
+                    strokeLinecap='round'
+                  />
+                </g>
+              </svg>
+            </div>
+          </div>
+          {/* المتسابق الأول (الفائز — بالأزرق والأخضر الزمردي ويمسك الأوكرَة) */}
+          <div
+            className='pointer-events-none absolute inset-x-0 bottom-1.5 h-[68px]'
+            style={{
+              transform: `translate3d(${winnerLeft}%, 0, 0)`,
+              willChange: 'transform',
+            }}
+          >
+            <div
+              className={`absolute bottom-0 transition-opacity duration-300 ${
+                isEntering ? 'opacity-0' : 'opacity-100'
+              }`}
+              style={{ left: '-29px' }}
+            >
+              <svg
+                width='58'
+                height='68'
+                viewBox='0 0 64 74'
+                fill='none'
+                xmlns='http://www.w3.org/2000/svg'
+                className='drop-shadow-[0_0_10px_rgba(56,189,248,0.4)]'
+                style={{
+                  transform: `translateY(${wBob}px)`,
+                }}
+              >
+                <defs>
+                  <linearGradient id='winnerGrad' x1='0' y1='0' x2='64' y2='74'>
+                    <stop offset='0%' stopColor='#38bdf8' />
+                    <stop offset='55%' stopColor='#818cf8' />
+                    <stop offset='100%' stopColor='#34d399' />
+                  </linearGradient>
+                </defs>
+                {/* الرجل الخلفية بمفاصل طبيعية */}
+                <g transform={`translate(31, 41) rotate(${wHipL})`}>
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='11'
+                    stroke='#0284c7'
+                    strokeWidth='4.2'
+                    strokeLinecap='round'
+                  />
+                  <g transform={`translate(0, 11) rotate(${wKneeL})`}>
+                    <line
+                      x1='0'
+                      y1='0'
+                      x2='0'
+                      y2='11'
+                      stroke='#0284c7'
+                      strokeWidth='3.8'
+                      strokeLinecap='round'
+                    />
+                    <line
+                      x1='0'
+                      y1='11'
+                      x2='4.5'
+                      y2='11'
+                      stroke='#38bdf8'
+                      strokeWidth='3.4'
+                      strokeLinecap='round'
+                    />
+                  </g>
+                </g>
+                {/* الذراع الخلفية */}
+                <g transform={`translate(33, 25) rotate(${wArmL})`}>
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='13'
+                    stroke='#0ea5e9'
+                    strokeWidth='3.6'
+                    strokeLinecap='round'
+                  />
+                </g>
+                {/* الجذع */}
+                <line
+                  x1='34'
+                  y1='22'
+                  x2='31'
+                  y2='41'
+                  stroke='url(#winnerGrad)'
+                  strokeWidth='5.2'
+                  strokeLinecap='round'
+                />
+                {/* الرأس */}
+                <circle cx='36' cy='14' r='6.2' fill='url(#winnerGrad)' />
+                {/* الرجل الأمامية بمفاصل طبيعية */}
+                <g transform={`translate(31, 41) rotate(${wHipR})`}>
+                  <line
+                    x1='0'
+                    y1='0'
+                    x2='0'
+                    y2='11'
+                    stroke='#34d399'
+                    strokeWidth='4.2'
+                    strokeLinecap='round'
+                  />
+                  <g transform={`translate(0, 11) rotate(${wKneeR})`}>
+                    <line
+                      x1='0'
+                      y1='0'
+                      x2='0'
+                      y2='11'
+                      stroke='#34d399'
+                      strokeWidth='3.8'
+                      strokeLinecap='round'
+                    />
+                    <line
+                      x1='0'
+                      y1='11'
+                      x2='4.5'
+                      y2='11'
+                      stroke='#6ee7b7'
+                      strokeWidth='3.4'
+                      strokeLinecap='round'
+                    />
+                  </g>
+                </g>
+                {/* الذراع الأمامية: تتحرك طبيعي أثناء المشي وتمتد لمسك الأوكرَة في النهاية */}
+                {isGrabbingOrMore ? (
+                  <path
+                    d='M34 25 L45 28 L54 28'
+                    stroke='#34d399'
+                    strokeWidth='4'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                  />
+                ) : (
+                  <g transform={`translate(34, 25) rotate(${wArmR})`}>
+                    <line
+                      x1='0'
+                      y1='0'
+                      x2='0'
+                      y2='8'
+                      stroke='#38bdf8'
+                      strokeWidth='3.8'
+                      strokeLinecap='round'
+                    />
+                    <line
+                      x1='0'
+                      y1='8'
+                      x2='3'
+                      y2='14'
+                      stroke='#34d399'
+                      strokeWidth='3.6'
+                      strokeLinecap='round'
+                    />
+                  </g>
+                )}
+              </svg>
+            </div>
+          </div>
+        </div>
+        {/* شريط التحميل المتزامن تحت حركة السباق */}
+        <div className='relative mb-7 w-full'>
+          <div className='relative h-2 w-full overflow-hidden rounded-full border border-slate-800/90 bg-[#0e1626] p-[1px]'>
+            <div
+              className='relative h-full overflow-hidden rounded-full transition-[width] duration-75 ease-linear'
+              style={{
+                width: `${frame.progress}%`,
+                background:
+                  'linear-gradient(90deg, #f43f5e 0%, #c084fc 35%, #38bdf8 70%, #10b981 100%)',
+                boxShadow: '0 0 12px rgba(56, 189, 248, 0.28)',
+              }}
+            >
+              <div className='splash-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent' />
+            </div>
+          </div>
+        </div>
+        {/* اسم المتجر والجملة الوصفية */}
+        <div className='relative text-center'>
+          <h1
+            className='text-4xl sm:text-5xl font-black tracking-wide bg-clip-text text-transparent'
+            style={{
+              backgroundImage:
+                'linear-gradient(90deg, #ff6b7a 0%, #e598d8 35%, #a78bfa 68%, #60a5fa 100%)',
+              filter:
+                'drop-shadow(0 0 18px rgba(244, 63, 94, 0.35)) drop-shadow(0 0 24px rgba(59, 130, 246, 0.35))',
+            }}
+          >
+            Abdo Store
+          </h1>
+          <p
+            dir='rtl'
+            className='mt-3 text-sm sm:text-base font-bold text-slate-200/95 flex items-center justify-center gap-2 tracking-normal'
+          >
+            <Compass className='w-4 h-4 text-emerald-400 shrink-0' />
+            <span>راحتك في الاختيار تبدأ من هنا</span>
+          </p>
+        </div>
+      </div>
+      <style jsx>{`
+        .splash-shimmer {
+          animation: gentleShimmer 1.2s linear infinite;
+        }
+
+        @keyframes gentleShimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .splash-root,
+          .splash-root * {
+            transition-duration: 0.01ms !important;
+            animation-duration: 0.01ms !important;
+          }
+
+          .splash-shimmer {
+            animation: none !important;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

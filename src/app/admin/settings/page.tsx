@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +12,7 @@ import {
   Megaphone,
   Save,
   Sparkles,
+  Zap,
   Star,
   MessageSquare,
   Search,
@@ -32,9 +33,11 @@ import {
   Calendar,
   MapPin,
   ShoppingBag,
+  ChevronRight,
   UserCheck,
   Store,
   ArrowUpDown,
+  ChevronLeft,
 } from 'lucide-react';
 
 type ProductOption = {
@@ -169,6 +172,7 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [announcement, setAnnouncement] =
     useState<AnnouncementConfig>(DEFAULT_ANNOUNCEMENT);
+
   const [feedback, setFeedback] = useState<{
     type: 'success' | 'error';
     text: string;
@@ -371,7 +375,7 @@ export default function AdminSettingsPage() {
           <div className='relative flex flex-col justify-between gap-4 lg:flex-row lg:items-center'>
             <div>
               <div className='mb-2 inline-flex items-center gap-1.5 rounded-full border border-blue-400/40 bg-blue-500/15 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-200'>
-                <Sparkles size={12} className='text-blue-300' /> Control Center
+                <Zap size={12} className='text-blue-300' /> Control Center
               </div>
               <h2 className='text-xl font-black tracking-tight text-white sm:text-2xl'>
                 Manage Promotions, Loyalty Rules & Storefront
@@ -831,8 +835,14 @@ function AdminPromoRulesManager() {
       case 'min_items_count':
         return { min_items: Math.max(1, Number(state.min_items) || 1) };
       case 'custom_manual':
-        return { note: state.manual_condition_note.trim() };
+        return {
+          note: state.manual_condition_note.trim(),
+          min_items:
+            Number(state.min_items) > 0 ? Number(state.min_items) : undefined,
+        };
     }
+
+
   };
 
   const handleSaveRule = async (e: FormEvent<HTMLFormElement>) => {
@@ -989,8 +999,11 @@ function AdminPromoRulesManager() {
       }
       case 'min_items_count':
         return `عدد قطع ≥ ${cfg.min_items ?? 3}`;
-      case 'custom_manual':
-        return rule.custom_condition_label || String(cfg.note || 'شرط مخصص');
+      case 'custom_manual': {
+        const base =
+          rule.custom_condition_label || String(cfg.note || 'شرط حر / مخصص');
+        return cfg.min_items ? `${base} (≥ ${cfg.min_items} قطع)` : base;
+      }
     }
   };
 
@@ -1064,7 +1077,7 @@ function AdminPromoRulesManager() {
           >
             <div className='flex items-center justify-between border-b border-slate-600/70 pb-3'>
               <h3 className='text-xs sm:text-sm font-black text-white flex items-center gap-2'>
-                <Sparkles size={15} className='text-amber-300' />
+                <Zap size={15} className='text-amber-300' />
                 {editingRuleId ? 'تعديل القاعدة الحالية' : 'إنشاء قاعدة عرض / ولاء جديدة'}
               </h3>
               <button
@@ -1899,6 +1912,24 @@ function AdminReviewsManager() {
     });
   }, [reviews, filter, search, productNames]);
 
+
+const reviewsSliderRef = useRef<HTMLDivElement | null>(null);
+
+const scrollReviewsSlider = (direction: 'start' | 'prev' | 'next' | 'end') => {
+  const el = reviewsSliderRef.current;
+  if (!el) return;
+
+  if (direction === 'start') {
+    el.scrollTo({ top: 0, behavior: 'smooth' });
+  } else if (direction === 'end') {
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  } else if (direction === 'prev') {
+    el.scrollBy({ top: -260, behavior: 'smooth' });
+  } else {
+    el.scrollBy({ top: 260, behavior: 'smooth' });
+  }
+};
+
   const totalCount = reviews.length;
   const hiddenCount = reviews.filter((review) => review.is_hidden).length;
 
@@ -2169,205 +2200,232 @@ function AdminReviewsManager() {
         </div>
 
         {/* Reviews List */}
-        <div className='space-y-3 max-h-[500px] overflow-y-auto pr-1'>
+        {/* Reviews Vertical Scroll List */}
+        {/* Reviews Compact Vertical Scroll List */}
+        <div className='space-y-2.5 px-3 sm:px-6'>
+          <div className='flex items-center justify-between gap-2 px-1'>
+            <span className='text-[11px] font-bold text-slate-300'>
+              Reviews List{' '}
+              <span className='px-2 py-0.5 rounded-full bg-slate-800 text-blue-300 font-mono text-[10px]'>
+                {visibleReviews.length}
+              </span>
+            </span>
+            {visibleReviews.length > 3 && (
+              <span className='text-[10px] text-slate-400'>
+                Scroll / Touch inside list
+              </span>
+            )}
+          </div>
+
           {loading ? (
-            <div className='py-8 text-center text-xs text-slate-300'>
+            <div className='py-6 text-center text-xs text-slate-300'>
               Loading reviews...
             </div>
           ) : visibleReviews.length === 0 ? (
-            <div className='py-8 text-center text-xs text-slate-300'>
+            <div className='py-6 text-center text-xs text-slate-300'>
               No reviews found.
             </div>
           ) : (
-            visibleReviews.map((review) => {
-              const isEditing = editingId === review.id;
-              const productName =
-                productNames.get(String(review.product_id)) || 'Product';
+            <div
+              className={`flex flex-col gap-2.5 pr-1.5 scroll-smooth touch-pan-y overscroll-contain ${
+                visibleReviews.length > 3
+                  ? 'max-h-[260px] overflow-y-scroll rounded-xl border border-slate-700/70 bg-[#1c2534]/65 p-3 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-slate-900/80 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-blue-500/50 hover:[&::-webkit-scrollbar-thumb]:bg-blue-400/70'
+                  : ''
+              }`}
+            >
+              {visibleReviews.map((review) => {
+                const isEditing = editingId === review.id;
+                const productName =
+                  productNames.get(String(review.product_id)) || 'Product';
 
-              return (
-                <div
-                  key={review.id}
-                  className='rounded-xl border border-slate-600/70 bg-[#273245] p-3.5 space-y-2.5 transition hover:border-slate-500'
-                >
-                  {isEditing ? (
-                    <form onSubmit={handleUpdateReview} className='space-y-3'>
-                      <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                return (
+                  <div
+                    key={review.id}
+                    className='rounded-xl border border-slate-600/70 bg-[#273245] p-2.5 sm:p-3 space-y-2 transition hover:border-slate-500 shrink-0'
+                  >
+                    {isEditing ? (
+                      <form
+                        onSubmit={handleUpdateReview}
+                        className='space-y-2.5'
+                      >
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                          <div>
+                            <label className={labelClass}>Reviewer Name</label>
+                            <input
+                              type='text'
+                              value={editForm.reviewer_name}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  reviewer_name: e.target.value,
+                                })
+                              }
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Rating (1-5)</label>
+                            <input
+                              type='number'
+                              min='1'
+                              max='5'
+                              value={editForm.rating}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  rating: Number(e.target.value),
+                                })
+                              }
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
                         <div>
-                          <label className={labelClass}>Reviewer Name</label>
+                          <label className={labelClass}>Comment</label>
+                          <textarea
+                            rows={2}
+                            value={editForm.comment}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                comment: e.target.value,
+                              })
+                            }
+                            className={`${inputClass} resize-none`}
+                          />
+                        </div>
+                        <div>
+                          <label className={labelClass}>Admin Reply</label>
                           <input
                             type='text'
-                            value={editForm.reviewer_name}
+                            value={editForm.admin_reply}
                             onChange={(e) =>
                               setEditForm({
                                 ...editForm,
-                                reviewer_name: e.target.value,
+                                admin_reply: e.target.value,
                               })
                             }
                             className={inputClass}
+                            placeholder='Add store reply...'
                           />
                         </div>
-                        <div>
-                          <label className={labelClass}>Rating (1-5)</label>
-                          <input
-                            type='number'
-                            min='1'
-                            max='5'
-                            value={editForm.rating}
-                            onChange={(e) =>
-                              setEditForm({
-                                ...editForm,
-                                rating: Number(e.target.value),
-                              })
-                            }
-                            className={inputClass}
-                          />
+                        <div className='flex justify-end gap-2 pt-1'>
+                          <button
+                            type='button'
+                            onClick={cancelEditing}
+                            className='px-2.5 py-1 rounded-lg border border-slate-600 bg-slate-700/60 text-[11px] font-bold text-slate-200 hover:text-white cursor-pointer'
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type='submit'
+                            disabled={saving}
+                            className='px-2.5 py-1 rounded-lg bg-blue-600 text-[11px] font-bold text-white hover:bg-blue-500 cursor-pointer'
+                          >
+                            Save
+                          </button>
                         </div>
-                      </div>
-                      <div>
-                        <label className={labelClass}>Comment</label>
-                        <textarea
-                          rows={2}
-                          value={editForm.comment}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              comment: e.target.value,
-                            })
-                          }
-                          className={`${inputClass} resize-none`}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Admin Reply</label>
-                        <input
-                          type='text'
-                          value={editForm.admin_reply}
-                          onChange={(e) =>
-                            setEditForm({
-                              ...editForm,
-                              admin_reply: e.target.value,
-                            })
-                          }
-                          className={inputClass}
-                          placeholder='Add store reply...'
-                        />
-                      </div>
-                      <div className='flex justify-end gap-2 pt-1'>
-                        <button
-                          type='button'
-                          onClick={cancelEditing}
-                          className='px-3 py-1.5 rounded-lg border border-slate-600 bg-slate-700/60 text-xs font-bold text-slate-200 hover:text-white cursor-pointer'
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type='submit'
-                          disabled={saving}
-                          className='px-3 py-1.5 rounded-lg bg-blue-600 text-xs font-bold text-white hover:bg-blue-500 cursor-pointer'
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <div className='flex items-start justify-between gap-2'>
-                        <div>
-                          <div className='flex flex-wrap items-center gap-2'>
-                            <span className='text-xs font-bold text-white'>
-                              {review.reviewer_name}
-                            </span>
-                            <span className='text-[10px] rounded-md border border-slate-500/60 bg-[#1e2736] px-2 py-0.5 text-slate-200'>
-                              {productName}
-                            </span>
+                      </form>
+                    ) : (
+                      <>
+                        <div className='flex items-start justify-between gap-2'>
+                          <div className='min-w-0'>
+                            <div className='flex flex-wrap items-center gap-1.5'>
+                              <span className='text-[11px] font-bold text-white truncate'>
+                                {review.reviewer_name}
+                              </span>
+                              <span className='text-[10px] rounded-md border border-slate-500/60 bg-[#1e2736] px-1.5 py-0.5 text-slate-200'>
+                                {productName}
+                              </span>
+                            </div>
+                            <div className='flex items-center gap-0.5 mt-1 text-amber-400'>
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={10}
+                                  className={
+                                    i < review.rating
+                                      ? 'fill-amber-400'
+                                      : 'text-slate-600'
+                                  }
+                                />
+                              ))}
+                            </div>
                           </div>
-                          <div className='flex items-center gap-1 mt-1 text-amber-400'>
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star
-                                key={i}
-                                size={11}
+
+                          <div className='flex items-center gap-1 shrink-0'>
+                            <button
+                              type='button'
+                              onClick={() => toggleLike(review)}
+                              className={`p-1 rounded-lg border transition cursor-pointer ${
+                                review.admin_liked
+                                  ? 'border-red-400/50 bg-red-500/20 text-red-300'
+                                  : 'border-slate-600 bg-[#1e2736] text-slate-300 hover:text-white'
+                              }`}
+                              title='Like review'
+                            >
+                              <Heart
+                                size={12}
                                 className={
-                                  i < review.rating
-                                    ? 'fill-amber-400'
-                                    : 'text-slate-600'
+                                  review.admin_liked ? 'fill-red-400' : ''
                                 }
                               />
-                            ))}
+                            </button>
+                            <button
+                              type='button'
+                              onClick={() => toggleVisibility(review)}
+                              className={`p-1 rounded-lg border transition cursor-pointer ${
+                                review.is_hidden
+                                  ? 'border-amber-400/50 bg-amber-500/20 text-amber-200'
+                                  : 'border-slate-600 bg-[#1e2736] text-slate-300 hover:text-white'
+                              }`}
+                              title={
+                                review.is_hidden ? 'Show review' : 'Hide review'
+                              }
+                            >
+                              {review.is_hidden ? (
+                                <EyeOff size={12} />
+                              ) : (
+                                <Eye size={12} />
+                              )}
+                            </button>
+                            <button
+                              type='button'
+                              onClick={() => startEditing(review)}
+                              className='p-1 rounded-lg border border-slate-600 bg-[#1e2736] text-slate-300 hover:text-white transition cursor-pointer'
+                              title='Edit'
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            <button
+                              type='button'
+                              onClick={() => handleDeleteReview(review)}
+                              className='p-1 rounded-lg border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 transition cursor-pointer'
+                              title='Delete'
+                            >
+                              <Trash2 size={12} />
+                            </button>
                           </div>
                         </div>
 
-                        <div className='flex items-center gap-1'>
-                          <button
-                            type='button'
-                            onClick={() => toggleLike(review)}
-                            className={`p-1.5 rounded-lg border transition cursor-pointer ${
-                              review.admin_liked
-                                ? 'border-red-400/50 bg-red-500/20 text-red-300'
-                                : 'border-slate-600 bg-[#1e2736] text-slate-300 hover:text-white'
-                            }`}
-                            title='Like review'
-                          >
-                            <Heart
-                              size={13}
-                              className={
-                                review.admin_liked ? 'fill-red-400' : ''
-                              }
-                            />
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => toggleVisibility(review)}
-                            className={`p-1.5 rounded-lg border transition cursor-pointer ${
-                              review.is_hidden
-                                ? 'border-amber-400/50 bg-amber-500/20 text-amber-200'
-                                : 'border-slate-600 bg-[#1e2736] text-slate-300 hover:text-white'
-                            }`}
-                            title={
-                              review.is_hidden ? 'Show review' : 'Hide review'
-                            }
-                          >
-                            {review.is_hidden ? (
-                              <EyeOff size={13} />
-                            ) : (
-                              <Eye size={13} />
-                            )}
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => startEditing(review)}
-                            className='p-1.5 rounded-lg border border-slate-600 bg-[#1e2736] text-slate-300 hover:text-white transition cursor-pointer'
-                            title='Edit'
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => handleDeleteReview(review)}
-                            className='p-1.5 rounded-lg border border-red-400/40 bg-red-500/15 text-red-300 hover:bg-red-500/25 transition cursor-pointer'
-                            title='Delete'
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </div>
+                        <p className='text-[11px] text-slate-200 leading-relaxed'>
+                          {review.comment}
+                        </p>
 
-                      <p className='text-xs text-slate-200 leading-relaxed'>
-                        {review.comment}
-                      </p>
-
-                      {review.admin_reply && (
-                        <div className='mt-2 rounded-lg border border-blue-400/40 bg-blue-500/15 p-2.5 text-xs text-slate-100'>
-                          <span className='font-bold text-blue-300 mr-1'>
-                            Store Reply:
-                          </span>
-                          {review.admin_reply}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })
+                        {review.admin_reply && (
+                          <div className='mt-1.5 rounded-lg border border-blue-400/40 bg-blue-500/15 p-2 text-[11px] text-slate-100'>
+                            <span className='font-bold text-blue-300 mr-1'>
+                              Store Reply:
+                            </span>
+                            {review.admin_reply}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

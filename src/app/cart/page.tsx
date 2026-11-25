@@ -29,6 +29,53 @@ export default function CartPage() {
   const [city, setCity] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.pathname.startsWith('/products/')
+    ) {
+      localStorage.setItem('lastProductUrl', window.location.pathname);
+    }
+  }, []);
+  // ===============================
+  // ===============================
+  // ===============================
+  const [continueHref, setContinueHref] = useState('/');
+  const [hasPreviousProduct, setHasPreviousProduct] = useState(false);
+
+  useEffect(() => {
+    const items = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCartItems(items);
+
+    const savedUrl = localStorage.getItem('lastProductUrl');
+    if (savedUrl && savedUrl.startsWith('/products/')) {
+      setContinueHref(savedUrl);
+      setHasPreviousProduct(true);
+      return;
+    }
+
+    const lastItem = items[items.length - 1];
+    const validSlug = lastItem?.slug || lastItem?.product_slug;
+    if (validSlug) {
+      setContinueHref(`/products/${validSlug}`);
+      setHasPreviousProduct(true);
+    }
+  }, []);
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+  // ===============================
+
   useEffect(() => {
     const items = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartItems(items);
@@ -102,15 +149,21 @@ export default function CartPage() {
       {/* Custom Neon Scrollbar Styles */}
       <style jsx global>{`
         ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 4px;
+          height: 4px;
+        }
+        @media (min-width: 640px) {
+          ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
         }
         ::-webkit-scrollbar-track {
           background: #07090e;
         }
         ::-webkit-scrollbar-thumb {
           background: linear-gradient(180deg, #ef4444, #3b82f6);
-          border-radius: 4px;
+          border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(180deg, #dc2626, #2563eb);
@@ -143,14 +196,16 @@ export default function CartPage() {
           </Link>
 
           <Link
-            href='/'
-            title='Continue Shopping'
-            aria-label='Continue Shopping'
+            href={continueHref}
+            title={hasPreviousProduct ? 'Back to Product' : 'Back to Store'}
+            aria-label={
+              hasPreviousProduct ? 'Back to Product' : 'Back to Store'
+            }
             className='inline-flex items-center justify-center gap-0 sm:gap-2 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 p-2 sm:px-4 sm:py-2 rounded-xl text-xs font-bold transition border border-slate-700/60 shadow-sm cursor-pointer shrink-0'
           >
             <ArrowLeft size={14} className='text-slate-400 shrink-0' />
             <span className='hidden sm:inline bg-gradient-to-r from-red-400 to-blue-400 bg-clip-text text-transparent tracking-wide'>
-              Continue Shopping
+              {hasPreviousProduct ? 'Back to Product' : 'Back to Store'}
             </span>
           </Link>
         </div>
@@ -207,8 +262,6 @@ export default function CartPage() {
           /* Active Cart & Checkout Grid */
           <div className='grid grid-cols-1 lg:grid-cols-12 gap-8'>
             {/* Left: Shopping Cart Items List (Cols 7) */}
-
-            {/* Left: Shopping Cart Items List (Cols 7) */}
             <div className='lg:col-span-7 space-y-4'>
               <div className='flex items-center justify-between border-b border-slate-800/80 pb-4'>
                 <h2 className='text-base sm:text-lg font-black text-white flex items-center gap-2.5'>
@@ -226,8 +279,8 @@ export default function CartPage() {
                 </button>
               </div>
 
-              {/* 🟢 صندوق المنتجات مع سكرول داخلي وتصميم أنيق */}
-              <div className='max-h-[390px] overflow-y-auto pr-2 space-y-4 custom-scrollbar'>
+              {/* صندوق المنتجات مع سكرول داخلي وتصميم أنيق */}
+              <div className='max-h-[260px] sm:max-h-[390px] overflow-y-auto pr-1.5 sm:pr-2 space-y-3 sm:space-y-4 custom-scrollbar'>
                 {cartItems.map((item) => {
                   const itemImg =
                     item.image || item.images?.[0] || item.image_url;
@@ -240,22 +293,24 @@ export default function CartPage() {
                     item.short_description ||
                     'High quality premium product';
                   const qty = item.quantity || 1;
-
+                  // console.log('CART ITEM DEBUG:', item);
                   return (
                     <div
                       key={item.id}
                       className='group relative bg-gradient-to-r from-[#141d2f]/90 via-[#0e1626] to-[#141d2f]/90 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-slate-800/90 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all duration-300 hover:border-slate-700/80'
                     >
                       <div className='flex items-start sm:items-center gap-4 min-w-0 flex-1'>
-                        {/* صورة المنتج مع استيكر Hot Deal */}
+                        {/* صورة المنتج مع استيكر Hot Deal و Lazy Loading */}
                         <div className='relative w-20 h-20 bg-slate-900 rounded-2xl overflow-hidden flex-shrink-0 border border-slate-700/60 shadow-md'>
                           {itemImg ? (
                             <Image
                               src={itemImg}
                               alt={item.name || 'Store Item'}
-                              width={600}
-                              height={600}
-                              className='w-full h-full object-cover group-hover:scale-105 transition duration-300'
+                              width={200}
+                              height={200}
+                              loading='lazy'
+                              sizes='80px'
+                              className='w-20 h-20 object-cover group-hover:scale-105 transition duration-300'
                             />
                           ) : (
                             <div className='flex items-center justify-center h-full text-[10px] text-slate-500'>
@@ -344,26 +399,37 @@ export default function CartPage() {
                   </div>
                   <span>Order Summary & Checkout</span>
                 </h2>
-                <p className='text-xs text-slate-400 mt-1'>
-                  Complete your order securely with Cash on Delivery
+                <p className='text-xs text-slate-300 mt-1 leading-relaxed'>
+                  أتمم طلبك بأمان وراحة مع الدفع عند الاستلام.
                 </p>
               </div>
 
               {/* صندوق الانتقال لصفحة الـ Checkout الكاملة */}
               <Link
                 href='/checkout'
-                className='block bg-[#141d2f]/90 hover:bg-[#1a263f] border border-slate-700/80 hover:border-blue-500/50 p-4 rounded-2xl shadow-lg transition duration-300 cursor-pointer space-y-2 group relative z-10'
+                dir='ltr'
+                className='block bg-[#141d2f]/90 hover:bg-[#1a263f] border border-slate-700/80 hover:border-blue-500/60 p-3.5 sm:p-4 rounded-2xl shadow-lg hover:shadow-blue-950/30 transition-all duration-300 cursor-pointer space-y-2 group relative z-10 hover:-translate-y-0.5'
               >
-                <div className='flex items-center justify-between'>
-                  <span className='text-xs font-bold text-slate-200 group-hover:text-white transition leading-relaxed'>
-                    Want to save your details & track orders?
+                <div className='flex items-center justify-between gap-2.5'>
+                  <span className='bg-gradient-to-r from-red-600 to-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-lg shrink-0 shadow-md shadow-blue-950/50 group-active:scale-95 transition-transform duration-200 inline-flex items-center gap-1'>
+                    <span>Sign In</span>
+                    <span className='inline-block animate-pulse group-hover:translate-x-1 transition-transform duration-300'>
+                      &rarr;
+                    </span>
                   </span>
-                  <span className='bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-lg shrink-0 ml-2'>
-                    Sign In &rarr;
+                  <span
+                    dir='rtl'
+                    className='text-xs font-bold text-white transition-colors leading-relaxed text-right'
+                  >
+                    حابب تحفظ بياناتك وتتابع طلباتك بسهولة؟
                   </span>
                 </div>
-                <p className='text-[11px] text-slate-400'>
-                  Click here to go to checkout and sign up with Google or Email.
+                <p
+                  dir='rtl'
+                  className='text-[11px] text-slate-200 group-hover:text-white transition-colors leading-relaxed text-right'
+                >
+                  اضغط هنا للانتقال لإتمام الطلب وإنشاء حساب عبر Google أو
+                  البريد الإلكتروني.
                 </p>
               </Link>
 
@@ -380,8 +446,8 @@ export default function CartPage() {
                   <span className='text-[10px] sm:text-xs text-slate-400 font-medium shrink-0'>
                     Shipping Fee:
                   </span>
-                  <span className='text-[8px] sm:text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1 py-[1px] sm:px-2 sm:py-0.5 rounded-[4px] sm:rounded-lg leading-none whitespace-nowrap'>
-                    Calculated on Delivery
+                  <span className='text-[8px] sm:text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-[2px] sm:px-2 sm:py-0.5 rounded-[4px] sm:rounded-lg leading-none whitespace-nowrap'>
+                    يُحسب عند الاستلام
                   </span>
                 </div>
 
@@ -402,9 +468,9 @@ export default function CartPage() {
                 <ArrowRight className='w-4 h-4 group-hover:translate-x-1 transition-transform' />
               </Link>
 
-              <div className='flex items-center justify-center gap-2 text-[11px] text-slate-400 font-medium pt-1 relative z-10'>
-                <ShieldCheck className='w-4 h-4 text-emerald-400' />
-                <span>Secure Cash on Delivery & Fast Dispatch</span>
+              <div className='flex items-center justify-center gap-2 text-[11px] text-slate-300 font-medium pt-1 relative z-10'>
+                <ShieldCheck className='w-4 h-4 text-emerald-400 shrink-0' />
+                <span>دفع آمن عند الاستلام وشحن سريع</span>
               </div>
             </div>
           </div>

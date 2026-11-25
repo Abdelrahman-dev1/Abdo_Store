@@ -167,12 +167,20 @@ export default function FlashDealsSlider({
               >
                 {/* Product Image & Badges */}
                 <div className='relative aspect-square bg-slate-900 border-b border-slate-800 overflow-hidden'>
-                  <img
-                    src={displayImage || 'https://via.placeholder.com/300'}
-                    alt={item.name}
+                  <Image
+                    src={resolvedSrc}
+                    alt={item.name || 'Product Image'}
+                    width={400}
+                    height={400}
+                    loading='lazy'
+                    sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
+                    unoptimized={
+                      typeof resolvedSrc === 'string' &&
+                      (resolvedSrc.startsWith('blob:') ||
+                        resolvedSrc.startsWith('data:'))
+                    }
                     className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
                   />
-
                   {/* Wishlist Heart Button */}
                   <button
                     onClick={() => toggleWishlist(item)}
@@ -188,12 +196,10 @@ export default function FlashDealsSlider({
                       className={isWish ? 'fill-rose-500' : ''}
                     />
                   </button>
-
                   {/* Limited Time Offer Badge */}
                   <span className='absolute top-3 right-3 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-black px-2.5 py-1.5 rounded-lg shadow-md uppercase tracking-wider'>
                     عرض لفترة محدودة جداً
                   </span>
-
                   {/* Discount percentage tag if available */}
                   {item.discountPercentage && (
                     <span className='absolute bottom-3 left-3 bg-amber-500/90 text-black font-black text-[10px] px-2 py-0.5 rounded-md backdrop-blur-sm'>

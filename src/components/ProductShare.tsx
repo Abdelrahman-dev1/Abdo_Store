@@ -91,8 +91,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             <Image
               src={product.image}
               alt={product.name || 'Product Image'}
-              width={800}
-              height={800}
+              width={400}
+              height={400}
+              loading='lazy'
+              sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
               className='w-full h-full object-cover'
             />
           </div>

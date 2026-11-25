@@ -189,9 +189,6 @@ export default function HeroSection({
       <div className='absolute top-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[120px] pointer-events-none' />
       <div className='absolute bottom-10 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none' />
 
-
-
-
       <div className='max-w-6xl mx-auto space-y-8 relative z-10'>
         {/* 1. Rotating Animated Dynamic Tagline */}
         <div className='flex justify-center'>
@@ -231,9 +228,17 @@ export default function HeroSection({
                   className='absolute inset-0'
                 >
                   {/* Background Image with Ambient Gradient Overlay */}
-                  <img
-                    src={currentSlide.imageUrl}
-                    alt={currentSlide.title}
+                  <Image
+                    src={currentSlide.imageUrl || '/placeholder.png'}
+                    alt={currentSlide.title || 'Slide'}
+                    width={1400}
+                    height={700}
+                    sizes='100vw'
+                    unoptimized={
+                      typeof currentSlide.imageUrl === 'string' &&
+                      (currentSlide.imageUrl.startsWith('blob:') ||
+                        currentSlide.imageUrl.startsWith('data:'))
+                    }
                     className='w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700'
                   />
                   <div className='absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/60 to-black/30' />
@@ -550,9 +555,18 @@ export default function HeroSection({
                       className='flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs'
                     >
                       <div className='flex items-center gap-3 overflow-hidden'>
-                        <img
-                          src={s.imageUrl}
-                          alt={s.title}
+                        <Image
+                          src={s.imageUrl || '/placeholder.png'}
+                          alt={s.title || 'Slide Thumbnail'}
+                          width={80}
+                          height={80}
+                          loading='lazy'
+                          sizes='40px'
+                          unoptimized={
+                            typeof s.imageUrl === 'string' &&
+                            (s.imageUrl.startsWith('blob:') ||
+                              s.imageUrl.startsWith('data:'))
+                          }
                           className='w-10 h-10 rounded-lg object-cover shrink-0'
                         />
                         <div className='truncate'>

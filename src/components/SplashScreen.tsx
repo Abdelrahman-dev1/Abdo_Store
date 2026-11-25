@@ -1,21 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Sparkles } from 'lucide-react';
+import { ShoppingBag, Compass } from 'lucide-react';
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
-    // يبدأ يختفي بنعومة بعد ثانيتين
-    const fadeTimer = setTimeout(() => setFadeOut(true), 2000);
-    // يتشال تماماً من الشاشة بعد 2.6 ثانية
-    const hideTimer = setTimeout(() => setVisible(false), 2600);
+    const openTimer = window.setTimeout(() => setGateOpen(true), 1200);
+    const leaveTimer = window.setTimeout(() => setLeaving(true), 1500);
+    const hideTimer = window.setTimeout(() => setVisible(false), 1850);
+
+    // أمان إضافي لضمان عدم بقاء الشاشة في أي ظرف
+    const safetyTimer = window.setTimeout(() => setVisible(false), 3200);
 
     return () => {
-      clearTimeout(fadeTimer);
+      clearTimeout(openTimer);
+      clearTimeout(leaveTimer);
       clearTimeout(hideTimer);
+      clearTimeout(safetyTimer);
     };
   }, []);
 
@@ -23,43 +28,103 @@ export default function SplashScreen() {
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] bg-[#07090e] flex flex-col items-center justify-center overflow-hidden transition-all duration-700 ease-out ${
-        fadeOut
+      className={`fixed inset-0 z-[9999] bg-[#07090e] flex flex-col items-center justify-center overflow-hidden select-none transition-all duration-350 ease-out ${
+        leaving
           ? 'opacity-0 scale-105 pointer-events-none'
           : 'opacity-100 scale-100'
       }`}
     >
-      {/* إضاءات نيون في الخلفية */}
-      <div className='absolute w-72 h-72 bg-blue-600/20 rounded-full blur-[120px] animate-pulse' />
-      <div className='absolute w-72 h-72 bg-red-600/20 rounded-full blur-[120px] animate-pulse delay-700' />
+      {/* إضاءات Ambient Shadow خفيفة بنفس روح الصورة + لمسة زمردي */}
+      <div className='pointer-events-none absolute -top-20 -left-20 w-64 h-64 bg-rose-600/20 rounded-full blur-[90px]' />
+      <div className='pointer-events-none absolute top-1/3 -right-20 w-64 h-64 bg-blue-600/20 rounded-full blur-[90px]' />
+      <div className='pointer-events-none absolute -bottom-20 left-1/3 w-64 h-64 bg-purple-600/20 rounded-full blur-[90px]' />
+      <div className='pointer-events-none absolute bottom-8 right-1/4 w-52 h-52 bg-emerald-500/15 rounded-full blur-[80px]' />
 
-      {/* اللوجو مع أنيميشن */}
-      <div className='relative mb-6 group'>
-        <div className='absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 opacity-75 blur-md animate-spin-slow' />
-        <div className='relative w-24 h-24 rounded-3xl bg-[#0e1626] border border-slate-700/80 flex items-center justify-center shadow-2xl'>
-          {/* تقدر تستبدل الأيقونة دي بـ <img src="/logo.png" className="w-16 h-16 object-contain" /> */}
-          <ShoppingBag className='w-11 h-11 text-white animate-bounce' />
+      {/* المحتوى الرئيسي */}
+      <div className='relative z-10 w-full max-w-sm px-6 flex flex-col items-center'>
+        {/* بوابة الضوء السريعة مع أيقونة المتجر */}
+        <div className='relative mb-6 flex items-center justify-center'>
+          {/* هالة الإضاءة الخلفية */}
+          <div
+            className={`absolute -inset-2 rounded-3xl blur-xl transition-all duration-350 ${
+              gateOpen
+                ? 'bg-gradient-to-tr from-rose-500/60 via-emerald-400/55 to-blue-500/65 scale-125 opacity-100'
+                : 'bg-gradient-to-tr from-rose-500/35 via-purple-500/35 to-blue-500/35 opacity-85'
+            }`}
+          />
+
+          {/* إطار البوابة */}
+          <div className='relative w-20 h-20 rounded-3xl bg-[#0e1626] border border-slate-700/80 shadow-2xl overflow-hidden flex items-center justify-center'>
+            {/* نور يفتح للداخل لحظة وصول التحميل */}
+            <div
+              className={`absolute inset-0 transition-opacity duration-250 ${
+                gateOpen ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(52,211,153,0.45) 0%, rgba(96,165,250,0.35) 55%, rgba(168,85,247,0.25) 100%)',
+              }}
+            />
+
+            {/* ضلفتا البوابة الخفيفتان */}
+            <div
+              className={`absolute inset-y-0 left-0 w-1/2 bg-[#0b1120] border-r border-purple-400/30 transition-transform duration-300 ease-out ${
+                gateOpen ? '-translate-x-full' : 'translate-x-0'
+              }`}
+            />
+            <div
+              className={`absolute inset-y-0 right-0 w-1/2 bg-[#0b1120] border-l border-blue-400/30 transition-transform duration-300 ease-out ${
+                gateOpen ? 'translate-x-full' : 'translate-x-0'
+              }`}
+            />
+
+            {/* الأيقونة الرئيسية */}
+            <ShoppingBag
+              className={`relative z-10 w-9 h-9 text-white transition-transform duration-250 ${
+                gateOpen ? 'scale-110 text-emerald-300' : 'scale-100'
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* اسم المتجر بنفس التدرج والشادو القريب من الصورة */}
+        <h1
+          className='text-4xl sm:text-5xl font-black tracking-wide text-center bg-clip-text text-transparent'
+          style={{
+            backgroundImage:
+              'linear-gradient(90deg, #ff6b7a 0%, #e598d8 35%, #a78bfa 68%, #60a5fa 100%)',
+            filter:
+              'drop-shadow(0 0 18px rgba(244, 63, 94, 0.35)) drop-shadow(0 0 24px rgba(59, 130, 246, 0.35))',
+          }}
+        >
+          Abdo Store
+        </h1>
+
+        {/* جملة الوصف المطلوبة */}
+        <p
+          dir='rtl'
+          className='mt-2.5 text-sm sm:text-base font-bold text-slate-200/95 flex items-center justify-center gap-2 text-center'
+        >
+          <Compass className='w-4 h-4 text-emerald-400 shrink-0' />
+          <span>راحتك في الاختيار تبدأ من هنا</span>
+        </p>
+
+        {/* شريط التحميل السريع والخفيف بـ CSS فقط */}
+        <div className='mt-7 w-48 h-2 bg-[#0e1626] border border-slate-800/90 rounded-full overflow-hidden p-[1px]'>
+          <div
+            className='h-full rounded-full'
+            style={{
+              background:
+                'linear-gradient(90deg, #f43f5e 0%, #c084fc 35%, #38bdf8 70%, #10b981 100%)',
+              animation:
+                'fastSplashBar 1.25s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+            }}
+          />
         </div>
       </div>
 
-      {/* الاسم الرئيسي بتدرج نيون */}
-      <h1 className='text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-red-400 via-purple-300 to-blue-400 bg-clip-text text-transparent animate-fade-in-up'>
-        ABDO STORE
-      </h1>
-
-      {/* الجملة الفرعية - اكتب أي حاجة هنا */}
-      <p className='mt-2 text-xs sm:text-sm text-slate-400 font-semibold tracking-widest uppercase flex items-center gap-1.5'>
-        <Sparkles size={14} className='text-amber-400 animate-pulse' />
-        <span>Next-Gen Shopping Experience</span>
-      </p>
-
-      {/* شريط تحميل متحرك في الأسفل */}
-      <div className='mt-8 w-44 h-1.5 bg-slate-800/90 rounded-full overflow-hidden p-[1px]'>
-        <div className='h-full bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 rounded-full animate-[loadingBar_2s_ease-in-out_forwards]' />
-      </div>
-
       <style jsx>{`
-        @keyframes loadingBar {
+        @keyframes fastSplashBar {
           0% {
             width: 0%;
           }

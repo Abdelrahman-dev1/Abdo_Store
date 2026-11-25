@@ -40,6 +40,10 @@ export default function StorePromoBanner() {
     };
   }, []);
 
+  const countLabel = `(${rules.length})`;
+  const rewardWord =
+    rules.length === 1 ? 'مكافأة استثنائية لك ⚡' : 'مكافآت استثنائية لك ⚡';
+
   return (
     <div className='mx-auto w-full max-w-4xl px-3 sm:px-5 pt-10 sm:pt-14'>
       {/* البانر الرئيسي - محاط بتأثير نبض خفيف وجذاب لخطف العين ودفعه للضغط */}
@@ -53,39 +57,73 @@ export default function StorePromoBanner() {
           onClick={() => setOpen((prev) => !prev)}
           className='flex w-full items-center justify-between gap-2.5 px-3.5 py-3 sm:px-4 sm:py-3.5 text-right transition-colors duration-200 hover:bg-white/[0.03] cursor-pointer'
         >
-          <div className='flex items-center gap-3 min-w-0'>
+          <div className='flex items-center gap-2 sm:gap-3 min-w-0 flex-1'>
             {/* صندوق الهدية الذي يتنطنط بحيوية (bounce) مع توهج محفز */}
-            <div className='relative flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500/25 via-violet-500/25 to-cyan-500/25 text-cyan-300 border border-cyan-400/40 shadow-md group-hover:scale-110 transition-transform duration-300'>
-              <Gift size={16} className='animate-bounce duration-1000' />
+            <div className='relative flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500/25 via-violet-500/25 to-cyan-500/25 text-cyan-300 border border-cyan-400/40 shadow-md group-hover:scale-110 transition-transform duration-300'>
+              <Gift
+                size={15}
+                className='sm:w-4 sm:h-4 animate-bounce duration-1000'
+              />
               {/* نقطة تنبيه نبضية تحفيزية */}
-              <span className='absolute -top-1 -right-1 flex h-2.5 w-2.5'>
+              <span className='absolute -top-1 -right-1 flex h-2 w-2 sm:h-2.5 sm:w-2.5'>
                 <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-80' />
-                <span className='relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500' />
+                <span className='relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-rose-500' />
               </span>
             </div>
 
-            {/* العنوان التحفيزي الجذاب */}
-            <div className='flex flex-col sm:flex-row sm:items-center sm:gap-2 min-w-0'>
-              <span className='truncate text-xs sm:text-[13px] font-extrabold text-slate-100 tracking-wide'>
-                {!loaded
-                  ? '🔥 اضغط هنا لاكتشاف مفاجآت ومكافآت متجرك الحصرية'
-                  : rules.length > 0
-                    ? `⚡ لا تفوتها! (${rules.length}) مكافأة استثنائية بانتظار تفعيلك`
-                    : '💎 بوابتك الذكية لأقوى العروض الحصرية'}
+            {/* العنوان التحفيزي: جملة الموبايل كما هي + جملة أطول للشاشات الكبيرة + الرقم في البداية */}
+            <div
+              dir='rtl'
+              className='flex items-center gap-1.5 sm:gap-2 min-w-0'
+            >
+              <span className='whitespace-nowrap text-[11px] sm:text-[13px] font-extrabold text-slate-100 tracking-tight sm:tracking-wide inline-flex items-center gap-1'>
+                {!loaded ? (
+                  <>
+                    <span className='sm:hidden'>🔥 مفاجآت ومكافآت متجرك</span>
+                    <span className='hidden sm:inline'>
+                      🔥 مفاجآت ومكافآت متجرك الحصرية في انتظارك الآن
+                    </span>
+                  </>
+                ) : rules.length > 0 ? (
+                  <>
+                    <bdi dir='ltr' className='text-cyan-300'>
+                      {countLabel}
+                    </bdi>
+                    <span className='sm:hidden'>{rewardWord}</span>
+                    <span className='hidden sm:inline'>
+                      {rules.length === 1
+                        ? 'مكافأة استثنائية بانتظارك لتفعيلها في طلبك ⚡'
+                        : 'مكافآت استثنائية بانتظارك لتفعيلها في طلبك ⚡'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className='sm:hidden'>
+                      💎 العروض والهدايا الحصرية
+                    </span>
+                    <span className='hidden sm:inline'>
+                      💎 اكتشف أقوى العروض والهدايا الحصرية داخل المتجر
+                    </span>
+                  </>
+                )}
               </span>
             </div>
 
-            {/* شارة تفاعلية متحركة خفيفة */}
+            {/* شارة تفاعلية متحركة خفيفة في نفس السطر */}
             {rules.length > 0 && (
-              <span className='hidden md:inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-400/35 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 animate-pulse'>
-                <Flame size={11} className='text-rose-400' /> جاهزة للتفعيل
+              <span className='inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-500/15 border border-emerald-400/35 px-1.5 sm:px-2.5 py-0.5 text-[9.5px] sm:text-[10px] font-bold text-emerald-300 animate-pulse'>
+                <Flame
+                  size={10}
+                  className='sm:w-[11px] sm:h-[11px] text-rose-400'
+                />
+                جاهزة للتفعيل
               </span>
             )}
           </div>
 
           {/* زر الفتح مع سهم متحرك يحفز على الضغط */}
-          <div className='inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 border border-cyan-400/40 px-3 py-1.5 text-xs font-extrabold text-cyan-200 transition-all duration-300 group-hover:bg-cyan-500/30 group-hover:text-white shadow-sm'>
-            <span>{open ? 'إخفاء' : 'اضغط للاكتشاف'}</span>
+          <div className='inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 border border-cyan-400/40 px-2.5 py-1 text-xs font-extrabold text-cyan-200 transition-all duration-300 group-hover:bg-cyan-500/30 group-hover:text-white shadow-sm'>
+            <span>{open ? 'إخفاء' : 'اكتشف '}</span>
             {open ? (
               <ChevronUp size={14} className='text-rose-300' />
             ) : (
@@ -101,7 +139,7 @@ export default function StorePromoBanner() {
               <div className='flex items-center justify-center gap-2 py-3 text-center'>
                 <Zap size={14} className='text-cyan-400 animate-pulse' />
                 <p className='text-xs font-semibold text-slate-300'>
-                  ترقبنا.. باقة عروض مذهلة ستتوفر قريباً جداً ✨
+                  ترقبنا.. باقة عروض مذهلة ستتوفر قريباً جداً 💝
                 </p>
               </div>
             ) : (

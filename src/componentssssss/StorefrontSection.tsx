@@ -248,9 +248,17 @@ export default function StorefrontSection() {
                   transition={{ duration: 0.6, ease: 'easeInOut' }}
                   className='absolute inset-0'
                 >
-                  <img
-                    src={currentHero.image}
-                    alt={currentHero.name}
+                  <Image
+                    src={currentHero.image || '/placeholder.png'}
+                    alt={currentHero.name || 'Hero Image'}
+                    width={1400}
+                    height={700}
+                    sizes='100vw'
+                    unoptimized={
+                      typeof currentHero.image === 'string' &&
+                      (currentHero.image.startsWith('blob:') ||
+                        currentHero.image.startsWith('data:'))
+                    }
                     className='w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700'
                   />
                   <div className='absolute inset-0 bg-gradient-to-t from-[#090d16] via-[#090d16]/60 to-black/30' />
@@ -462,9 +470,18 @@ export default function StorefrontSection() {
                 className='w-[270px] sm:w-[290px] shrink-0 bg-[#0e1626]/90 backdrop-blur-xl rounded-3xl border border-slate-800 shadow-xl overflow-hidden hover:border-slate-700 transition flex flex-col justify-between group'
               >
                 <div className='relative aspect-square bg-slate-900 border-b border-slate-800 overflow-hidden'>
-                  <img
-                    src={item.image}
-                    alt={item.name}
+                  <Image
+                    src={item.image || '/placeholder.png'}
+                    alt={item.name || 'Product Image'}
+                    width={400}
+                    height={400}
+                    loading='lazy'
+                    sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
+                    unoptimized={
+                      typeof item.image === 'string' &&
+                      (item.image.startsWith('blob:') ||
+                        item.image.startsWith('data:'))
+                    }
                     className='w-full h-full object-cover group-hover:scale-105 transition duration-500'
                   />
                   <button
@@ -589,9 +606,18 @@ export default function StorefrontSection() {
                 >
                   <div>
                     <div className='w-full aspect-square bg-slate-900 relative overflow-hidden border-b border-slate-800'>
-                      <img
-                        src={product.image}
-                        alt={product.name}
+                      <Image
+                        src={product.image || '/placeholder.png'}
+                        alt={product.name || 'Product Image'}
+                        width={400}
+                        height={400}
+                        loading='lazy'
+                        sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
+                        unoptimized={
+                          typeof product.image === 'string' &&
+                          (product.image.startsWith('blob:') ||
+                            product.image.startsWith('data:'))
+                        }
                         className='w-full h-full object-cover group-hover:scale-108 transition duration-700'
                       />
                       <span className='absolute top-3 right-3 bg-gradient-to-r from-red-600 to-rose-600 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-md'>
@@ -658,7 +684,7 @@ export default function StorefrontSection() {
           <div className='flex flex-col sm:flex-row sm:items-end justify-between gap-4'>
             <div className='flex items-start gap-3.5 text-left'>
               <div className='p-2.5 bg-blue-950/60 border border-blue-500/30 rounded-2xl text-blue-400 mt-1 shrink-0'>
-                <Sparkles size={22} className='text-blue-400 animate-pulse' />
+                <Zap size={22} className='text-blue-400 animate-pulse' />
               </div>
               <div className='space-y-1'>
                 <h2 className='text-2xl font-black text-white tracking-tight'>
@@ -702,9 +728,18 @@ export default function StorefrontSection() {
                 >
                   <div>
                     <div className='w-full aspect-square bg-slate-900 relative overflow-hidden border-b border-slate-800'>
-                      <img
-                        src={product.image}
-                        alt={product.name}
+                      <Image
+                        src={product.image || '/placeholder.png'}
+                        alt={product.name || 'Product Image'}
+                        width={400}
+                        height={400}
+                        loading='lazy'
+                        sizes='(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw'
+                        unoptimized={
+                          typeof product.image === 'string' &&
+                          (product.image.startsWith('blob:') ||
+                            product.image.startsWith('data:'))
+                        }
                         className='w-full h-full object-cover group-hover:scale-108 transition duration-700'
                       />
                       <span className='absolute top-3 right-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-3 py-1.5 rounded-xl shadow-md'>

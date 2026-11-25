@@ -4,22 +4,24 @@ import './globals.css';
 import SplashScreen from '@/components/SplashScreen';
 
 /* ==========================================================
-   1. إعدادات خطوط النظام (Geist) لتحسين الأداء والسرعة
+1. إعدادات خطوط النظام (Geist) لتحسين الأداء والسرعة
    ========================================================== */
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
   display: 'swap',
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
   display: 'swap',
+  preload: true,
 });
 
 /* ==========================================================
-   2. إعدادات الـ SEO الشاملة وميتا داتا الموقع (Abdo Store)
+2. إعدادات الـ SEO الشاملة وميتا داتا الموقع (Abdo Store)
    ========================================================== */
 const siteUrl = 'https://abdo-store-kappa.vercel.app';
 const siteName = 'Abdo Store';
@@ -37,6 +39,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: siteName,
   category: 'shopping',
+  referrer: 'origin-when-cross-origin',
+  formatDetection: {
+    telephone: false,
+    address: false,
+    email: false,
+  },
 
   title: {
     default: defaultTitle,
@@ -108,27 +116,26 @@ export const metadata: Metadata = {
 };
 
 /* ==========================================================
-   3. المكون الرئيسي للجذر (Root Layout)
+3. المكون الرئيسي للجذر (Root Layout)
    ========================================================== */
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // rtl - ltr - auto - en - ar - وممكن تعمل تخصيص ع الديف تحددلها الاتجاه واللغه
   return (
     <html
       lang='en'
       dir='ltr'
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark scroll-smooth"`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark scroll-smooth`}
     >
       <body className='min-h-full flex flex-col bg-[#07090e] text-slate-100 selection:bg-red-500 selection:text-white font-sans antialiased'>
         {/* ==========================================================
-            4. ستايل السكرول بار المخصص موجود في globals.css
+4. ستايل السكرول بار المخصص موجود في globals.css
            ========================================================== */}
 
         {/* ==========================================================
-            5. حاوية محتوى الموقع الأساسية
+5. حاوية محتوى الموقع الأساسية
            ========================================================== */}
         <div className='flex-1 flex flex-col min-h-screen'>
           <SplashScreen />
