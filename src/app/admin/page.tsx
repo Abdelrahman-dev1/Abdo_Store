@@ -65,7 +65,22 @@ export default function AdminDashboardPage() {
     fetchDashboardData();
     fetchSiteSettings();
   }, []);
-
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+const [isResettingOrders, setIsResettingOrders] = useState(false);
+const [resetFeedback, setResetFeedback] = useState<{
+  type: 'success' | 'error';
+  message: string;
+} | null>(null);
+// ===================================
+// ===================================
+// ===================================
+// ===================================
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
@@ -142,35 +157,50 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleResetOrdersAndRevenue = async () => {
-    const confirmed = window.confirm(
-      '⚠️ Are you sure you want to delete all orders and reset revenue to zero? This action cannot be undone!',
-    );
-    if (!confirmed) return;
+const handleResetOrdersAndRevenue = () => {
+  setResetFeedback(null);
+  setResetConfirmOpen(true);
+};
 
-    try {
-      const { error } = await supabase
+const confirmResetOrdersAndRevenue = async () => {
+  setIsResettingOrders(true);
+  setResetFeedback(null);
+
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    if (error) {
+      const { error: err2 } = await supabase
         .from('orders')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
-
-      if (error) {
-        const { error: err2 } = await supabase
-          .from('orders')
-          .delete()
-          .gte('id', 0);
-        if (err2) throw err2;
-      }
-
-      alert('🔄 Orders and revenue have been successfully reset to zero.');
-      fetchDashboardData();
-    } catch (err) {
-      console.error('Error resetting orders:', err);
-      alert(
-        'Failed to reset orders. Check your database RLS deletion policies.',
-      );
+        .gte('id', 0);
+      if (err2) throw err2;
     }
-  };
+
+    setResetFeedback({
+      type: 'success',
+      message: 'تم تصفير جميع الطلبات والإيرادات بنجاح.',
+    });
+    fetchDashboardData();
+
+    setTimeout(() => {
+      setResetConfirmOpen(false);
+      setResetFeedback(null);
+    }, 1100);
+  } catch (err) {
+    console.error('Error resetting orders:', err);
+    setResetFeedback({
+      type: 'error',
+      message:
+        'تعذر تصفير الطلبات. تأكد من صلاحيات الحذف (RLS) في قاعدة البيانات.',
+    });
+  } finally {
+    setIsResettingOrders(false);
+  }
+};
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -1050,6 +1080,140 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </main>
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {resetConfirmOpen && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm'>
+          <div
+            role='dialog'
+            aria-modal='true'
+            className='w-full max-w-sm sm:max-w-md rounded-2xl border border-rose-500/30 bg-[#09101d] p-4 sm:p-5 text-white shadow-2xl shadow-black/70'
+          >
+            {/* Header */}
+            <div className='flex items-start justify-between gap-3'>
+              <div className='flex items-center gap-2.5'>
+                <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/15 text-rose-400 text-base'>
+                  ⚠️
+                </div>
+                <div dir='rtl' className='text-right'>
+                  <h3 className='text-sm sm:text-base font-extrabold text-white leading-tight'>
+                    حذف نهائي لا يمكن التراجع عنه
+                  </h3>
+                  <p className='text-[11px] text-slate-400 mt-0.5'>
+                    سجل الطلبات وعدّاد إجمالي الإيرادات
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type='button'
+                disabled={isResettingOrders}
+                onClick={() => setResetConfirmOpen(false)}
+                className='rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800/80 hover:text-white transition cursor-pointer disabled:opacity-40'
+                aria-label='إغلاق النافذة'
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Warning Message */}
+            <div className='mt-3.5 rounded-xl border border-rose-500/20 bg-rose-950/25 p-3'>
+              <p
+                dir='rtl'
+                className='text-xs sm:text-[13px] font-bold leading-relaxed text-rose-200'
+              >
+                ⚠️ هل أنت متأكد من حذف جميع الطلبات وتصفير الإيرادات؟ لا يمكن
+                التراجع عن هذا الإجراء!
+              </p>
+              <p
+                dir='rtl'
+                className='mt-2 text-[11px] leading-relaxed text-slate-300'
+              >
+                سيتم مسح كافة الطلبات من السجل نهائياً وإرجاع إجمالي الإيرادات
+                إلى <span className='font-semibold text-white'>0</span>.
+              </p>
+            </div>
+
+            {/* Feedback Banner */}
+            {resetFeedback && (
+              <div
+                dir='rtl'
+                className={`mt-3 rounded-xl border px-3 py-2 text-[11px] sm:text-xs font-semibold ${
+                  resetFeedback.type === 'success'
+                    ? 'border-emerald-500/30 bg-emerald-500/15 text-emerald-300'
+                    : 'border-rose-500/35 bg-rose-500/15 text-rose-300'
+                }`}
+              >
+                {resetFeedback.message}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className='mt-4 flex items-center justify-end gap-2'>
+              <button
+                type='button'
+                disabled={isResettingOrders}
+                onClick={() => setResetConfirmOpen(false)}
+                className='px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800/70 hover:bg-slate-800 text-xs font-bold text-slate-200 transition cursor-pointer disabled:opacity-40'
+              >
+                Cancel
+              </button>
+
+              <button
+                type='button'
+                disabled={isResettingOrders}
+                onClick={confirmResetOrdersAndRevenue}
+                className='px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-xs font-extrabold text-white shadow-lg shadow-rose-950/40 transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5'
+              >
+                {isResettingOrders ? (
+                  <>
+                    <RefreshCw size={13} className='animate-spin' />
+                    <span>جاري التصفير...</span>
+                  </>
+                ) : (
+                  <span>Yes, Reset Everything</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
     </div>
   );
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
+  // ========================================
 }

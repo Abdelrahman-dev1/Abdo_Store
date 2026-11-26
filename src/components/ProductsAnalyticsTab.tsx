@@ -1684,13 +1684,13 @@ const handleTablePageChange = (nextPage: number) => {
               <span className='w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0'>
                 <AlertTriangle size={18} />
               </span>
-              <div>
-                <h3 className='text-sm font-black text-white'>
-                  Reset All Filters?
+              <div dir='rtl' className='text-right'>
+                <h3 className='text-base sm:text-lg font-black text-white'>
+                  إعادة ضبط جميع الفلاتر؟
                 </h3>
-                <p className='text-xs text-slate-300 mt-1 leading-relaxed'>
-                  This will clear your search query, reset the category and lens
-                  tab, and restore default sorting.
+                <p className='text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed'>
+                  سيؤدي هذا إلى مسح نص البحث، وإعادة تعيين القسم وتبويب العدسة،
+                  واستعادة الترتيب الافتراضي.
                 </p>
               </div>
             </div>
@@ -1704,7 +1704,7 @@ const handleTablePageChange = (nextPage: number) => {
                 }}
                 className='px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-xs font-bold text-slate-200 cursor-pointer'
               >
-                Keep Filters
+               Cancel
               </button>
               <button
                 type='button'

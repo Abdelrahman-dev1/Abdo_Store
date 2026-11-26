@@ -12,6 +12,7 @@ import {
   Trash2,
   Plus,
   Minus,
+  Compass,
   User,
   ShieldAlert,
   Flame,
@@ -33,6 +34,9 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import BenefitsBar from '@/components/Benefits/BenefitsBar';
+import CustomerReviewsSection from '@/components/ReviewsSite/CustomerReviewsSection';
+import TechShowcaseBanner from '@/components/Showcase/TechShowcaseBanner';
 
 const ShareButton = dynamic(() => import('@/components/ShareButton'), {
   ssr: false,
@@ -77,9 +81,20 @@ const writeStorageArray = (key: string, value: any[]) => {
   }
 };
 
+
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
+// ==================
 function LazyMount({
   children,
-  rootMargin = '320px 0px',
+  rootMargin = '180px 0px',
   className = '',
 }: {
   children: React.ReactNode;
@@ -90,27 +105,31 @@ function LazyMount({
   const [shouldMount, setShouldMount] = useState(false);
 
   useEffect(() => {
+    if (shouldMount) return;
+
     const node = mountRef.current;
     if (!node) return;
 
     if (typeof IntersectionObserver === 'undefined') {
-      setShouldMount(true);
-      return;
+      const timer = window.setTimeout(() => {
+        setShouldMount(true);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting || entry.intersectionRatio > 0) {
           setShouldMount(true);
           observer.disconnect();
         }
       },
-      { rootMargin },
+      { rootMargin, threshold: 0 },
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [rootMargin]);
+  }, [rootMargin, shouldMount]);
 
   return (
     <div ref={mountRef} className={className}>
@@ -118,8 +137,6 @@ function LazyMount({
     </div>
   );
 }
-
-// ===============================
 // ===============================
 // ===============================
 // ===============================
@@ -233,8 +250,80 @@ export default function HomePage() {
     }, duration);
   };
 
-  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  const [isNavSectionsOpen, setIsNavSectionsOpen] = useState(false);
 
+  const sectionItems = [
+    {
+      id: 'top-picks-section',
+      label: 'Top Picks',
+      icon: '⭐',
+      iconAnim: 'group-hover:rotate-12 group-hover:scale-110',
+      badgeClass: 'text-amber-300 bg-amber-500/10 border-amber-500/25',
+    },
+    {
+      id: 'deals-section',
+      label: 'Deals & Offers',
+      icon: '⚡',
+      iconAnim: 'group-hover:-translate-y-0.5 group-hover:scale-110',
+      badgeClass: 'text-rose-300 bg-rose-500/10 border-rose-500/25',
+    },
+    {
+      // id: 'catalog-section',
+      id: 'products-grid',
+      label: 'Product Catalog',
+      icon: '🏷️',
+      iconAnim: 'group-hover:rotate-[-12deg] group-hover:scale-110',
+      badgeClass: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/25',
+    },
+    {
+      id: 'store-footer',
+      label: 'Footer',
+      icon: '📍',
+      iconAnim: 'group-hover:translate-y-0.5',
+      badgeClass: 'text-blue-300 bg-blue-500/10 border-blue-500/25',
+    },
+  ];
+
+  const handleScrollToSection = (id: string) => {
+    setIsNavSectionsOpen(false);
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  // ====================
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+// ====================
+// ====================
+const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+const [sortHighlight, setSortHighlight] = useState<'none' | 'green' | 'red'>(
+  'none',
+);
+// ====================
+// ====================
+// ====================
 const filteredProducts = useMemo(() => {
   const selectedCategoryObject = categories.find(
     (category) =>
@@ -245,7 +334,7 @@ const filteredProducts = useMemo(() => {
   const isExactPrice = rawQuery !== '' && /^\d+(\.\d+)?$/.test(rawQuery);
   const exactPriceNum = isExactPrice ? Number(rawQuery) : null;
 
-  return products.filter((product) => {
+  const matched = products.filter((product) => {
     if (normalizedSearchQuery) {
       const productName = String(product.name ?? '').toLowerCase();
       const rawPriceStr = String(product.price ?? '')
@@ -280,12 +369,19 @@ const filteredProducts = useMemo(() => {
       product.categories?.id === selectedCategoryObject?.id
     );
   });
+
+  return [...matched].sort((a, b) => {
+    const priceA = Number(String(a.price ?? '').replace(/,/g, '')) || 0;
+    const priceB = Number(String(b.price ?? '').replace(/,/g, '')) || 0;
+    return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+  });
 }, [
   products,
   categories,
   selectedCategory,
   searchQuery,
   normalizedSearchQuery,
+  sortOrder,
 ]);
 
   const categoryCounts = useMemo(() => {
@@ -948,38 +1044,45 @@ const filteredProducts = useMemo(() => {
     );
   };
 
-  const addToCart = (e: React.MouseEvent, product: any) => {
-    e.preventDefault();
-    e.stopPropagation();
+const addToCart = (e: React.MouseEvent, product: any) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-    if (!product?.id) return;
+  if (!product?.id) return;
 
-    const productImage = product.image || product.images?.[0] || '';
-    const numericPrice = Number(product.price);
-    const safePrice =
-      Number.isFinite(numericPrice) && numericPrice >= 0 ? numericPrice : 0;
-    const exists = cart.some((item) => item.id === product.id);
+  const productImage = product.image || product.images?.[0] || '';
+  const productDesc =
+    product.description || product.details || product.short_description || '';
+  const numericPrice = Number(product.price);
+  const safePrice =
+    Number.isFinite(numericPrice) && numericPrice >= 0 ? numericPrice : 0;
+  const exists = cart.some((item) => item.id === product.id);
 
-    const updatedCart = exists
-      ? cart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: Math.max(1, Number(item.quantity) || 1) + 1 }
-            : item,
-        )
-      : [
-          ...cart,
-          {
-            id: product.id,
-            name: product.name,
-            price: safePrice,
-            image: productImage,
-            quantity: 1,
-          },
-        ];
+  const updatedCart = exists
+    ? cart.map((item) =>
+        item.id === product.id
+          ? {
+              ...item,
+              quantity: Math.max(1, Number(item.quantity) || 1) + 1,
+              description: item.description || productDesc,
+            }
+          : item,
+      )
+    : [
+        ...cart,
+        {
+          id: product.id,
+          name: product.name,
+          price: safePrice,
+          image: productImage,
+          description: productDesc,
+          quantity: 1,
+        },
+      ];
 
-    saveCartToStorage(updatedCart);
-    showToast(`Added "${product.name}" to your cart!`);
-  };
+  saveCartToStorage(updatedCart);
+  showToast(`Added "${product.name}" to your cart!`);
+};
 
   const updateQuantity = (id: string, delta: number) => {
     const updated = cart.flatMap((item) => {
@@ -1540,6 +1643,79 @@ const filteredCatalogProducts = useMemo(() => {
             {/* =============================== */}
             {/* =============================== */}
             {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            <div className='relative inline-flex'>
+              <button
+                type='button'
+                onClick={() => setIsNavSectionsOpen((prev) => !prev)}
+                title='Jump to section'
+                aria-expanded={isNavSectionsOpen}
+                className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gradient-to-b from-slate-800/75 to-[#090f19]/90 hover:from-slate-800 hover:to-[#0e1626] border transition cursor-pointer shadow-sm active:scale-95 ${
+                  isNavSectionsOpen
+                    ? 'border-cyan-500/60 text-cyan-300 ring-1 ring-cyan-500/30'
+                    : 'border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+                }`}
+              >
+                <Compass
+                  className={`w-3 h-3 sm:w-[17px] sm:h-[17px] text-cyan-400 transition-transform duration-300 ${
+                    isNavSectionsOpen ? 'rotate-45 scale-105' : ''
+                  }`}
+                />
+              </button>
+
+              {isNavSectionsOpen && (
+                <>
+                  <div
+                    className='fixed inset-0 z-30'
+                    onClick={() => setIsNavSectionsOpen(false)}
+                  />
+
+                  <div
+                    role='menu'
+                    className='fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-14 sm:top-full z-40 sm:mt-2 w-auto sm:w-52 rounded-xl border border-slate-700/80 bg-[#080e1a]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl'
+                  >
+                    <div className='px-2 py-1 text-[10px] font-bold tracking-wide text-slate-400 border-b border-slate-800/80 mb-1 flex items-center justify-between'>
+                      <span>Sections</span>
+                      <span className='text-[10px] text-cyan-400/90'>
+                        انتقال سريع
+                      </span>
+                    </div>
+
+                    <div className='space-y-0.5'>
+                      {sectionItems.map((item) => (
+                        <button
+                          key={item.id}
+                          type='button'
+                          role='menuitem'
+                          onClick={() => handleScrollToSection(item.id)}
+                          className='group flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-[11px] sm:text-xs font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-white transition cursor-pointer'
+                        >
+                          <span className='flex items-center gap-2 min-w-0'>
+                            <span
+                              className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[11px] transition-transform duration-200 ${item.badgeClass} ${item.iconAnim}`}
+                            >
+                              {item.icon}
+                            </span>
+                            <span className='truncate'>{item.label}</span>
+                          </span>
+                          <span className='text-[10px] text-slate-500 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-all'>
+                            ›
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
+            {/* =============================== */}
 
             {/* Wishlist Button in Navbar linked with Wishlist count logic */}
 
@@ -1627,8 +1803,26 @@ const filteredCatalogProducts = useMemo(() => {
       {/* =============================== */}
       {/* =============================== */}
       {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      <TechShowcaseBanner />
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
       {/* 3. SECTION 1: HERO BANNER SLIDER */}
-      <section className=' sm:mt-6 mb-3 relative w-full py-2 sm:py-4 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80 text-[11px] sm:text-sm'>
+      <section
+        id='top-picks-section'
+        className=' mb-2 sm:mt-6 mb-3 relative w-full py-2 sm:py-4 bg-gradient-to-b from-[#070b14] via-[#0b1324] to-[#070b14] overflow-hidden border-b border-slate-800/80 text-[11px] sm:text-sm'
+      >
         {/* Background Ambient Glows */}
         <div className=' absolute top-1/4 left-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-blue-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
         <div className=' absolute bottom-1/4 right-1/4 w-32 sm:w-96 h-32 sm:h-96 bg-red-600/10 rounded-full blur-2xl sm:blur-3xl pointer-events-none' />
@@ -2300,12 +2494,29 @@ const filteredCatalogProducts = useMemo(() => {
       {/* =============================== */}
       {/* =============================== */}
       {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      <BenefitsBar />
+
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
+      {/* =============================== */}
 
       {/* 1. Top Announcement Bar (متحرك بـ Animation خفيف ونار من الناحيتين) */}
 
       {/* Top Announcement Bar - Dynamic from Supabase */}
       {announcementBar?.enabled && announcementBar.text.trim() && (
-        <div className='w-full py-3 px-4 bg-[#07090e] flex items-center justify-center border-b border-slate-800/60'>
+        <div className='w-full mt-3 py-3 px-4 bg-[#07090e] flex items-center justify-center border-b border-slate-800/60'>
           <div className='inline-flex max-w-full items-center justify-center gap-2.5 rounded-2xl border border-red-500/40 bg-gradient-to-r from-red-600/90 via-emerald-600/90 to-blue-600/90 px-4 py-2.5 text-xs font-extrabold text-white shadow-xl shadow-red-950/40 backdrop-blur-md sm:px-6 sm:text-sm'>
             <span className='shrink-0 animate-pulse text-sm sm:text-base'>
               {announcementBar.startEmoji}
@@ -2329,6 +2540,7 @@ const filteredCatalogProducts = useMemo(() => {
       {/* ===============2================ */}
       {flashDeals.length > 0 && (
         <section
+          id='deals-section'
           className='max-w-7xl mx-auto px-2 sm:px-6 my-3 sm:my-6 py-3 sm:py-5 border-b border-slate-800/80 relative'
           style={{
             contentVisibility: 'auto',
@@ -2914,6 +3126,7 @@ const filteredCatalogProducts = useMemo(() => {
 
       {/* 5. SECTION 3: MAIN CATALOG & SLIDER SECTION - Final Smooth Infinite */}
       <main
+        // id='catalog-section'
         id='products-grid'
         ref={catalogSectionRef}
         className='max-w-7xl mx-auto px-2 sm:px-4 my-2 sm:my-4 py-2 sm:py-4 space-y-3 sm:space-y-4'
@@ -3143,6 +3356,48 @@ const filteredCatalogProducts = useMemo(() => {
                   </button>
                 )}
               </div>
+
+              {/* زر Sort الصغير اللازق بجانب الفلتر */}
+              <button
+                type='button'
+                onClick={() => {
+                  setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+                  setCatalogPage(1);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setSortHighlight((prev) =>
+                    prev === 'green' ? 'red' : 'green',
+                  );
+                }}
+                title={
+                  sortOrder === 'asc'
+                    ? 'ترتيب تصاعدي (دبل كليك لتبديل اللون أخضر/أحمر)'
+                    : 'ترتيب تنازلي (دبل كليك لتبديل اللون أخضر/أحمر)'
+                }
+                className={`px-2 sm:px-2.5 border-l border-slate-800/90 flex items-center gap-1 text-[10px] sm:text-xs font-extrabold transition-all duration-200 cursor-pointer shrink-0 select-none ${
+                  sortHighlight === 'green'
+                    ? 'bg-emerald-500/20 text-emerald-300'
+                    : sortHighlight === 'red'
+                      ? 'bg-rose-500/20 text-rose-300'
+                      : 'bg-[#0c1526] hover:bg-[#121f38] text-slate-200 hover:text-white'
+                }`}
+              >
+                <span>Sort</span>
+                <span
+                  className={`text-[11px] font-black leading-none transition-transform duration-200 ${
+                    sortHighlight === 'green'
+                      ? 'text-emerald-400'
+                      : sortHighlight === 'red'
+                        ? 'text-rose-400'
+                        : sortOrder === 'asc'
+                          ? 'text-cyan-300'
+                          : 'text-amber-300'
+                  }`}
+                >
+                  {sortOrder === 'asc' ? '↑' : '↓'}
+                </span>
+              </button>
 
               {/* زر الفلتر اللازق مباشرة بالسيرش بار */}
               <button
@@ -4116,9 +4371,23 @@ const filteredCatalogProducts = useMemo(() => {
       {/* ====================================== */}
       {/* ====================================== */}
       {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      <CustomerReviewsSection />
+
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
+      {/* ====================================== */}
 
       {/* 6. Professional Footer */}
       <footer
+        id='store-footer'
         className='bg-[#07090e] border-t border-blue-500/20 pt-12 sm:pt-16 pb-10 sm:pb-12 mt-16 sm:mt-20 relative z-10 overflow-hidden'
         style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 520px' }}
       >
@@ -4177,7 +4446,7 @@ const filteredCatalogProducts = useMemo(() => {
                   💎
                 </span>
                 <span className='bg-gradient-to-r from-blue-400 to-red-400 bg-clip-text text-transparent font-bold'>
-                  Best Quality & Lowest Price
+                  أعلى جودة بأفضل سعر
                 </span>
               </li>
 
@@ -4186,7 +4455,7 @@ const filteredCatalogProducts = useMemo(() => {
                   🚀
                 </span>
                 <span className='bg-gradient-to-r from-red-400 to-blue-400 bg-clip-text text-transparent font-bold'>
-                  Fast & Affordable Delivery
+                  توصيل سريع وبسعر مناسب جدا
                 </span>
               </li>
 
@@ -4195,7 +4464,7 @@ const filteredCatalogProducts = useMemo(() => {
                   🎁
                 </span>
                 <span className='bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent font-bold'>
-                  Weekly Special Discounts
+                  خصومات أسبوعية مميزة
                 </span>
               </li>
 
@@ -4204,7 +4473,7 @@ const filteredCatalogProducts = useMemo(() => {
                   🛡️
                 </span>
                 <span className='bg-gradient-to-r from-purple-400 to-red-400 bg-clip-text text-transparent font-bold'>
-                  Secure & Safe Shopping
+                  تسوق آمن ومضمون
                 </span>
               </li>
             </ul>

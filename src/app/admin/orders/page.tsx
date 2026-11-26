@@ -41,6 +41,18 @@ export default function AdminOrdersPage() {
 
   // ======================
   // ======================
+  // ======================
+  // ======================
+  // ======================
+  // ======================
+  const [statusModalOrder, setStatusModalOrder] = useState<{
+    id: string;
+    status: string;
+    customerName?: string;
+  } | null>(null);
+  // ======================
+  // ======================
+  // ======================
 
   const [liveOrderPage, setLiveOrderPage] = useState(1);
   const [liveOrderPageAnimKey, setLiveOrderPageAnimKey] = useState(0);
@@ -1233,46 +1245,40 @@ export default function AdminOrdersPage() {
                               </span>
                             </div>
 
-                            <select
-                              value={order.status}
-                              onChange={(e) =>
-                                handleStatusChange(order.id, e.target.value)
+                            <button
+                              type='button'
+                              onClick={() =>
+                                setStatusModalOrder({
+                                  id: order.id,
+                                  status: order.status,
+                                  customerName:
+                                    order.customer_name || order.name,
+                                })
                               }
-                              className={`text-[10px] font-bold px-2 py-1 rounded border outline-none cursor-pointer ${
+                              className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg border outline-none cursor-pointer transition-all duration-200 shrink-0 active:scale-95 ${
                                 order.status === 'pending'
-                                  ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
+                                  ? 'bg-amber-950/50 hover:bg-amber-950/70 text-amber-300 border-amber-500/40'
                                   : order.status === 'shipping'
-                                    ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
+                                    ? 'bg-blue-950/50 hover:bg-blue-950/70 text-blue-300 border-blue-500/40'
                                     : order.status === 'delivered'
-                                      ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                                      : 'bg-red-950/40 text-red-300 border-red-500/40'
+                                      ? 'bg-emerald-950/50 hover:bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
+                                      : 'bg-rose-950/50 hover:bg-rose-950/70 text-rose-300 border-rose-500/40'
                               }`}
                             >
-                              <option
-                                value='pending'
-                                className='bg-[#1f2937] text-amber-300'
-                              >
-                                Pending
-                              </option>
-                              <option
-                                value='shipping'
-                                className='bg-[#1f2937] text-blue-300'
-                              >
-                                Shipping
-                              </option>
-                              <option
-                                value='delivered'
-                                className='bg-[#1f2937] text-emerald-300'
-                              >
-                                Delivered
-                              </option>
-                              <option
-                                value='cancelled'
-                                className='bg-[#1f2937] text-red-300'
-                              >
-                                Cancelled
-                              </option>
-                            </select>
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  order.status === 'pending'
+                                    ? 'bg-amber-400'
+                                    : order.status === 'shipping'
+                                      ? 'bg-blue-400'
+                                      : order.status === 'delivered'
+                                        ? 'bg-emerald-400'
+                                        : 'bg-rose-400'
+                                }`}
+                              />
+                              <span className='capitalize'>{order.status}</span>
+                              <span className='text-[9px] opacity-80'>▾</span>
+                            </button>
 
                             <button
                               type='button'
@@ -2166,49 +2172,45 @@ export default function AdminOrdersPage() {
                                               .slice(0, 5)
                                               .toUpperCase()}
                                         </span>
-                                        <select
-                                          value={order.status}
-                                          onChange={(e) =>
-                                            handleStatusChange(
-                                              order.id,
-                                              e.target.value,
-                                            )
+                                        <button
+                                          type='button'
+                                          onClick={() =>
+                                            setStatusModalOrder({
+                                              id: order.id,
+                                              status: order.status,
+                                              customerName:
+                                                order.customer_name ||
+                                                order.name,
+                                            })
                                           }
-                                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded border outline-none cursor-pointer ${
+                                          className={`inline-flex items-center gap-1 text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded border outline-none cursor-pointer transition-all duration-150 shrink-0 leading-tight active:scale-95 ${
                                             order.status === 'pending'
-                                              ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
+                                              ? 'bg-amber-950/50 hover:bg-amber-950/70 text-amber-300 border-amber-500/40'
                                               : order.status === 'shipping'
-                                                ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
+                                                ? 'bg-blue-950/50 hover:bg-blue-950/70 text-blue-300 border-blue-500/40'
                                                 : order.status === 'delivered'
-                                                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                                                  : 'bg-red-950/40 text-red-300 border-red-500/40'
+                                                  ? 'bg-emerald-950/50 hover:bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
+                                                  : 'bg-rose-950/50 hover:bg-rose-950/70 text-rose-300 border-rose-500/40'
                                           }`}
                                         >
-                                          <option
-                                            value='pending'
-                                            className='bg-[#1f2937] text-amber-300'
-                                          >
-                                            Pending
-                                          </option>
-                                          <option
-                                            value='shipping'
-                                            className='bg-[#1f2937] text-blue-300'
-                                          >
-                                            Shipping
-                                          </option>
-                                          <option
-                                            value='delivered'
-                                            className='bg-[#1f2937] text-emerald-300'
-                                          >
-                                            Delivered
-                                          </option>
-                                          <option
-                                            value='cancelled'
-                                            className='bg-[#1f2937] text-red-300'
-                                          >
-                                            Cancelled
-                                          </option>
-                                        </select>
+                                          <span
+                                            className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${
+                                              order.status === 'pending'
+                                                ? 'bg-amber-400'
+                                                : order.status === 'shipping'
+                                                  ? 'bg-blue-400'
+                                                  : order.status === 'delivered'
+                                                    ? 'bg-emerald-400'
+                                                    : 'bg-rose-400'
+                                            }`}
+                                          />
+                                          <span className='capitalize'>
+                                            {order.status}
+                                          </span>
+                                          <span className='text-[8px] opacity-75'>
+                                            ▾
+                                          </span>
+                                        </button>
                                         <span className='font-bold text-amber-300'>
                                           {order.total_amount} EGP
                                         </span>
@@ -2851,51 +2853,62 @@ export default function AdminOrdersPage() {
                                                       .slice(0, 5)
                                                       .toUpperCase()}
                                                 </span>
-                                                <select
-                                                  value={order.status}
-                                                  onChange={(e) =>
-                                                    handleStatusChange(
-                                                      order.id,
-                                                      e.target.value,
-                                                    )
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                <button
+                                                  type='button'
+                                                  onClick={() =>
+                                                    setStatusModalOrder({
+                                                      id: order.id,
+                                                      status: order.status,
+                                                      customerName:
+                                                        order.customer_name ||
+                                                        order.name,
+                                                    })
                                                   }
-                                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded border outline-none cursor-pointer ${
+                                                  className={`inline-flex items-center gap-1 text-[9px] sm:text-[11px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded border outline-none cursor-pointer transition-all duration-150 shrink-0 leading-tight active:scale-95 ${
                                                     order.status === 'pending'
-                                                      ? 'bg-amber-950/40 text-amber-300 border-amber-500/40'
+                                                      ? 'bg-amber-950/50 hover:bg-amber-950/70 text-amber-300 border-amber-500/40'
                                                       : order.status ===
                                                           'shipping'
-                                                        ? 'bg-blue-950/40 text-blue-300 border-blue-500/40'
+                                                        ? 'bg-blue-950/50 hover:bg-blue-950/70 text-blue-300 border-blue-500/40'
                                                         : order.status ===
                                                             'delivered'
-                                                          ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/40'
-                                                          : 'bg-red-950/40 text-red-300 border-red-500/40'
+                                                          ? 'bg-emerald-950/50 hover:bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
+                                                          : 'bg-rose-950/50 hover:bg-rose-950/70 text-rose-300 border-rose-500/40'
                                                   }`}
                                                 >
-                                                  <option
-                                                    value='pending'
-                                                    className='bg-[#1f2937] text-amber-300'
-                                                  >
-                                                    Pending
-                                                  </option>
-                                                  <option
-                                                    value='shipping'
-                                                    className='bg-[#1f2937] text-blue-300'
-                                                  >
-                                                    Shipping
-                                                  </option>
-                                                  <option
-                                                    value='delivered'
-                                                    className='bg-[#1f2937] text-emerald-300'
-                                                  >
-                                                    Delivered
-                                                  </option>
-                                                  <option
-                                                    value='cancelled'
-                                                    className='bg-[#1f2937] text-red-300'
-                                                  >
-                                                    Cancelled
-                                                  </option>
-                                                </select>
+                                                  <span
+                                                    className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${
+                                                      order.status === 'pending'
+                                                        ? 'bg-amber-400'
+                                                        : order.status ===
+                                                            'shipping'
+                                                          ? 'bg-blue-400'
+                                                          : order.status ===
+                                                              'delivered'
+                                                            ? 'bg-emerald-400'
+                                                            : 'bg-rose-400'
+                                                    }`}
+                                                  />
+                                                  <span className='capitalize'>
+                                                    {order.status}
+                                                  </span>
+                                                  <span className='text-[8px] opacity-75'>
+                                                    ▾
+                                                  </span>
+                                                </button>
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+                                                {/* ====================================== */}
+
                                                 <span className='font-bold text-sky-300'>
                                                   {order.total_amount} EGP
                                                 </span>
@@ -3088,6 +3101,110 @@ export default function AdminOrdersPage() {
             {/* ========================================================= */}
             {/* ========================================================= */}
             {/* ========================================================= */}
+            {statusModalOrder && (
+              <div
+                className='fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/75 backdrop-blur-sm'
+                onClick={() => setStatusModalOrder(null)}
+              >
+                <div
+                  role='dialog'
+                  aria-modal='true'
+                  onClick={(e) => e.stopPropagation()}
+                  className='w-full max-w-[290px] sm:max-w-xs rounded-2xl border border-slate-700/80 bg-[#09101d] p-3.5 sm:p-4 text-white shadow-2xl shadow-black/70'
+                >
+                  {/* Header */}
+                  <div className='flex items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80'>
+                    <div className='min-w-0'>
+                      <h4 className='text-xs sm:text-sm font-extrabold text-white truncate'>
+                        Update Order Status
+                      </h4>
+                      {statusModalOrder.customerName && (
+                        <p className='text-[10px] text-slate-400 truncate mt-0.5'>
+                          {statusModalOrder.customerName}
+                        </p>
+                      )}
+                    </div>
+
+                    <button
+                      type='button'
+                      onClick={() => setStatusModalOrder(null)}
+                      className='rounded-lg px-2 py-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white transition cursor-pointer shrink-0'
+                      aria-label='Close'
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Status Options */}
+                  <div className='mt-3 grid grid-cols-2 gap-1.5 sm:gap-2'>
+                    {[
+                      {
+                        value: 'pending',
+                        label: 'Pending',
+                        dot: 'bg-amber-400',
+                        activeClass:
+                          'bg-amber-500/20 text-amber-200 border-amber-400/60 ring-1 ring-amber-400/30',
+                        idleClass:
+                          'bg-amber-950/30 hover:bg-amber-950/50 text-amber-300 border-amber-500/25',
+                      },
+                      {
+                        value: 'shipping',
+                        label: 'Shipping',
+                        dot: 'bg-blue-400',
+                        activeClass:
+                          'bg-blue-500/20 text-blue-200 border-blue-400/60 ring-1 ring-blue-400/30',
+                        idleClass:
+                          'bg-blue-950/30 hover:bg-blue-950/50 text-blue-300 border-blue-500/25',
+                      },
+                      {
+                        value: 'delivered',
+                        label: 'Delivered',
+                        dot: 'bg-emerald-400',
+                        activeClass:
+                          'bg-emerald-500/20 text-emerald-200 border-emerald-400/60 ring-1 ring-emerald-400/30',
+                        idleClass:
+                          'bg-emerald-950/30 hover:bg-emerald-950/50 text-emerald-300 border-emerald-500/25',
+                      },
+                      {
+                        value: 'cancelled',
+                        label: 'Cancelled',
+                        dot: 'bg-rose-400',
+                        activeClass:
+                          'bg-rose-500/20 text-rose-200 border-rose-400/60 ring-1 ring-rose-400/30',
+                        idleClass:
+                          'bg-rose-950/30 hover:bg-rose-950/50 text-rose-300 border-rose-500/25',
+                      },
+                    ].map((option) => {
+                      const isCurrent =
+                        statusModalOrder.status === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type='button'
+                          onClick={() => {
+                            const targetId = statusModalOrder.id;
+                            setStatusModalOrder(null);
+                            handleStatusChange(targetId, option.value);
+                          }}
+                          className={`flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl border text-[11px] sm:text-xs font-extrabold transition cursor-pointer active:scale-95 ${
+                            isCurrent ? option.activeClass : option.idleClass
+                          }`}
+                        >
+                          <span className='flex items-center gap-1.5 truncate'>
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${option.dot}`}
+                            />
+                            <span className='truncate'>{option.label}</span>
+                          </span>
+                          {isCurrent && <span className='text-[10px]'>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ========================================================= */}
             {/* ========================================================= */}
             {/* ========================================================= */}

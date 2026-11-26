@@ -773,12 +773,12 @@ free_shipping_reason,
     const acceptUrl = `${origin}/delivery/accept/${record.id}`;
 
 const messageText = [
-  `🚚 *NEW DELIVERY MISSION — Order #${record.orders?.order_number}*`,
-  `👤 *Customer:* ${record.orders?.customer_name}`,
-  `📍 *Address:* ${record.orders?.customer_address || ''}`,
-  `💵 *Delivery Fee:* ${currentFee} ${storeCurrency}`,
+  `🚚 *تنبيه — طلب توصيل جاهز الآن #${record.orders?.order_number}*`,
+  `👤 *العميل:* ${record.orders?.customer_name}`,
+  `📍 *العنوان:* ${record.orders?.customer_address || ''}`,
+  `💵 *مبلغ التوصيل:* ${currentFee} ${storeCurrency}`,
   ``,
-  `👇 *Tap link below & enter your phone to accept:*`,
+  `👇 *اضغط على الرابط بالأسفل وأدخل رقم هاتفك لقبول الطلب:*`,
   acceptUrl,
 ].join('\n');
 
@@ -901,25 +901,29 @@ const messageText = [
     const deliveryFee = Number(record.delivery_fee || 0);
     const grandTotal = orderAmount + deliveryFee;
 
-    const customerMessage = [
-      `📦 *Order #${record.orders?.order_number} — Out for Delivery!*`,
-      `Hello *${record.orders?.customer_name}*, your order is on the way.`,
-      ``,
-      `🛒 *Order Details:*`,
-      itemsList,
-      ``,
-      `💰 *Payment Summary:*`,
-      `• Order Subtotal: ${orderAmount} ${storeCurrency}`,
-      `• Delivery Fee: ${deliveryFee} ${storeCurrency}`,
-      `• *Total to Pay Driver:* ${grandTotal} ${storeCurrency}`,
-      ``,
-      `🛵 *Assigned Driver:*`,
-      `• Name: ${record.drivers.full_name}`,
-      `• Phone: ${record.drivers.phone}`,
-      ``,
-      `✅ *When you receive your order, please confirm & rate your driver here:*`,
-      confirmUrl,
-    ].join('\n');
+const customerFirstName =
+  record.orders?.customer_name?.trim().split(/\s+/)[0] || '';
+
+const customerMessage = [
+  `📦 *طلب رقم #${record.orders?.order_number}*`,
+  `السلام عليكم يا *${customerFirstName}*`,
+  `ببلغ حضرتك إن الأوردر في الطريق إليك الآن.`,
+  ``,
+  `🛒 *تفاصيل الطلب:*`,
+  itemsList,
+  ``,
+  `💰 *ملخص الحساب:*`,
+  `• قيمة المنتجات: ${orderAmount} ${storeCurrency}`,
+  `• مبلغ التوصيل: ${deliveryFee} ${storeCurrency}`,
+  `• *إجمالي الدفع للمندوب:* ${grandTotal} ${storeCurrency}`,
+  ``,
+  `🛵 *بيانات المندوب:*`,
+  `• الاسم: ${record.drivers.full_name}`,
+  `• الهاتف: ${record.drivers.phone}`,
+  ``,
+  `✅ *يُرجى تأكيد الاستلام وتقييم المندوب والمتابعة من خلال هذا الرابط :*`,
+  confirmUrl,
+].join('\n');
 
     const waPhone = formatWhatsAppPhone(record.orders?.customer_phone || '');
     const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(
@@ -2640,7 +2644,7 @@ const buildCustomerWhatsAppLink = (order: any, deliveryRecord?: any) => {
               <div className='mt-4 p-2.5 sm:px-4 rounded-2xl bg-gradient-to-r from-[#090f19]/95 via-[#0e1626]/95 to-[#090f19]/95 border border-slate-800/90 backdrop-blur-md shadow-lg shadow-black/30 flex flex-wrap items-center justify-between gap-3 text-xs'>
                 {/* عداد الصفحات والأوردرات */}
                 <div className='flex items-center gap-2 text-slate-400'>
-                  <span className='w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse' />
+                  <span className='w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse [animation-duration:0.50s]' />
                   <span>
                     Showing{' '}
                     <strong className='text-white font-mono'>
@@ -4178,8 +4182,6 @@ const buildCustomerWhatsAppLink = (order: any, deliveryRecord?: any) => {
                         className='p-3 rounded-2xl bg-[#0e1626] border border-slate-800 hover:border-violet-500/45 hover:bg-[#121c30] transition-all duration-200 hover:-translate-y-0.5 flex gap-3 items-start group'
                       >
                         {info.imageUrl ? (
-
-
                           <Image
                             src={info.imageUrl}
                             alt={info.name || 'Item'}

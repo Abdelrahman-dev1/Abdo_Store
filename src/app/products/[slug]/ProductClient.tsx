@@ -27,16 +27,85 @@ import Link from 'next/link';
 
 import { supabase } from '@/lib/supabase';
 import CustomerReviews from '@/components/CustomerReviews';
-import ShareButton from '@/components/ShareButton';
+import dynamic from 'next/dynamic';
 
 interface ToastState {
   id: number;
   message: string;
   type: 'cart' | 'wishlist' | 'quantity' | 'info';
 }
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+function LazyMount({
+  children,
+  rootMargin = '180px 0px',
+  className = '',
+}: {
+  children: React.ReactNode;
+  rootMargin?: string;
+  className?: string;
+}) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const [shouldMount, setShouldMount] = useState(false);
 
+  useEffect(() => {
+    if (shouldMount) return;
+
+    const node = mountRef.current;
+    if (!node) return;
+
+    if (typeof IntersectionObserver === 'undefined') {
+      const timer = window.setTimeout(() => {
+        setShouldMount(true);
+      }, 0);
+      return () => window.clearTimeout(timer);
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting || entry.intersectionRatio > 0) {
+          setShouldMount(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin, threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rootMargin, shouldMount]);
+
+  return (
+    <div ref={mountRef} className={className}>
+      {shouldMount ? children : null}
+    </div>
+  );
+}
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+
+const ShareButton = dynamic(() => import('@/components/ShareButton'), {
+  ssr: false,
+  loading: () => null,
+});
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
+// ===================================
 export default function ProductClient({ slug }: { slug: string }) {
   const productIdentifier = slug;
+
 
   const [product, setProduct] = useState<any>(null);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
@@ -818,28 +887,28 @@ const addToCart = () => {
       <div className='fixed bottom-0 right-1/4 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none' />
 
       {/* مودال تكبير الصورة (Zoom Modal) — زر الخروج واضح تحت النافبار */}
-      {isZoomOpen && (
+      {/* {isZoomOpen && (
         <div
           onClick={() => setIsZoomOpen(false)}
           className='fixed inset-0 bg-black/92 backdrop-blur-md z-[60] flex flex-col pt-24 pb-6 px-4 sm:px-6'
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className='w-full max-w-5xl mx-auto flex items-center justify-between gap-3 mb-3 shrink-0 z-30'
+            className='w-full max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-3 mb-3 shrink-0 z-30'
           >
+            <span className='text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 text-slate-300 border border-slate-800 truncate max-w-[60%] sm:max-w-[70%]'>
+              {product.name}
+            </span>
+
             <button
               type='button'
               onClick={() => setIsZoomOpen(false)}
-              className='inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow-lg shadow-rose-950/50 border border-rose-400/30 transition cursor-pointer active:scale-95'
+              className='inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold shadow-lg shadow-rose-950/50 border border-rose-400/30 transition cursor-pointer shrink-0 active:scale-95'
               aria-label='Close zoom view'
             >
               <X size={16} />
               <span>Exit Zoom</span>
             </button>
-
-            <span className='text-[11px] font-bold px-3 py-1.5 rounded-xl bg-slate-900/90 text-slate-300 border border-slate-800 truncate max-w-[60%]'>
-              {product.name}
-            </span>
           </div>
 
           <div
@@ -855,7 +924,7 @@ const addToCart = () => {
             />
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Navbar */}
       <nav className='fixed top-0 left-0 right-0 w-full z-50 bg-[#0e1626]/90 backdrop-blur-xl border-b border-slate-800/80'>
@@ -979,10 +1048,10 @@ const addToCart = () => {
 
                   <div className='absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none z-20' />
 
-                  <span className='absolute bottom-2.5 right-2.5 z-30 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-950/75 text-slate-200 border border-slate-700/70 text-[10px] font-bold backdrop-blur-sm opacity-85 group-hover:opacity-100 transition'>
+                  {/* <span className='absolute bottom-2.5 right-2.5 z-30 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-950/75 text-slate-200 border border-slate-700/70 text-[10px] font-bold backdrop-blur-sm opacity-85 group-hover:opacity-100 transition'>
                     <ZoomIn size={12} className='text-cyan-300' />
                     <span>Zoom</span>
-                  </span>
+                  </span> */}
                 </button>
               ) : (
                 <div className='flex items-center justify-center h-full text-slate-600 text-xs font-medium'>
@@ -1114,7 +1183,17 @@ const addToCart = () => {
               </div>
 
               <div className='shrink-0 scale-90 sm:scale-100 origin-right [&>button]:!w-auto'>
-                <ShareButton title={product.name} text={product.description} />
+                <LazyMount
+                  rootMargin='180px 0px'
+                  className='min-h-8 min-w-12 inline-flex items-center justify-center'
+                >
+                  <ShareButton
+                    productSlug={product.slug}
+                    productName={product.name}
+                    productPrice={product.price}
+                    compareAtPrice={product.compare_at_price}
+                  />
+                </LazyMount>
               </div>
             </div>
 
@@ -1126,11 +1205,11 @@ const addToCart = () => {
             <div className='border-t border-b border-slate-800/90 py-3 space-y-2 text-xs text-slate-300 font-medium'>
               <div className='flex items-center gap-2.5'>
                 <Truck size={15} className='text-blue-400 shrink-0' />
-                <span>Fast delivery to all regions & cities</span>
+                <span>توصيل سريع لباب بيتك في كل المحافظات</span>
               </div>
               <div className='flex items-center gap-2.5'>
                 <ShieldCheck size={15} className='text-emerald-400 shrink-0' />
-                <span>Quality guarantee & easy return policy</span>
+                <span>اعلي كواليتي وافضل سعر بفضل الله</span>
               </div>
             </div>
 
@@ -1413,7 +1492,7 @@ const addToCart = () => {
                         {/* استيكر بادج صغير برقم المنتج في الاسلايدر أسفل اليمين */}
                         <span
                           title={`Item #${sliderNumber} in slider`}
-                          className='absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-black bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 backdrop-blur-md shadow'
+                          className='absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[9.5px] font-black bg-cyan-950/85 text-white border border-cyan-300/50 backdrop-blur-md shadow-md'
                         >
                           #{sliderNumber}
                         </span>

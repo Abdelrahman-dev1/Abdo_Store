@@ -672,25 +672,21 @@ useEffect(() => {
         <section className='bg-[#0e1626]/90 backdrop-blur-xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-800/95 shadow-xl space-y-4'>
           <div className='border-b border-slate-800/80 pb-3 flex items-center gap-2.5'>
             <User className='w-5 h-5 text-blue-400' />
-            <div>
+            <div className='text-left'>
               <h1 className='text-sm sm:text-base font-black text-white'>
                 Profile & Delivery Address
               </h1>
               <p
-                dir='rtl'
-                className='text-[10px] sm:text-xs text-slate-300 font-medium leading-relaxed'
+                dir='ltr'
+                className='mt-0.5 text-[11px] sm:text-xs font-normal leading-relaxed text-slate-400'
               >
                 كل تفاصيل{' '}
-                <span className='bg-gradient-to-l from-rose-400 via-purple-400 to-sky-400 bg-clip-text text-transparent font-bold'>
-                  رحلتك معانا
-                </span>{' '}
+                <span className='font-medium text-sky-300/90'>رحلتك معانا</span>{' '}
                 منظمة بدقة في مكان واحد —{' '}
-                <span className='text-emerald-400 font-bold'>مكافآتك</span>،{' '}
-                <span className='text-sky-400 font-bold'>
-                  طلباتك بكل تفاصيلها
+                <span className='font-medium text-slate-200'>
+                  مكافآتك، طلباتك، والبحث بسهولة
                 </span>
-                ، و
-                <span className='text-purple-400 font-bold'>البحث بسهولة</span>.
+                .
               </p>
             </div>
           </div>

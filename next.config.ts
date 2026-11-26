@@ -30,7 +30,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   // السماح لـ Next.js dev / HMR بالوصول من الموبايل على الشبكة المحلية
-  allowedDevOrigins: ["192.168.1.2"],
+  allowedDevOrigins: ["192.168.1.2" ,'192.168.1.7', 'localhost:3000'],
 
   // 1. إبقاء هذا الخيار بناءً على طلبك لضمان عدم توقف الـ Build على Vercel بسبب التايبس
   typescript: {

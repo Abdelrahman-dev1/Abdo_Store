@@ -35,7 +35,58 @@ export default function CustomerReviews({ productId }: CustomerReviewsProps) {
   const [comment, setComment] = useState('');
   const [notice, setNotice] = useState('');
   const [noticeError, setNoticeError] = useState(false);
+// ================
+// ================
+const [isRatingOpen, setIsRatingOpen] = useState(false);
 
+const ratingOptions = [
+  {
+    value: 5,
+    label: 'ممتاز',
+    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  },
+  {
+    value: 4,
+    label: 'جيد جداً',
+    badge: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+  },
+  {
+    value: 3,
+    label: 'متوسط',
+    badge: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+  },
+  {
+    value: 2,
+    label: 'مقبول',
+    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  },
+  {
+    value: 1,
+    label: 'سيئ',
+    badge: 'bg-red-500/20 text-red-300 border-red-500/35',
+  },
+];
+
+const selectedRating =
+  ratingOptions.find((item) => item.value === rating) || ratingOptions[0];
+// ================
+// ================
+// ================
+const renderStars = (count) => (
+  <span className='inline-flex items-center gap-0.5 text-sm leading-none'>
+    {[1, 2, 3, 4, 5].map((star) => (
+      <span
+        key={star}
+        className={star <= count ? 'text-amber-400' : 'text-slate-600/80'}
+      >
+        ★
+      </span>
+    ))}
+  </span>
+);
+// ================
+// ================
+// ================
   const fetchReviews = useCallback(
     async (showLoader = false) => {
       if (showLoader) setLoading(true);
@@ -157,8 +208,8 @@ useEffect(() => {
               <h2 className='text-base font-black tracking-tight text-white sm:text-lg'>
                 Customer Reviews & Ratings
               </h2>
-              <p className='mt-0.5 text-xs text-slate-400'>
-                Real feedback from customers
+              <p className='mt-1 text-sm font-medium text-slate-300'>
+                آراء حقيقية من عملائنا
               </p>
             </div>
           </div>
@@ -312,7 +363,7 @@ useEffect(() => {
                   value={reviewerName}
                   onChange={(e) => setReviewerName(e.target.value)}
                   className='w-full rounded-xl border border-slate-700 bg-[#080e18] px-3.5 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-500/70 focus:ring-2 focus:ring-emerald-500/10'
-                  placeholder='e.g. John Doe'
+                  placeholder='مثال: أحمد محمد'
                 />
               </div>
 
@@ -321,17 +372,75 @@ useEffect(() => {
                   Your rating <span className='text-red-400'>*</span>
                 </label>
 
-                <select
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                  className='w-full cursor-pointer rounded-xl border border-slate-700 bg-[#080e18] px-3.5 py-3 text-sm font-bold text-amber-300 outline-none focus:border-blue-500/70'
-                >
-                  <option value={5}>★★★★★ — Excellent</option>
-                  <option value={4}>★★★★☆ — Very good</option>
-                  <option value={3}>★★★☆☆ — Average</option>
-                  <option value={2}>★★☆☆☆ — Poor</option>
-                  <option value={1}>★☆☆☆☆ — Terrible</option>
-                </select>
+                <div className='relative w-full'>
+                  {/* زر الفتح الصغير */}
+                  <button
+                    type='button'
+                    onClick={() => setIsRatingOpen((prev) => !prev)}
+                    className='flex w-full items-center justify-between gap-2 rounded-xl border border-blue-500/30 bg-gradient-to-l from-slate-900/95 via-[#0b1324] to-slate-900/95 px-3 py-2 text-xs shadow-sm transition hover:border-blue-400/50 focus:outline-none'
+                  >
+                    <div className='flex items-center gap-2'>
+                      {renderStars(selectedRating.value)}
+                      <span
+                        className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${selectedRating.badge}`}
+                      >
+                        {selectedRating.label}
+                      </span>
+                    </div>
+
+                    <svg
+                      className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-200 ${
+                        isRatingOpen ? 'rotate-180 text-blue-300' : ''
+                      }`}
+                      viewBox='0 0 20 20'
+                      fill='currentColor'
+                    >
+                      <path
+                        fillRule='evenodd'
+                        d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z'
+                        clipRule='evenodd'
+                      />
+                    </svg>
+                  </button>
+
+                  {/* القائمة المنسدلة */}
+                  {isRatingOpen && (
+                    <>
+                      <div
+                        className='fixed inset-0 z-10'
+                        onClick={() => setIsRatingOpen(false)}
+                      />
+
+                      <div className='absolute right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-slate-700/80 bg-[#0b1220]/95 p-1 shadow-xl backdrop-blur-md'>
+                        {ratingOptions.map((option) => {
+                          const isSelected = option.value === rating;
+                          return (
+                            <button
+                              key={option.value}
+                              type='button'
+                              onClick={() => {
+                                setRating(option.value);
+                                setIsRatingOpen(false);
+                              }}
+                              className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition ${
+                                isSelected
+                                  ? 'bg-gradient-to-l from-blue-600/20 via-emerald-500/15 to-rose-500/20 text-white'
+                                  : 'text-slate-300 hover:bg-slate-800/70'
+                              }`}
+                            >
+                              {renderStars(option.value)}
+                              <span
+                                className={`rounded-md border px-2 py-0.5 text-[11px] font-medium ${option.badge}`}
+                              >
+                                {option.label}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -346,7 +455,7 @@ useEffect(() => {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   className='w-full resize-y rounded-xl border border-slate-700 bg-[#080e18] px-3.5 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-500/70 focus:ring-2 focus:ring-blue-500/10'
-                  placeholder='Share your experience with this product...'
+                  placeholder='...شاركنا تجربتك مع هذا المنتج'
                 />
 
                 <p className='mt-1 text-right text-xs text-slate-400'>
