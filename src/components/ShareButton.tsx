@@ -47,14 +47,14 @@ export default function ShareButton({
     if (hasDiscount) {
       const saving = old - current;
       const discountPercent = Math.round((saving / old) * 100);
-      discountText = `💥 خصم نار ${discountPercent}%!\n💰 السعر الحالي: ${current} EGP (بدلاً من ${old} EGP)\n💸 وفرت: ${saving} EGP!\n`;
+      discountText = `💥 خصم لفتره محدوده جدا  ${discountPercent}%!\n💰 السعر الحالي: ${current} EGP (بدلاً من ${old} EGP)\n💸 وفرت: ${saving} EGP!\n`;
     } else if (current > 0) {
       discountText = `💰 السعر: ${current} EGP\n`;
     }
 
     // 🎛️ [مكان التحكم الكامل في نص رسالة الشير]
     const shareTitle = `⚡ ${productName} | Abdo Store`;
-    const shareText = `⏳  المنتج لفترة محدودة جداً: ${productName}\n${discountText}🚨 متوفر الآن في Abdo Store`;
+    const shareText = `⏳  المنتج : ${productName}\n${discountText}🚨 متوفر الآن في Abdo Store`;
 
     // 1. استخدام واجهة المشاركة الأصلية (للهواتف)
     if (

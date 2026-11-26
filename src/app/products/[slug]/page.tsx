@@ -42,6 +42,55 @@ function safeDecode(value: string): string {
   }
 }
 
+function cleanText(value: unknown, maxLength = 200): string {
+  if (typeof value !== 'string') return '';
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength - 1).trim()}…`
+    : normalized;
+}
+
+// تحسين رابط صورة المعاينة فقط (لضمان ظهورها في واتساب وفيسبوك بدون المساس بصور المتجر)
+function optimizeShareImageUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return FALLBACK_IMAGE;
+
+  try {
+    const parsed = new URL(trimmed);
+
+    // تأمين البروتوكول إلى https إذا كان الرابط يبدأ بـ http
+    if (parsed.protocol === 'http:') {
+      parsed.protocol = 'https:';
+    }
+
+    if (parsed.protocol !== 'https:') {
+      return FALLBACK_IMAGE;
+    }
+
+    const finalUrl = parsed.toString();
+
+    // إذا كانت الصورة من Cloudinary، نولد نسخة JPG متوافقة مع معاينة واتساب
+    if (
+      finalUrl.includes('res.cloudinary.com') &&
+      finalUrl.includes('/upload/')
+    ) {
+      // تجنب إضافة التحويل مرتين إذا كان موجوداً بالفعل
+      if (finalUrl.includes('/upload/f_jpg,')) {
+        return finalUrl;
+      }
+      return finalUrl.replace(
+        '/upload/',
+        '/upload/f_jpg,q_80,w_1200,h_630,c_pad,b_rgb:07090e/',
+      );
+    }
+
+    return finalUrl;
+  } catch {
+    return FALLBACK_IMAGE;
+  }
+}
+
 function resolveProductImage(product: ProductMetadataRow | null): string {
   if (!product) return FALLBACK_IMAGE;
 
@@ -61,17 +110,16 @@ function resolveProductImage(product: ProductMetadataRow | null): string {
   if (!candidate) return FALLBACK_IMAGE;
 
   if (candidate.startsWith('http://') || candidate.startsWith('https://')) {
-    return candidate;
+    return optimizeShareImageUrl(candidate);
   }
 
   if (candidate.startsWith('/')) {
-    return `${SITE_URL}${candidate}`;
+    return optimizeShareImageUrl(`${SITE_URL}${candidate}`);
   }
 
   return FALLBACK_IMAGE;
 }
 
-// دالة مخزنة في الكاش لجلب بيانات الميتا داتا بدون حظر الصفحة
 // دالة مخزنة في الكاش لجلب بيانات الميتا داتا بدون حظر الصفحة
 async function getCachedProductMetadata(
   slug: string,
@@ -84,8 +132,9 @@ async function getCachedProductMetadata(
     if (!supabase) return null;
 
     const cleanSlug = safeDecode(slug).trim();
+    if (!cleanSlug) return null;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('products')
       .select(
         'name, slug, description, image, images, price, category, is_active',
@@ -93,7 +142,22 @@ async function getCachedProductMetadata(
       .eq('slug', cleanSlug)
       .maybeSingle();
 
-    return (data as ProductMetadataRow) || null;
+    if (error || !data) {
+      // محاولة احتياطية بالـ slug الأصلي في حال اختلاف التشفير
+      if (cleanSlug !== slug) {
+        const fallbackRes = await supabase
+          .from('products')
+          .select(
+            'name, slug, description, image, images, price, category, is_active',
+          )
+          .eq('slug', slug)
+          .maybeSingle();
+        return (fallbackRes.data as ProductMetadataRow) || null;
+      }
+      return null;
+    }
+
+    return data as ProductMetadataRow;
   } catch {
     return null;
   }
@@ -128,24 +192,19 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const decodedSlug = safeDecode(slug);
-  const productUrl = `${SITE_URL}/products/${encodeURIComponent(slug)}`;
+  const decodedSlug = safeDecode(slug).trim();
+  const productUrl = `${SITE_URL}/products/${encodeURIComponent(decodedSlug || slug)}`;
 
   const product = await getCachedProductMetadata(slug);
 
   const productName =
-    product?.name && product.name.trim().length > 0
-      ? product.name.trim()
-      : product
-        ? decodedSlug
-        : '';
+    cleanText(product?.name, 120) ||
+    (product ? cleanText(decodedSlug, 120) : '');
 
   const title = productName ? `${productName} | Abdo Store` : DEFAULT_TITLE;
 
   const description =
-    product?.description && product.description.trim().length > 0
-      ? product.description.trim()
-      : DEFAULT_DESCRIPTION;
+    cleanText(product?.description, 160) || DEFAULT_DESCRIPTION;
 
   const imageUrl = resolveProductImage(product);
 
@@ -158,7 +217,15 @@ export async function generateMetadata({
       description,
       url: productUrl,
       siteName: 'Abdo Store',
-      images: [{ url: imageUrl, width: 1200, height: 630 }],
+      images: [
+        {
+          url: imageUrl,
+          secureUrl: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: productName || 'Abdo Store Product',
+        },
+      ],
       locale: 'ar_EG',
       type: 'website',
     },
