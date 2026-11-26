@@ -72,6 +72,7 @@ function resolveProductImage(product: ProductMetadataRow | null): string {
 }
 
 // دالة مخزنة في الكاش لجلب بيانات الميتا داتا بدون حظر الصفحة
+// دالة مخزنة في الكاش لجلب بيانات الميتا داتا بدون حظر الصفحة
 async function getCachedProductMetadata(
   slug: string,
 ): Promise<ProductMetadataRow | null> {
@@ -82,12 +83,14 @@ async function getCachedProductMetadata(
     const supabase = createServerSupabaseClient();
     if (!supabase) return null;
 
+    const cleanSlug = safeDecode(slug).trim();
+
     const { data } = await supabase
       .from('products')
       .select(
         'name, slug, description, image, images, price, category, is_active',
       )
-      .eq('slug', slug)
+      .eq('slug', cleanSlug)
       .maybeSingle();
 
     return (data as ProductMetadataRow) || null;
